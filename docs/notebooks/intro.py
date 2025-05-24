@@ -16,13 +16,15 @@
 # %% [markdown]
 # # Layout
 #
+# > **NOTE**: If you were previously using the `gf180` package, it has been renamed to `gf180mcu` and the original package is now deprecated.
+#
 # ## Layout driven flow
 #
 # You can import the PDK and layout any of the standard cells
 
 # %%
-import gf180
+import gf180mcu  # The new package name (previously gf180)
 
 # %%
-c = gf180.diode_dw2ps()
+c = gf180mcu.diode_dw2ps()
 c.plot()

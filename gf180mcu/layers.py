@@ -2,7 +2,7 @@ import gdsfactory as gf
 from gdsfactory.technology import LayerMap
 from gdsfactory.typings import Layer
 
-from gf180.config import PATH
+from gf180mcu.config import PATH
 
 
 class LAYER(LayerMap):
