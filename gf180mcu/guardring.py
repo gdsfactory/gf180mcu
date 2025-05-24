@@ -2,8 +2,8 @@ from functools import partial
 
 import gdsfactory as gf
 
-from gf180.layers import LAYER, layer
-from gf180.via_generator import via_generator
+from gf180mcu.layers import LAYER, layer
+from gf180mcu.via_generator import via_generator
 
 dn_rect = partial(gf.components.rectangle, layer=LAYER.dnwell)
 

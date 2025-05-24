@@ -57,7 +57,7 @@ Cells
 {name}
 ----------------------------------------------------
 
-.. autofunction:: gf180.{name}
+.. autofunction:: gf180mcu.{name}
 
 """
             )
@@ -68,14 +68,14 @@ Cells
 {name}
 ----------------------------------------------------
 
-.. autofunction:: gf180.{name}
+.. autofunction:: gf180mcu.{name}
 
 .. plot::
   :include-source:
 
-  import gf180
+  import gf180mcu
 
-  c = gf180.{name}({kwargs})
+  c = gf180mcu.{name}({kwargs})
   c = c.copy()
   c.draw_ports()
   c.plot()

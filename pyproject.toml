@@ -17,7 +17,7 @@ dependencies = [
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
 license = {file = "LICENSE"}
-name = "gf180"
+name = "gf180mcu"
 readme = "README.md"
 requires-python = ">=3.11"
 version = "0.1.1"
