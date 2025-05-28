@@ -399,7 +399,7 @@ def draw_cap_mos(
                 gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
             )  # psdm
 
-            # generating contacts
+            # generatingg contacts
 
             c.add_ref(
                 via_generator(
