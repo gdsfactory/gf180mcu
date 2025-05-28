@@ -10,6 +10,7 @@ tests/gds_ref/*.oas
 *.so
 *.fsp
 uv.lock
+docs/cells.rst
 
 # Distribution / packaging
 .Python
