@@ -89,10 +89,10 @@ src = "README.md"
 src = "pyproject.toml"
 
 [[tool.tbump.file]]
-src = "gf180/__init__.py"
+src = "gf180mcu/__init__.py"
 
 [[tool.tbump.file]]
-src = "gf180/klayout/grain.xml"
+src = "gf180mcu/klayout/grain.xml"
 
 [tool.tbump.git]
 message_template = "Bump to {new_version}"
