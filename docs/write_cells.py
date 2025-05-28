@@ -2,7 +2,6 @@ import inspect
 import pathlib
 
 from gdsfactory.serialization import clean_value_json
-
 from gf180 import cells
 
 filepath = pathlib.Path(__file__).parent.absolute() / "cells.rst"

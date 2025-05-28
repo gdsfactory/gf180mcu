@@ -231,7 +231,7 @@ def diode_nd2ps(
                 gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
             )  # psdm draw
 
-            # generating contacts
+            # generatingg contacts
 
             c.add_ref(
                 via_generator(
@@ -543,7 +543,7 @@ def diode_pd2nw(
                 gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
             )  # psdm guardring
 
-            # generating contacts
+            # generatingg contacts
 
             c.add_ref(
                 via_generator(
@@ -972,7 +972,7 @@ def diode_pw2dw(
             gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
         )  # guardring psdm
 
-        # generating contacts
+        # generatingg contacts
 
         c.add_ref(
             via_generator(
@@ -1196,7 +1196,7 @@ def diode_dw2ps(
             gf.boolean(A=pplus_out, B=pplus_in, operation="A-B", layer=layer["nplus"])
         )  # nplus
 
-        # generating contacts
+        # generatingg contacts
 
         c.add_ref(
             via_generator(
@@ -1381,7 +1381,7 @@ def diode_dw2ps(
             gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
         )  # psdm
 
-        # generating contacts
+        # generatingg contacts
 
         c.add_ref(
             via_generator(
@@ -1780,7 +1780,7 @@ def sc_diode(
             gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
         )  # psdm
 
-        # generating contacts
+        # generatingg contacts
         c.add_ref(
             via_generator(
                 x_range=(

@@ -175,7 +175,7 @@ def pcmpgr_gen(dn_rect, grw: float = 0.36) -> gf.Component:
         gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
     )  # pplus_draw
 
-    # generating contacts
+    # generatingg contacts
 
     c.add_ref(
         via_generator(

@@ -106,7 +106,7 @@ def cap_mim(
     cap_mk.dxmin = m_dn.dxmin
     cap_mk.dymin = m_dn.dymin
 
-    # generating labels
+    # generatingg labels
     if label == 1:
         c.add_label(
             top_label,
@@ -123,7 +123,7 @@ def cap_mim(
             layer=bot_label_layer,
         )
 
-    # generating vias
+    # generatingg vias
     via = via_generator(
         x_range=(m_up.dxmin, m_up.dxmax),
         y_range=(m_up.dymin, m_up.dymax),

@@ -691,7 +691,7 @@ def bulk_gr_gen(
         gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=implant_layer)
     )  # implant_draw(pplus or nplus)
 
-    # generating contacts
+    # generatingg contacts
 
     c.add_ref(
         via_generator(
@@ -1057,7 +1057,7 @@ def nfet(
 
     c_inst = gf.Component()
 
-    # generating sd diffusion
+    # generatingg sd diffusion
 
     if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
         nf = len(patt)
@@ -1068,7 +1068,7 @@ def nfet(
     rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
     sd_diff_intr = c_inst.add_ref(rect_d_intr)
 
-    #  generating sd contacts
+    #  generatingg sd contacts
 
     if w_gate <= con_size + 2 * con_comp_enc:
         cmpc_y = con_comp_enc + con_size + con_comp_enc
@@ -1149,7 +1149,7 @@ def nfet(
         )
     )
 
-    # generating poly
+    # generatingg poly
 
     if l_gate <= con_size + 2 * con_pl_enc:
         pc_x = con_pl_enc + con_size + con_pl_enc
@@ -1251,7 +1251,7 @@ def nfet(
         poly2.dxmin = poly1.dxmin + l_gate + inter_sd_l
         poly2.dymin = p_mv
 
-        # generating poly contacts setups
+        # generatingg poly contacts setups
 
         if gate_con_pos == "bottom":
             mv_1 = 0
@@ -1268,7 +1268,7 @@ def nfet(
 
         pc_spacing = 2 * (inter_sd_l + l_gate)
 
-        # generating poly contacts
+        # generatingg poly contacts
 
         pc1 = c_inst.add_ref(
             component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
@@ -1323,7 +1323,7 @@ def nfet(
                 c, g_label, pc1, c_pc, pc_spacing, nc1, nc2, pc2, label, layer, nf
             )
 
-    # generating bulk
+    # generatingg bulk
     if bulk == "None":
         nplus = c_inst.add_ref(
             gf.components.rectangle(
@@ -1570,7 +1570,7 @@ def pfet(
 
     c_inst = gf.Component()
 
-    # generating sd diffusion
+    # generatingg sd diffusion
 
     if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
         nf = len(patt)
@@ -1581,7 +1581,7 @@ def pfet(
     rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
     sd_diff_intr = c_inst.add_ref(rect_d_intr)
 
-    # generating sd contacts
+    # generatingg sd contacts
 
     if w_gate <= con_size + 2 * con_comp_enc:
         cmpc_y = con_comp_enc + con_size + con_comp_enc
@@ -1661,7 +1661,7 @@ def pfet(
         )
     )
 
-    # generating poly
+    # generatingg poly
 
     if l_gate <= con_size + 2 * con_pl_enc:
         pc_x = con_pl_enc + con_size + con_pl_enc
@@ -1765,7 +1765,7 @@ def pfet(
         poly2.dxmin = poly1.dxmin + l_gate + inter_sd_l
         poly2.dymin = p_mv
 
-        # generating poly contacts setups
+        # generatingg poly contacts setups
 
         if gate_con_pos == "bottom":
             mv_1 = 0
@@ -1782,7 +1782,7 @@ def pfet(
 
         pc_spacing = 2 * (inter_sd_l + l_gate)
 
-        # generating poly contacts
+        # generatingg poly contacts
 
         pc1 = c_inst.add_ref(
             component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
@@ -1835,7 +1835,7 @@ def pfet(
                 )
             )
 
-    # generating bulk
+    # generatingg bulk
     if bulk == "None":
         pplus = c_inst.add_ref(
             gf.components.rectangle(
@@ -2032,7 +2032,7 @@ def nfet_06v0_nvt(
 
     c_inst = gf.Component("dev_temp")
 
-    # generating sd diffusion
+    # generatingg sd diffusion
 
     if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
         nf = len(patt)
@@ -2043,7 +2043,7 @@ def nfet_06v0_nvt(
     rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
     sd_diff_intr = c_inst.add_ref(rect_d_intr)
 
-    # generatin sd contacts
+    # generating sd contacts
 
     if w_gate <= con_size + 2 * con_comp_enc:
         cmpc_y = con_comp_enc + con_size + con_comp_enc
@@ -2124,7 +2124,7 @@ def nfet_06v0_nvt(
         )
     )
 
-    # generating poly
+    # generatingg poly
 
     if l_gate <= con_size + 2 * con_pl_enc:
         pc_x = con_pl_enc + con_size + con_pl_enc
@@ -2229,7 +2229,7 @@ def nfet_06v0_nvt(
         poly2.dxmin = poly1.dxmin + l_gate + inter_sd_l
         poly2.dymin = p_mv
 
-        # generating poly contacts setups
+        # generatingg poly contacts setups
 
         if gate_con_pos == "bottom":
             mv_1 = 0
@@ -2246,7 +2246,7 @@ def nfet_06v0_nvt(
 
         pc_spacing = 2 * (inter_sd_l + l_gate)
 
-        # generating poly contacts
+        # generatingg poly contacts
 
         pc1 = c_inst.add_ref(
             component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
@@ -2299,7 +2299,7 @@ def nfet_06v0_nvt(
                 )
             )
 
-    # generating bulk
+    # generatingg bulk
     if bulk == "None":
         nplus = c_inst.add_ref(
             gf.components.rectangle(
@@ -2436,7 +2436,7 @@ def nfet_06v0_nvt(
             gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
         )
 
-        # generating contacts
+        # generatingg contacts
 
         c.add_ref(
             via_generator(
@@ -2564,7 +2564,7 @@ def nfet_06v0_nvt(
         dg.dxmin = c_inst.dxmin - dg_enc_cmp
         dg.dymin = c_inst.dymin - dg_enc_poly
 
-    # generating native layer
+    # generatingg native layer
     nat = c.add_ref(
         gf.components.rectangle(size=(dg.dxsize, dg.dysize), layer=layer["nat"])
     )
