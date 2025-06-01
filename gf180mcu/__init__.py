@@ -104,7 +104,7 @@ __version__ = "0.2.0"
 
 cells = get_cells(sys.modules[__name__])
 PDK = Pdk(
-    name="gf180",
+    name="gf180mcu",
     cells=cells,
     layers=LAYER,
     layer_views=LAYER_VIEWS,
