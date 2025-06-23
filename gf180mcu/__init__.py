@@ -110,7 +110,7 @@ __all__ = [
     "via_stack",
     "well_res",
 ]
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 cells = get_cells(sys.modules[__name__])
 PDK = Pdk(
