@@ -1,6 +1,10 @@
-# Klayout PCells implementation.
+# Klayout GUI PCells implementation.
 
-You could use those PCells either in 2 ways:
+Note: This is not the recommended way to use the GF180MCU PDK. This is a collection of PCells for the GF180MCU PDK inside the KLayout GUI, which is not a supported flow for this PDK.
+We strongly recommend using the PDK as a standalone python package, which is available at: `pip install gf180mcu`
+
+
+If you still want to proceed with this. You could use those PCells either in 2 ways:
 1. Use volare built PDK directly from: https://github.com/efabless/volare
 2. Use the PDK from this primitive library for testing purposes.
 
