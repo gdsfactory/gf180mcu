@@ -38,7 +38,14 @@ from gf180mcu.fet import (
 from gf180mcu.guardring import (
     pcmpgr_gen,
 )
-from gf180mcu.layers import LAYER, LAYER_VIEWS, LayerMap, layer
+from gf180mcu.layers import (
+    LAYER,
+    LAYER_STACK,
+    LAYER_VIEWS,
+    LayerMap,
+    get_layer_stack,
+    layer,
+)
 from gf180mcu.res import (
     nplus_res,
     npolyf_res,
@@ -57,6 +64,8 @@ from gf180mcu.via_generator import (
 
 __all__ = [
     "LAYER",
+    "LAYER_STACK",
+    "LAYER_VIEWS",
     "PATH",
     "LayerMap",
     "add_gate_labels",
@@ -75,6 +84,7 @@ __all__ = [
     "diode_pd2nw",
     "diode_pw2dw",
     "fet",
+    "get_layer_stack",
     "get_patt_label",
     "hv_gen",
     "interdigit",
@@ -104,10 +114,10 @@ __version__ = "0.2.0"
 
 cells = get_cells(sys.modules[__name__])
 PDK = Pdk(
-    name="gf180",
+    name="gf180mcu",
     cells=cells,
     layers=LAYER,
     layer_views=LAYER_VIEWS,
-    # layer_stack=LAYER_STACK,
+    layer_stack=LAYER_STACK,
 )
 PDK.activate()
