@@ -13,7 +13,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.7.0"
+  "gdsfactory~=9.8.2"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
@@ -33,6 +33,9 @@ dev = [
 ]
 docs = ["autodoc_pydantic", "jupytext", "jupyter-book>=0.15.1,<1.1"]
 tests = ["pytest", "pytest-cov"]
+
+[tool.gdsfactoryplus.pdk]
+name = "gf180mcu"
 
 [tool.mypy]
 python_version = "3.10"
