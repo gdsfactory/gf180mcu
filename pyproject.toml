@@ -13,7 +13,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.9.2"
+  "gdsfactory~=9.12.1"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
@@ -38,7 +38,7 @@ tests = ["pytest", "pytest-cov"]
 name = "gf180mcu"
 
 [tool.mypy]
-python_version = "3.10"
+python_version = "3.12"
 strict = true
 
 [tool.pylsp-mypy]
@@ -78,7 +78,7 @@ select = [
 ]
 
 [tool.setuptools.package-data]
-mypkg = ["*.csv", "*.yaml"]
+"*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg", '*.GDS', "*.json", "*.txt"]
 
 [tool.setuptools.packages]
 find = {}
