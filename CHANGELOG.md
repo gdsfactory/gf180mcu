@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## 0.3.0
+
+- Update package
+
 ## 0.1.1 (2025-05-24)
 
 - Package renamed from gf180 to gf180mcu to better align with GlobalFoundries naming
