@@ -74,6 +74,25 @@ def res(
             layer=m_label_layer,
         )
 
+    # Add ports for resistor terminals
+    c.add_port(
+        name="r0",
+        center=(m_rect.dxmin, m_rect.dymin + m_rect.dysize / 2),
+        width=w_res,
+        orientation=180,
+        layer=m_layer,
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="r1",
+        center=(m_rect.dxmax, m_rect.dymin + m_rect.dysize / 2),
+        width=w_res,
+        orientation=0,
+        layer=m_layer,
+        port_type="electrical",
+    )
+
     return c
 
 

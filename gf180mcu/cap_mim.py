@@ -26,7 +26,7 @@ def cap_mim(
         bot_label: bottom label.
 
     """
-    c = gf.Component("mim_cap_dev")
+    c = gf.Component()
     # used dimensions and layers
 
     # MIM Option selection
@@ -133,9 +133,30 @@ def cap_mim(
         via_spacing=via_spacing,
     )
     c.add_ref(via)
+
+    # Add ports for top and bottom metal connections
+    c.add_port(
+        name="top",
+        center=(m_up.dcenter[0], m_up.dcenter[1]),
+        width=m_up.dxsize,
+        orientation=90,
+        layer=upper_layer,
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="bottom",
+        center=(m_dn.dcenter[0], m_dn.dcenter[1]),
+        width=m_dn.dxsize,
+        orientation=90,
+        layer=bottom_layer,
+        port_type="electrical",
+    )
+
     return c
 
 
 if __name__ == "__main__":
     c = cap_mim()
+    c.pprint_ports()
     c.show()

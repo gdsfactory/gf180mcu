@@ -57,6 +57,29 @@ def via_generator(
 
     via_arr.dmovex((width - nc * via_size[0] - (nc - 1) * via_spacing[0]) / 2)
     via_arr.dmovey((length - nr * via_size[1] - (nr - 1) * via_spacing[1]) / 2)
+
+    # Add ports for top and bottom connections
+    center_x = (x_range[0] + x_range[1]) / 2
+    (y_range[0] + y_range[1]) / 2
+
+    c.add_port(
+        name="e1",
+        center=(center_x, y_range[0]),
+        width=width,
+        orientation=270,
+        layer=via_layer,
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="e2",
+        center=(center_x, y_range[1]),
+        width=width,
+        orientation=90,
+        layer=via_layer,
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -150,6 +173,35 @@ def via_stack(
             gf.components.rectangle(size=(m2_x, m2_y), layer=layer["metal2"])
         )
         m2.dmove((via1.dxmin - m2_mx, via1.dymin - m2_my))
+
+    # Add ports for the via stack
+    if metal_level >= 1:
+        # Port at bottom layer
+        c.add_port(
+            name="e1",
+            center=((x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2),
+            width=m1_x,
+            orientation=0,
+            layer=base_layer,
+            port_type="electrical",
+        )
+
+        # Port at top metal layer
+        if metal_level == 1:
+            top_layer = base_layer
+            top_width = m1_x
+        elif metal_level >= 2:
+            top_layer = layer["metal2"]
+            top_width = m2_x
+
+        c.add_port(
+            name="e2",
+            center=((x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2),
+            width=top_width,
+            orientation=0,
+            layer=top_layer,
+            port_type="electrical",
+        )
 
     return c
 
