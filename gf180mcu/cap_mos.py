@@ -120,6 +120,28 @@ def cap_mos_inst(
     pl_m1.dxmin = pl_con.dxmin
     pl_m1.dymin = pl_con.dymin
 
+    # Add ports for gate and source/drain connections
+    c_inst.add_port(
+        name="gate",
+        center=(pl_m1.dcenter[0], pl_m1.dcenter[1]),
+        width=pl_m1.dxsize,
+        orientation=270,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    # Add port for comp contact (source/drain)
+    comp_contacts = c_inst.get_polygons_points()[layer["metal1"]]
+    if len(comp_contacts) > 1:  # First polygon is gate, others are source/drain
+        c_inst.add_port(
+            name="source_drain",
+            center=(cmp.dcenter[0], cmp.dcenter[1]),
+            width=con_w,
+            orientation=90,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
     return c_inst
 
 
@@ -475,6 +497,35 @@ def cap_mos(
                     layer=layer["metal1"],
                 )
             )  # guardring metal1
+
+    # Add ports for the main cap_mos component
+    # Gate port from the poly connection
+    pl_polys = c.get_polygons_points().get(layer["metal1"], [])
+    if pl_polys:
+        # Get gate metal1 location
+        gate_center = (
+            c_inst.ports["gate"].dcenter
+            if "gate" in c_inst.ports
+            else (c_inst.dxmin + lc / 2, c_inst.dymin)
+        )
+        c.add_port(
+            name="gate",
+            center=gate_center,
+            width=lc,
+            orientation=270,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    # Source/drain port from the comp metal connection
+    c.add_port(
+        name="source_drain",
+        center=(cmp_m1_h.dcenter[0], cmp_m1_h.dcenter[1]),
+        width=cmp_m1_h.dxsize,
+        orientation=270,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
 
     return c
 
