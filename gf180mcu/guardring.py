@@ -175,6 +175,19 @@ def pcmpgr_gen(dn_rect=dn_rect, grw: float = 0.36) -> gf.Component:
         )
     )  # metal1 guardring
 
+    # Add port for guardring connection
+    center_x = (rect_pcmpgr_out.dxmin + rect_pcmpgr_out.dxmax) / 2
+    (rect_pcmpgr_out.dymin + rect_pcmpgr_out.dymax) / 2
+
+    c.add_port(
+        name="guardring",
+        center=(center_x, rect_pcmpgr_out.dymin),
+        width=rect_pcmpgr_out.dxsize,
+        orientation=270,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
