@@ -5,9 +5,10 @@ from gdsfactory.component import Component
 from gdsfactory.difftest import difftest
 from pytest_regressions.data_regression import DataRegressionFixture
 
-from gf180mcu import cells
+from gf180mcu import PDK
 
 skip_test = {"res_dev"}
+cells = PDK.cells
 cell_names = set(cells.keys()) - set(skip_test)
 dirpath = pathlib.Path(__file__).absolute().parent / "gds_ref"
 
