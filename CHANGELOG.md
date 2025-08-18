@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## 0.4.0
+
+- create cells folder [#14](https://github.com/gdsfactory/gf180/pull/14)
+- add ports [#12](https://github.com/gdsfactory/gf180/pull/12)
+
 ## 0.3.1
 
 - Update to gdsfactory 9.12.1
