@@ -77,6 +77,9 @@ select = [
   "RUF"  # ruff
 ]
 
+[tool.ruff.lint.per-file-ignores]
+"gf180mcu/cells/__init__.py" = ["F403"]
+
 [tool.setuptools.package-data]
 "*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg", '*.GDS', "*.json", "*.txt"]
 
