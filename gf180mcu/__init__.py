@@ -57,10 +57,12 @@ from gf180mcu.res import (
     res,
     well_res,
 )
+from gf180mcu.tech import cross_sections, routing_strategies
 from gf180mcu.via_generator import (
     via_generator,
     via_stack,
 )
+from gf180mcu.waveguides import bend, bend_s, straight, wire_corner, wire_corner45
 
 __all__ = [
     "LAYER",
@@ -71,6 +73,8 @@ __all__ = [
     "add_gate_labels",
     "add_inter_sd_labels",
     "alter_interdig",
+    "bend",
+    "bend_s",
     "bulk_gr_gen",
     "cap_mim",
     "cap_mos",
@@ -106,18 +110,25 @@ __all__ = [
     "ppolyf_u_high_Rs_res",
     "res",
     "sc_diode",
+    "straight",
     "via_generator",
     "via_stack",
     "well_res",
+    "wire_corner",
+    "wire_corner45",
 ]
 __version__ = "0.3.2"
 
 cells = get_cells(sys.modules[__name__])
+
+
 PDK = Pdk(
     name="gf180mcu",
     cells=cells,
     layers=LAYER,
     layer_views=LAYER_VIEWS,
     layer_stack=LAYER_STACK,
+    cross_sections=cross_sections,
+    routing_strategies=routing_strategies,
 )
 PDK.activate()
