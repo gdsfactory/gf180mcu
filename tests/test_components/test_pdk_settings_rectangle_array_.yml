@@ -1,0 +1,11 @@
+info: {}
+name: array_gdsfactorypcompon_857c0b00
+settings:
+  add_ports: true
+  auto_rename_ports: false
+  centered: false
+  column_pitch: 150
+  columns: 6
+  component: Frectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  row_pitch: 150
+  rows: 1
