@@ -1,4 +1,4 @@
-# gf180mcu 0.3.2
+# gf180mcu 0.4.0
 
 GlobalFoundries 180nm MCU based on [Google open source PDK](https://github.com/google/globalfoundries-pdk-libs-gf180mcu_fd_pr)
 
