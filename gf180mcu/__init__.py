@@ -23,7 +23,7 @@ __all__ = [
     "layer",
     "layers",
 ]
-__version__ = "0.3.2"
+__version__ = "0.4.0"
 
 _cells = get_cells(cells)
 

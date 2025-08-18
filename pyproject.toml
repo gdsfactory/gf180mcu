@@ -21,7 +21,7 @@ license = {file = "LICENSE"}
 name = "gf180mcu"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-version = "0.3.2"
+version = "0.4.0"
 
 [project.optional-dependencies]
 dev = [
@@ -105,7 +105,7 @@ message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
 
 [tool.tbump.version]
-current = "0.3.2"
+current = "0.4.0"
 regex = '''
   (?P<major>\d+)
   \.
