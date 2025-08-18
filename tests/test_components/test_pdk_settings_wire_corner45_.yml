@@ -1,0 +1,7 @@
+info:
+  length: 14.142
+name: wire_corner45_CSmetal2__2b9165de
+settings:
+  cross_section: metal2
+  radius: 10
+  with_corner90_ports: true

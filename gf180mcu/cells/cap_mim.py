@@ -1,7 +1,7 @@
 import gdsfactory as gf
 
+from gf180mcu.cells.via_generator import via_generator
 from gf180mcu.layers import layer
-from gf180mcu.via_generator import via_generator
 
 
 @gf.cell

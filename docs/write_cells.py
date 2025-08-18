@@ -3,9 +3,10 @@ import pathlib
 
 from gdsfactory.serialization import clean_value_json
 
-from gf180mcu import cells
+from gf180mcu import PDK
 
 filepath = pathlib.Path(__file__).parent.absolute() / "cells.rst"
+cells = PDK.cells
 
 skip = {
     "LIBRARY",
@@ -57,7 +58,7 @@ Cells
 {name}
 ----------------------------------------------------
 
-.. autofunction:: gf180mcu.{name}
+.. autofunction:: gf180mcu.cells.{name}
 
 """
             )
@@ -68,14 +69,14 @@ Cells
 {name}
 ----------------------------------------------------
 
-.. autofunction:: gf180mcu.{name}
+.. autofunction:: gf180mcu.cells.{name}
 
 .. plot::
   :include-source:
 
-  import gf180mcu
+  from gf180mcu import cells
 
-  c = gf180mcu.{name}({kwargs})
+  c = cells.{name}({kwargs})
   c = c.copy()
   c.draw_ports()
   c.plot()
