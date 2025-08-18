@@ -1,0 +1,14 @@
+info: {}
+name: rectangle_gdsfactorypco_0b27c387
+settings:
+  centered: false
+  layer: dnwell
+  port_orientations:
+  - 180
+  - 90
+  - 0
+  - -90
+  port_type: electrical
+  size:
+  - 4
+  - 2
