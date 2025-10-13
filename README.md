@@ -37,7 +37,7 @@ For developers you need to `git clone` the GitHub repository, fork it, git add, 
 ```
 git clone https://github.com/gdsfactory/gf180mcu.git
 cd gf180
-uv venv --python 3.11
+uv venv --python 3.12
 uv sync --extra docs --extra dev
 ```
 
