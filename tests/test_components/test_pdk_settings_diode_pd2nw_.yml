@@ -1,5 +1,5 @@
 info: {}
-name: diode_pd2nw_L0p1_W0p1_C_36e50474
+name: diode_pd2nw_L0p1_W0p1_C0p1_V3p3V_DFalse_PFalse_LFalse_PL_NL
 settings:
   cw: 0.1
   deepnwell: false
