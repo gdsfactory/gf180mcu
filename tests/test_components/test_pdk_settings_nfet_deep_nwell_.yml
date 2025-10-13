@@ -1,5 +1,5 @@
 info: {}
-name: nfet_deep_nwell_DFalse__1f9b92a1
+name: nfet_deep_nwell_DFalse_PFalse_IS0p1_0p1_IX0p1_IY0p1_G0p36
 settings:
   deepnwell: false
   grw: 0.36
