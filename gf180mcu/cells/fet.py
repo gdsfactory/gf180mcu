@@ -1524,18 +1524,17 @@ def pfet(
     """Return pfet.
 
     Args:
-        l : Float of gate length
-        w : Float of gate width
-        sd_l : Float of source and drain diffusion length
-        inter_sd_l : Float of source and drain diffusion length between fingers
-        nf : integer of number of fingers
-        M : integer of number of multipliers
-        grw : guard ring width when enabled
-        type : string of the device type
-        bulk : String of bulk connection type (None, Bulk Tie, Guard Ring)
-        con_bet_fin : boolean of having contacts for diffusion between fingers
-        gate_con_pos : string of choosing the gate contact position (bottom, top, alternating )
-
+        l: Float of gate length
+        w: Float of gate width
+        sd_l: Float of source and drain diffusion length
+        inter_sd_l: Float of source and drain diffusion length between fingers
+        nf: integer of number of fingers
+        M: integer of number of multipliers
+        grw: guard ring width when enabled
+        type: string of the device type
+        bulk: String of bulk connection type (None, Bulk Tie, Guard Ring)
+        con_bet_fin: boolean of having contacts for diffusion between fingers
+        gate_con_pos: string of choosing the gate contact position (bottom, top, alternating )
     """
     # used layers and dimensions
 
@@ -1971,6 +1970,7 @@ def pfet(
         )
         # bulk guardring
 
+    c.add_port(name="s", port=sd_diff.ports["e1"])
     return c
 
 
@@ -2577,6 +2577,7 @@ def nfet_06v0_nvt(
 
 if __name__ == "__main__":
     c = pfet()
+    c.pprint_ports()
     # c = nfet()
     # c = nfet_06v0_nvt()
     # c = interdigit()
