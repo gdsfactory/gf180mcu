@@ -90,7 +90,7 @@ def via_stack(
     metal_level: int = 1,
     con_size: Size = (0.22, 0.22),
     con_enc: float = 0.07,
-    m_enc: float = 0.06,
+    m_enc: Float2 = (0.06, 0.06),
     con_spacing: Spacing = (0.28, 0.28),
     via_size: Size = (0.22, 0.22),
     via_spacing: Spacing = (0.28, 0.28),
@@ -98,7 +98,7 @@ def via_stack(
     base_layer: LayerSpec = layer["metal1"],
     **kwargs: Any,
 ) -> gf.Component:
-    """Returns a via stack withen the range xrange and yrange and expecting the base_layer to be drawen.
+    """Returns a via stack within the range xrange and yrange and expecting the base_layer to be drawn.
 
     Args:
         x_range: dx range.
@@ -119,7 +119,7 @@ def via_stack(
     metal_level 3 : till m3
     metal_level 4 : till m4
     metal_level 5 : till m5
-    withen the range xrange and yrange and expecting the base_layer to be drawen
+    within the range xrange and yrange and expecting the base_layer to be drawn
 
     """
     c = gf.Component()
@@ -133,11 +133,21 @@ def via_stack(
             via_spacing=con_spacing,
         )
         con = c.add_ref(con_gen)
-        m1_x = con.dxsize + 2 * m_enc
-        m1_y = con.dysize + 2 * m_enc
-        m1 = c.add_ref(gf.components.rectangle(size=(m1_x, m1_y), layer=base_layer))
-        m1.dxmin = con.dxmin - m_enc
-        m1.dymin = con.dymin - m_enc
+        m1_x = con.dxsize + 2 * m_enc[0]
+        m1_y = con.dysize + 2 * m_enc[1]
+
+        if base_layer is not None:
+            bl_rect = c.add_ref(
+                gf.components.rectangle(size=(m1_x, m1_y), layer=base_layer)
+            )
+            bl_rect.dxmin = con.dxmin - m_enc[0]
+            bl_rect.dymin = con.dymin - m_enc[1]
+
+        m1 = c.add_ref(
+            gf.components.rectangle(size=(m1_x, m1_y), layer=layer["metal1"])
+        )
+        m1.dxmin = con.dxmin - m_enc[0]
+        m1.dymin = con.dymin - m_enc[1]
 
     if metal_level >= 2:
         via1_gen = via_generator(
