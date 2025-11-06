@@ -23,8 +23,9 @@
 # You can import the PDK and layout any of the standard cells
 
 # %%
-import gf180mcu  # The new package name (previously gf180)
+from gf180mcu import PDK, cells
 
 # %%
-c = gf180mcu.diode_dw2ps()
+PDK.activate()
+c = cells.diode_dw2ps()
 c.plot()
