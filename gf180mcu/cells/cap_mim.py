@@ -80,53 +80,53 @@ def cap_mim(
     )
 
     fusetop = c.add_ref(
-        gf.components.rectangle(size=(m_up.dxsize, m_up.dysize), layer=layer["fusetop"])
+        gf.components.rectangle(size=(m_up.xsize, m_up.ysize), layer=layer["fusetop"])
     )
-    fusetop.dxmin = m_up.dxmin
-    fusetop.dymin = m_up.dymin
+    fusetop.xmin = m_up.xmin
+    fusetop.ymin = m_up.ymin
 
     mim_l_mk = c.add_ref(
-        gf.components.rectangle(size=(fusetop.dxsize, l_mk_w), layer=layer["mim_l_mk"])
+        gf.components.rectangle(size=(fusetop.xsize, l_mk_w), layer=layer["mim_l_mk"])
     )
-    mim_l_mk.dxmin = fusetop.dxmin
-    mim_l_mk.dymin = fusetop.dymin
+    mim_l_mk.xmin = fusetop.xmin
+    mim_l_mk.ymin = fusetop.ymin
 
     m_dn = c.add_ref(
         gf.components.rectangle(
-            size=(m_up.dxsize + (2 * bot_enc_top), m_up.dysize + (2 * bot_enc_top)),
+            size=(m_up.xsize + (2 * bot_enc_top), m_up.ysize + (2 * bot_enc_top)),
             layer=bottom_layer,
         )
     )
-    m_dn.dxmin = m_up.dxmin - bot_enc_top
-    m_dn.dymin = m_up.dymin - bot_enc_top
+    m_dn.xmin = m_up.xmin - bot_enc_top
+    m_dn.ymin = m_up.ymin - bot_enc_top
 
     cap_mk = c.add_ref(
-        gf.components.rectangle(size=(m_dn.dxsize, m_dn.dysize), layer=layer["cap_mk"])
+        gf.components.rectangle(size=(m_dn.xsize, m_dn.ysize), layer=layer["cap_mk"])
     )
-    cap_mk.dxmin = m_dn.dxmin
-    cap_mk.dymin = m_dn.dymin
+    cap_mk.xmin = m_dn.xmin
+    cap_mk.ymin = m_dn.ymin
 
     # generatingg labels
     if label == 1:
         c.add_label(
             top_label,
-            position=(m_up.dxmin + (m_up.dxsize / 2), m_dn.dxmin + (m_dn.dysize / 2)),
+            position=(m_up.xmin + (m_up.xsize / 2), m_dn.xmin + (m_dn.ysize / 2)),
             layer=up_label_layer,
         )
 
         c.add_label(
             bot_label,
             position=(
-                m_dn.dxmin + (m_dn.dxsize / 2),
-                m_dn.dymin + (m_up.dymin - m_dn.dymin) / 2,
+                m_dn.xmin + (m_dn.xsize / 2),
+                m_dn.ymin + (m_up.ymin - m_dn.ymin) / 2,
             ),
             layer=bot_label_layer,
         )
 
     # generatingg vias
     via = via_generator(
-        x_range=(m_up.dxmin, m_up.dxmax),
-        y_range=(m_up.dymin, m_up.dymax),
+        x_range=(m_up.xmin, m_up.xmax),
+        y_range=(m_up.ymin, m_up.ymax),
         via_enclosure=via_enc,
         via_layer=via_layer,
         via_size=via_size,
@@ -138,7 +138,7 @@ def cap_mim(
     c.add_port(
         name="top",
         center=(m_up.dcenter[0], m_up.dcenter[1]),
-        width=m_up.dxsize,
+        width=m_up.xsize,
         orientation=90,
         layer=upper_layer,
         port_type="electrical",
@@ -147,7 +147,7 @@ def cap_mim(
     c.add_port(
         name="bottom",
         center=(m_dn.dcenter[0], m_dn.dcenter[1]),
-        width=m_dn.dxsize,
+        width=m_dn.xsize,
         orientation=90,
         layer=bottom_layer,
         port_type="electrical",
