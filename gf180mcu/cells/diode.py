@@ -315,6 +315,25 @@ def diode_nd2ps(
                 )
             )  # guardring metal1
 
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(ncmp_con.dcenter[0], ncmp_con.dcenter[1]),
+        width=wa,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="cathode",
+        center=(pcmp_con.dcenter[0], pcmp_con.dcenter[1]),
+        width=cw,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -627,6 +646,25 @@ def diode_pd2nw(
                 )
             )  # guardring metal1
 
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(pcmp_con.dcenter[0], pcmp_con.dcenter[1]),
+        width=wa,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="cathode",
+        center=(ncmp_con.dcenter[0], ncmp_con.dcenter[1]),
+        width=cw,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -759,6 +797,25 @@ def diode_nw2ps(
         )
         dg.dxmin = pcmp.dxmin - dg_enc_cmp
         dg.dymin = pcmp.dymin - dg_enc_cmp
+
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(n_con.dcenter[0], n_con.dcenter[1]),
+        width=wa,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="cathode",
+        center=(p_con.dcenter[0], p_con.dcenter[1]),
+        width=cw,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
 
     return c
 
@@ -1068,6 +1125,25 @@ def diode_pw2dw(
         )
         dg.dxmin = dn_rect.dxmin - dg_enc_dn
         dg.dymin = dn_rect.dymin - dg_enc_dn
+
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(p_con.dcenter[0], p_con.dcenter[1]),
+        width=wa,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="cathode",
+        center=(n_con.dcenter[0], n_con.dcenter[1]),
+        width=cw,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
 
     return c
 
@@ -1492,6 +1568,27 @@ def diode_dw2ps(
         dg.dxmin = dn_rect.dxmin - dg_enc_dn
         dg.dymin = dn_rect.dymin - dg_enc_dn
 
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(n_con.dcenter[0], n_con.dcenter[1]),
+        width=wa,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    if pcmpgr == 1:
+        # For pcmpgr case, cathode is on the guardring
+        c.add_port(
+            name="cathode",
+            center=(p_con.dcenter[0], p_con.dcenter[1]),
+            width=cw,
+            orientation=180,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
     return c
 
 
@@ -1862,6 +1959,39 @@ def sc_diode(
                 layer=layer["metal1"],
             )
         )  # guardring metal1
+
+    # Add ports for anode and cathode
+    c.add_port(
+        name="anode",
+        center=(cath_m1_h.dcenter[0], cath_m1_h.dcenter[1]),
+        width=cath_m1_h.dxsize,
+        orientation=270,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    if m > 1:
+        c.add_port(
+            name="cathode",
+            center=(an_m1_h.dcenter[0], an_m1_h.dcenter[1]),
+            width=an_m1_h.dxsize,
+            orientation=90,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+    else:
+        # For single finger, use anode center
+        c.add_port(
+            name="cathode",
+            center=(
+                an_m1_xmin + ((an_m1_xmax - an_m1_xmin) / 2),
+                an_m1_ymin + ((an_m1_ymax - an_m1_ymin) / 2),
+            ),
+            width=wa,
+            orientation=90,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
 
     # creating layout and cell in klayout
     return c
