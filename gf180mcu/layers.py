@@ -414,7 +414,7 @@ def get_layer_stack(
 LAYER_STACK = get_layer_stack()
 
 if __name__ == "__main__":
-    # LAYER_VIEWS.to_lyp(PATH.lyp)
+    LAYER_VIEWS.to_lyp(PATH.lyp)
 
     # Demo: LayerStack usage
     print("GF180MCU LayerStack Demo")
