@@ -645,7 +645,7 @@ LayerViews:
     color: "#e4b00d"
   Border:
     layer: [63, 0]
-    hatch_pattern: coarsely dotted
+    hatch_pattern: hollow
     line_style: solid
     width: 1
     color: "#edeb06"
