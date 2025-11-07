@@ -225,6 +225,35 @@ def plus_res_inst(
                 layer=layer["metal1_label"],
             )
 
+        # Add substrate port
+        c.add_port(
+            name="sub",
+            center=(sub_con.dcenter[0], sub_con.dcenter[1]),
+            width=sub_w,
+            orientation=180,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    # Add ports for resistor terminals
+    c.add_port(
+        name="r0",
+        center=(cmp_con_arr.dxmin + (cmp_con.dxsize / 2), cmp_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="r1",
+        center=(cmp_con_arr.dxmax - (cmp_con.dxsize / 2), cmp_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -299,6 +328,37 @@ def nplus_res(
 
         if pcmpgr == 1:
             c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
+
+    # Add ports from the underlying r_inst component
+    if "r0" in r_inst.ports:
+        c.add_port(
+            name="r0",
+            center=r_inst.ports["r0"].dcenter,
+            width=r_inst.ports["r0"].width,
+            orientation=r_inst.ports["r0"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "r1" in r_inst.ports:
+        c.add_port(
+            name="r1",
+            center=r_inst.ports["r1"].dcenter,
+            width=r_inst.ports["r1"].width,
+            orientation=r_inst.ports["r1"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "sub" in r_inst.ports and sub == 1:
+        c.add_port(
+            name="sub",
+            center=r_inst.ports["sub"].dcenter,
+            width=r_inst.ports["sub"].width,
+            orientation=r_inst.ports["sub"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
 
     return c
 
@@ -376,6 +436,37 @@ def pplus_res(
         )
         nw_rect.dxmin = r_inst.dxmin - nw_enc_pcmp
         nw_rect.dymin = r_inst.dymin - nw_enc_pcmp
+
+    # Add ports from the underlying r_inst component
+    if "r0" in r_inst.ports:
+        c.add_port(
+            name="r0",
+            center=r_inst.ports["r0"].dcenter,
+            width=r_inst.ports["r0"].width,
+            orientation=r_inst.ports["r0"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "r1" in r_inst.ports:
+        c.add_port(
+            name="r1",
+            center=r_inst.ports["r1"].dcenter,
+            width=r_inst.ports["r1"].width,
+            orientation=r_inst.ports["r1"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "sub" in r_inst.ports:
+        c.add_port(
+            name="sub",
+            center=r_inst.ports["sub"].dcenter,
+            width=r_inst.ports["sub"].width,
+            orientation=r_inst.ports["sub"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
 
     return c
 
@@ -504,6 +595,35 @@ def polyf_res_inst(
             layer=layer["metal1_label"],
         )
 
+    # Add substrate port
+    c.add_port(
+        name="sub",
+        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
+        width=sub_w,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    # Add ports for resistor terminals
+    c.add_port(
+        name="r0",
+        center=(pl_con_arr.dxmin + (pl_con.dxsize / 2), pl_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="r1",
+        center=(pl_con_arr.dxmax - (pl_con.dxsize / 2), pl_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -577,6 +697,37 @@ def npolyf_res(
         if pcmpgr == 1:
             c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
 
+    # Add ports from the underlying r_inst component
+    if "r0" in r_inst.ports:
+        c.add_port(
+            name="r0",
+            center=r_inst.ports["r0"].dcenter,
+            width=r_inst.ports["r0"].width,
+            orientation=r_inst.ports["r0"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "r1" in r_inst.ports:
+        c.add_port(
+            name="r1",
+            center=r_inst.ports["r1"].dcenter,
+            width=r_inst.ports["r1"].width,
+            orientation=r_inst.ports["r1"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "sub" in r_inst.ports:
+        c.add_port(
+            name="sub",
+            center=r_inst.ports["sub"].dcenter,
+            width=r_inst.ports["sub"].width,
+            orientation=r_inst.ports["sub"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
     return c
 
 
@@ -642,6 +793,37 @@ def ppolyf_res(
 
         if pcmpgr == 1:
             c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
+
+    # Add ports from the underlying r_inst component
+    if "r0" in r_inst.ports:
+        c.add_port(
+            name="r0",
+            center=r_inst.ports["r0"].dcenter,
+            width=r_inst.ports["r0"].width,
+            orientation=r_inst.ports["r0"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "r1" in r_inst.ports:
+        c.add_port(
+            name="r1",
+            center=r_inst.ports["r1"].dcenter,
+            width=r_inst.ports["r1"].width,
+            orientation=r_inst.ports["r1"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+
+    if "sub" in r_inst.ports:
+        c.add_port(
+            name="sub",
+            center=r_inst.ports["sub"].dcenter,
+            width=r_inst.ports["sub"].width,
+            orientation=r_inst.ports["sub"].orientation,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
 
     return c
 
@@ -840,6 +1022,35 @@ def ppolyf_u_high_Rs_res(
             dg.dxmin = resis_mk.dxmin
             dg.dymin = resis_mk.dymin
 
+    # Add substrate port
+    c.add_port(
+        name="sub",
+        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
+        width=sub_w,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    # Add ports for resistor terminals
+    c.add_port(
+        name="r0",
+        center=(pl_con_arr.dxmin + (pl_con.dxsize / 2), pl_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="r1",
+        center=(pl_con_arr.dxmax - (pl_con.dxsize / 2), pl_con_arr.dcenter[1]),
+        width=w_res,
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
@@ -1008,6 +1219,36 @@ def well_res(
             ),
             layer=layer["metal1_label"],
         )
+
+    # Add substrate port
+    c.add_port(
+        name="sub",
+        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
+        width=sub_w,
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    # Add ports for resistor terminals
+    c.add_port(
+        name="r0",
+        center=(con_polys_arr.dxmin + (con_polys.dxsize / 2), con_polys_arr.dcenter[1]),
+        width=well_rect.dysize - (2 * nw_enc_cmp),
+        orientation=180,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
+    c.add_port(
+        name="r1",
+        center=(con_polys_arr.dxmax - (con_polys.dxsize / 2), con_polys_arr.dcenter[1]),
+        width=well_rect.dysize - (2 * nw_enc_cmp),
+        orientation=0,
+        layer=layer["metal1"],
+        port_type="electrical",
+    )
+
     return c
 
 
