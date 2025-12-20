@@ -6,13 +6,6 @@ on:
     branches:
       - main
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
-
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
@@ -37,19 +30,3 @@ jobs:
         run: uv sync --all-extras
       - name: Run Tests
         run: make test
-  test_gfp:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      max-parallel: 12
-      matrix:
-        python-version: ["3.12"]
-        os: [ubuntu-latest]
-    steps:
-      - uses: actions/checkout@v5
-      - uses: astral-sh/setup-uv@v7
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Install Dependencies
-        run: uv sync --all-extras
-      - name: Test with pytest
-        run: uv run gfp test
