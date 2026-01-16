@@ -1,6 +1,9 @@
 install:
 	uv sync --extra docs --extra dev
 
+rm-samples:
+	rm -rf gf180mcu/samples
+
 dev:
 	uv sync --all-extras
 	uv pip install -e .
