@@ -5,6 +5,8 @@ from gdsfactory.typings import Float2, LayerSpec
 from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
 
+# TODO: For SPICE modelling, we must deduced
+
 
 @gf.cell
 def cap_mos_inst(
@@ -520,6 +522,22 @@ def cap_mos(
         layer=layer["metal1"],
         port_type="electrical",
     )
+
+    # VLSIR Simulation Metadata
+    c.info["vlsir"] = {
+        "spice_type": "SUBCKT",
+        "spice_lib": "moscap",
+        "port_order": ["1", "2"],
+        "port_map": {"source_drain": "1", "gate": "2"},
+        "params": {"c_length": lc, "c_width": wc},
+    }
+
+    # Model chooser
+    prefix = "nmoscap" if "cap_nmos" in type else "pmoscap"
+    voltage = "3p3" if volt == "3.3V" else "6p0"
+    suffix = "_b" if "_b" in type else ""
+
+    c.info["vlsir"].update({"model": f"{prefix}_{voltage}{suffix}"})
 
     return c
 

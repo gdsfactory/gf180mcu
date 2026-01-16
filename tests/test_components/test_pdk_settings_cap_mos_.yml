@@ -1,4 +1,17 @@
-info: {}
+info:
+  vlsir:
+    model: nmoscap_3p3
+    params:
+      c_length: 0.1
+      c_width: 0.1
+    port_map:
+      gate: '2'
+      source_drain: '1'
+    port_order:
+    - '1'
+    - '2'
+    spice_lib: moscap
+    spice_type: SUBCKT
 name: cap_mos_Tcap_nmos_L0p1_W0p1_V3p3V_DFalse_PFalse_LFalse_GL_SL
 settings:
   deepnwell: false

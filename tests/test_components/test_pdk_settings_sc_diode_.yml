@@ -1,4 +1,16 @@
-info: {}
+info:
+  vlsir:
+    model: sc_diode
+    params:
+      l: 0.1
+      m: 1
+      w: 0.1
+    port_map: {}
+    port_order:
+    - anode
+    - cathode
+    spice_lib: dio
+    spice_type: DIODE
 name: sc_diode_L0p1_W0p1_C0p1_M1_PFalse_LFalse_PL_NL
 settings:
   cw: 0.1

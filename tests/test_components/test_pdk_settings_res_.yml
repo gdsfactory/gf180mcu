@@ -1,4 +1,17 @@
-info: {}
+info:
+  vlsir:
+    model: rm1
+    params:
+      r_length: 0.1
+      r_width: 0.1
+    port_map:
+      r0: '1'
+      r1: '2'
+    port_order:
+    - '1'
+    - '2'
+    spice_lib: res
+    spice_type: SUBCKT
 name: res_LR0p1_WR0p1_RTrm1_LFalse_RL_RL
 settings:
   l_res: 0.1

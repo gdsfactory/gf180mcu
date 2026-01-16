@@ -1,4 +1,18 @@
-info: {}
+info:
+  vlsir:
+    model: nmos_6p0_nat
+    params:
+      l: 1.8
+      nf: 1
+      w: 0.8
+    port_map: {}
+    port_order:
+    - d
+    - g
+    - s
+    - b
+    spice_lib: nmos_6p0_nat_t
+    spice_type: SUBCKT
 name: nfet_06v0_nvt_LG1p8_WG0p8_SCC1_ISL0p24_N1_G0p22_BNone_C_a70c57c7
 settings:
   bulk: None

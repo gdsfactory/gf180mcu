@@ -1,4 +1,17 @@
-info: {}
+info:
+  vlsir:
+    model: mim_2p0fF
+    params:
+      c_length: 2
+      c_width: 2
+    port_map:
+      bottom: '2'
+      top: '1'
+    port_order:
+    - '1'
+    - '2'
+    spice_lib: mim_cap
+    spice_type: SUBCKT
 name: cap_mim_MOA_MLM4_L2_W2_LFalse_TL_BL
 settings:
   bot_label: ''

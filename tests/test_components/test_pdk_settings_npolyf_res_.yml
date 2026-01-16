@@ -1,4 +1,19 @@
-info: {}
+info:
+  vlsir:
+    model: npolyf_s
+    params:
+      r_length: 0.1
+      r_width: 0.1
+    port_map:
+      r0: '1'
+      r1: '2'
+      sub: '3'
+    port_order:
+    - '1'
+    - '2'
+    - '3'
+    spice_lib: res
+    spice_type: SUBCKT
 name: npolyf_res_LR0p1_WR0p1_RTnpolyf_s_DFalse_PFalse_LFalse_RL_RL_SL
 settings:
   deepnwell: false
