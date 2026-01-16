@@ -1,4 +1,15 @@
-info: {}
+info:
+  vlsir:
+    model: pn_3p3
+    params:
+      l: 0.1
+      w: 0.1
+    port_map: {}
+    port_order:
+    - anode
+    - cathode
+    spice_lib: dio
+    spice_type: DIODE
 name: diode_pd2nw_L0p1_W0p1_C0p1_V3p3V_DFalse_PFalse_LFalse_PL_NL
 settings:
   cw: 0.1

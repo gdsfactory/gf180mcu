@@ -328,6 +328,20 @@ def diode_nd2ps(
         port_type="electrical",
     )
 
+    # VLSIR Simulation Metadata
+    c.info["vlsir"] = {
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa},
+    }
+
+    if volt == "3.3V":
+        c.info["vlsir"].update({"model": "np_3p3"})
+    else:
+        c.info["vlsir"].update({"model": "np_6p0"})
+
     return c
 
 
@@ -653,6 +667,19 @@ def diode_pd2nw(
         port_type="electrical",
     )
 
+    c.info["vlsir"] = {
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa},
+    }
+
+    if volt == "3.3V":
+        c.info["vlsir"].update({"model": "pn_3p3"})
+    else:
+        c.info["vlsir"].update({"model": "pn_6p0"})
+
     return c
 
 
@@ -802,6 +829,19 @@ def diode_nw2ps(
         layer=layer["metal1"],
         port_type="electrical",
     )
+
+    c.info["vlsir"] = {
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa},
+    }
+
+    if volt == "3.3V":
+        c.info["vlsir"].update({"model": "nwp_3p3"})
+    else:
+        c.info["vlsir"].update({"model": "nwp_6p0"})
 
     return c
 
@@ -1128,6 +1168,15 @@ def diode_pw2dw(
         layer=layer["metal1"],
         port_type="electrical",
     )
+
+    c.info["vlsir"] = {
+        "model": "dnwpw",
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa},
+    }
 
     return c
 
@@ -1573,6 +1622,15 @@ def diode_dw2ps(
             port_type="electrical",
         )
 
+    c.info["vlsir"] = {
+        "model": "dnwps",
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa},
+    }
+
     return c
 
 
@@ -1976,6 +2034,15 @@ def sc_diode(
             layer=layer["metal1"],
             port_type="electrical",
         )
+
+    c.info["vlsir"] = {
+        "model": "sc_diode",
+        "spice_type": "DIODE",
+        "spice_lib": "dio",
+        "port_order": ["anode", "cathode"],
+        "port_map": {},
+        "params": {"l": la, "w": wa, "m": m},
+    }
 
     # creating layout and cell in klayout
     return c
