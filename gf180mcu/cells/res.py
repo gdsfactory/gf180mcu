@@ -93,6 +93,16 @@ def res(
         port_type="electrical",
     )
 
+    # VLSIR Simulation Metadata
+    c.info["vlsir"] = {
+        "model": res_type,
+        "spice_type": "SUBCKT",
+        "spice_lib": "res",
+        "port_order": ["1", "2"],
+        "port_map": {"r0": "1", "r1": "2"},
+        "params": {"r_length": l_res, "r_width": w_res},
+    }
+
     return c
 
 
@@ -360,6 +370,26 @@ def nplus_res(
             port_type="electrical",
         )
 
+        # VLSIR Simulation Metadata with substrate port
+        c.info["vlsir"] = {
+            "model": "nplus_u" if "_u" in res_type else "nplus_s",
+            "spice_type": "SUBCKT",
+            "spice_lib": "res",
+            "port_order": ["1", "2", "3"],
+            "port_map": {"r0": "1", "r1": "2", "sub": "3"},
+            "params": {"r_length": l_res, "r_width": w_res},
+        }
+    else:
+        # VLSIR Simulation Metadata without substrate port
+        c.info["vlsir"] = {
+            "model": "nplus_u" if "_u" in res_type else "nplus_s",
+            "spice_type": "SUBCKT",
+            "spice_lib": "res",
+            "port_order": ["1", "2"],
+            "port_map": {"r0": "1", "r1": "2"},
+            "params": {"r_length": l_res, "r_width": w_res},
+        }
+
     return c
 
 
@@ -467,6 +497,17 @@ def pplus_res(
             layer=layer["metal1"],
             port_type="electrical",
         )
+
+    # VLSIR Simulation Metadata
+
+    c.info["vlsir"] = {
+        "model": "pplus_u" if "_u" in res_type else "pplus_s",
+        "spice_type": "SUBCKT",
+        "spice_lib": "res",
+        "port_order": ["1", "2", "3"],
+        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
+        "params": {"r_length": l_res, "r_width": w_res},
+    }
 
     return c
 
@@ -728,6 +769,17 @@ def npolyf_res(
             port_type="electrical",
         )
 
+    # VLSIR Simulation Metadata
+
+    c.info["vlsir"] = {
+        "model": "npolyf_u" if "_u" in res_type else "npolyf_s",
+        "spice_type": "SUBCKT",
+        "spice_lib": "res",
+        "port_order": ["1", "2", "3"],
+        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
+        "params": {"r_length": l_res, "r_width": w_res},
+    }
+
     return c
 
 
@@ -824,6 +876,17 @@ def ppolyf_res(
             layer=layer["metal1"],
             port_type="electrical",
         )
+
+    # VLSIR Simulation Metadata
+
+    c.info["vlsir"] = {
+        "model": "ppolyf_u" if "_u" in res_type else "ppolyf_s",
+        "spice_type": "SUBCKT",
+        "spice_lib": "res",
+        "port_order": ["1", "2", "3"],
+        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
+        "params": {"r_length": l_res, "r_width": w_res},
+    }
 
     return c
 
@@ -1051,6 +1114,9 @@ def ppolyf_u_high_Rs_res(
         port_type="electrical",
     )
 
+    # TODO: VLSIR Simulation Metadata
+    # Which model is being used in spice?
+
     return c
 
 
@@ -1248,6 +1314,21 @@ def well_res(
         layer=layer["metal1"],
         port_type="electrical",
     )
+
+    # VLSIR Simulation Metadata
+    if res_type == "nwell":
+        pass
+    else:
+        raise NotImplementedError("pwell is not specified in sm141064 library")
+
+    c.info["vlsir"] = {
+        "model": "nwell",
+        "spice_type": "SUBCKT",
+        "spice_lib": "res",
+        "port_order": ["1", "2", "3"],
+        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
+        "params": {"r_length": l_res, "r_width": w_res},
+    }
 
     return c
 
