@@ -1,5 +1,33 @@
 info: {}
 name: npolyf_res_LR0p1_WR0p1_RTnpolyf_s_DFalse_PFalse_LFalse_RL_RL_SL
+ports:
+  r0:
+    center:
+    - -0.11
+    - 0.05
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.1
+  r1:
+    center:
+    - 0.21
+    - 0.05
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.1
+  sub:
+    center:
+    - -1.19
+    - 0.05
+    layer: 10
+    name: sub
+    orientation: 180
+    port_type: electrical
+    width: 0.36
 settings:
   deepnwell: false
   l_res: 0.1

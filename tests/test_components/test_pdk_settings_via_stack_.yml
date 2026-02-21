@@ -1,5 +1,24 @@
 info: {}
 name: via_stack_XR0_1_YR0_1_ML1_CS0p22_0p22_CE0p07_ME0p06_CS0_50a43cf3
+ports:
+  e1:
+    center:
+    - 0.5
+    - 0.5
+    layer: 10
+    name: e1
+    orientation: 0
+    port_type: electrical
+    width: 0.84
+  e2:
+    center:
+    - 0.5
+    - 0.5
+    layer: 10
+    name: e2
+    orientation: 0
+    port_type: electrical
+    width: 0.84
 settings:
   base_layer: metal1
   con_enc: 0.07

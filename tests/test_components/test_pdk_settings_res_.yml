@@ -1,5 +1,24 @@
 info: {}
 name: res_LR0p1_WR0p1_RTrm1_LFalse_RL_RL
+ports:
+  r0:
+    center:
+    - -0.28
+    - 0.05
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.1
+  r1:
+    center:
+    - 0.38
+    - 0.05
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.1
 settings:
   l_res: 0.1
   label: false
