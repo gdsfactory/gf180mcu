@@ -1,5 +1,33 @@
 info: {}
 name: ppolyf_u_high_Rs_res_LR0p42_WR0p42_V3p3V_DFalse_PFalse__bce160cb
+ports:
+  r0:
+    center:
+    - -0.46
+    - 0.21
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.42
+  r1:
+    center:
+    - 0.88
+    - 0.21
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.42
+  sub:
+    center:
+    - -1.55
+    - 0.21
+    layer: 10
+    name: sub
+    orientation: 180
+    port_type: electrical
+    width: 0.42
 settings:
   deepnwell: false
   l_res: 0.42

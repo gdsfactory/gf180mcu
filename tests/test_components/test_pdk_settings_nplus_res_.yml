@@ -1,5 +1,24 @@
 info: {}
 name: nplus_res_LR0p1_WR0p1_RTnplus_s_SFalse_DFalse_PFalse_LF_fed35f17
+ports:
+  r0:
+    center:
+    - -0.11
+    - 0.05
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.1
+  r1:
+    center:
+    - 0.21
+    - 0.05
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.1
 settings:
   deepnwell: false
   l_res: 0.1

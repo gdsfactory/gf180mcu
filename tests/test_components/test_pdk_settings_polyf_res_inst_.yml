@@ -1,5 +1,33 @@
 info: {}
 name: polyf_res_inst_LR0p1_WR0p1_RTnpolyf_s_PRE0p1_CE0p1_PILn_4b8c717c
+ports:
+  r0:
+    center:
+    - 0
+    - 0.05
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.1
+  r1:
+    center:
+    - 0.1
+    - 0.05
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.1
+  sub:
+    center:
+    - -1
+    - 0.05
+    layer: 10
+    name: sub
+    orientation: 180
+    port_type: electrical
+    width: 0.36
 settings:
   con_enc: 0.1
   l_res: 0.1

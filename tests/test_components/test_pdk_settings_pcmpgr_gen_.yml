@@ -1,5 +1,15 @@
 info: {}
 name: pcmpgr_gen_DRFrectangle_Mgdsfactorypcomponentspshapespr_4acb6000
+ports:
+  guardring:
+    center:
+    - 2
+    - -2.86
+    layer: 10
+    name: guardring
+    orientation: 270
+    port_type: electrical
+    width: 9.72
 settings:
   dn_rect: Frectangle_Mgdsfactorypcomponentspshapesprectangle_SLdnwell
   grw: 0.36

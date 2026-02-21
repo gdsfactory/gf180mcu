@@ -4,8 +4,8 @@ import gdsfactory as gf
 import kfactory as kf
 import numpy as np
 import pytest
+from conftest import difftest
 from gdsfactory.component import Component
-from gdsfactory.difftest import difftest
 from pytest_regressions.data_regression import DataRegressionFixture
 
 from gf180mcu import PDK
@@ -30,7 +30,7 @@ def test_pdk_settings(
     component: Component, data_regression: DataRegressionFixture
 ) -> None:
     """Avoid regressions when exporting settings."""
-    data_regression.check(component.to_dict())
+    data_regression.check(component.to_dict(with_ports=True))
 
 
 @pytest.mark.parametrize("component_name", cell_names)

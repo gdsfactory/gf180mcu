@@ -1,5 +1,24 @@
 info: {}
 name: diode_nw2ps_L0p1_W0p1_C0p1_V3p3V_LFalse_PL_NL
+ports:
+  anode:
+    center:
+    - 0.05
+    - 0.05
+    layer: 10
+    name: anode
+    orientation: 0
+    port_type: electrical
+    width: 0.1
+  cathode:
+    center:
+    - -0.53
+    - 0.05
+    layer: 10
+    name: cathode
+    orientation: 180
+    port_type: electrical
+    width: 0.1
 settings:
   cw: 0.1
   la: 0.1
