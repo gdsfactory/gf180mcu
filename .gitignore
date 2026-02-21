@@ -148,3 +148,4 @@ cython_debug/
 *.DS_Store
 .DS_Store
 *Thumbs.db
+test_diffs/
