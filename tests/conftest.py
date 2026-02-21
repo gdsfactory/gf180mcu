@@ -3,8 +3,6 @@
 import filecmp
 import pathlib
 import shutil
-import subprocess
-import sys
 
 import gdsfactory as gf
 from gdsfactory.name import clean_name, get_name_short
@@ -103,15 +101,8 @@ def difftest(
         print(f"  Reference: {ref_file}")
         print(f"  Run file:  {run_file}")
         print(f"  Diff GDS:  {diff_gds}")
-        try:
-            if sys.platform == "darwin":
-                subprocess.Popen(["open", str(diff_gds)])
-            elif sys.platform == "linux":
-                subprocess.Popen(["xdg-open", str(diff_gds)])
-            else:
-                subprocess.Popen(["klayout", str(diff_gds)])
-        except Exception as e:
-            print(f"  (Could not open KLayout: {e})")
+        c = gf.import_gds(diff_gds)
+        c.show()  # This will open the diff GDS in klayout
 
         answer = input("  Accept new reference? [Y/n] ")
         if answer.strip().lower() not in ("n", "no"):
