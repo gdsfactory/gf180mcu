@@ -1,5 +1,15 @@
 info: {}
 name: pfet_LG0p28_WG0p22_SCC1_ISL0p24_N1_G0p22_V3p3V_BNone_CB_3cff6ea1
+ports:
+  s:
+    center:
+    - -0.36
+    - 0.11
+    layer: 14
+    name: s
+    orientation: 180
+    port_type: electrical
+    width: 0.36
 settings:
   bulk: None
   con_bet_fin: 1
