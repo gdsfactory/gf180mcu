@@ -1,5 +1,33 @@
 info: {}
 name: well_res_LR0p42_WR0p42_RTnwell_PFalse_LFalse_RL_RL_SL
+ports:
+  r0:
+    center:
+    - -0.18
+    - 0.71
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.18
+  r1:
+    center:
+    - 0.6
+    - 0.71
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.18
+  sub:
+    center:
+    - -1.38
+    - 0.71
+    layer: 10
+    name: sub
+    orientation: 180
+    port_type: electrical
+    width: 0.36
 settings:
   l_res: 0.42
   label: false

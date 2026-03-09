@@ -1,5 +1,24 @@
 info: {}
 name: cap_mos_Tcap_nmos_L0p1_W0p1_V3p3V_DFalse_PFalse_LFalse_GL_SL
+ports:
+  gate:
+    center:
+    - 0.49
+    - 0.05
+    layer: 10
+    name: gate
+    orientation: 270
+    port_type: electrical
+    width: 0.1
+  source_drain:
+    center:
+    - 0.79
+    - -0.87
+    layer: 10
+    name: source_drain
+    orientation: 270
+    port_type: electrical
+    width: 2.26
 settings:
   deepnwell: false
   g_label: ''
