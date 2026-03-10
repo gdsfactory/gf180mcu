@@ -1,5 +1,24 @@
 info: {}
 name: plus_res_inst_LR0p1_WR0p1_RTnplus_s_SFalse_CRE0p1_CE0p1_179df1b2
+ports:
+  r0:
+    center:
+    - 0
+    - 0.05
+    layer: 10
+    name: r0
+    orientation: 180
+    port_type: electrical
+    width: 0.1
+  r1:
+    center:
+    - 0.1
+    - 0.05
+    layer: 10
+    name: r1
+    orientation: 0
+    port_type: electrical
+    width: 0.1
 settings:
   cmp_imp_layer: nplus
   cmp_res_ext: 0.1

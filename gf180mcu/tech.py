@@ -52,6 +52,7 @@ def metal1(
         width=width,
         layer=layer,
         radius=radius,
+        radius_min=None,
     )
 
 
@@ -66,6 +67,7 @@ def metal2(
         width=width,
         layer=layer,
         radius=radius,
+        radius_min=None,
     )
 
 
@@ -80,6 +82,7 @@ def metal3(
         width=width,
         layer=layer,
         radius=radius,
+        radius_min=None,
     )
 
 
@@ -94,6 +97,7 @@ def metal4(
         width=width,
         layer=layer,
         radius=radius,
+        radius_min=None,
     )
 
 
@@ -108,6 +112,7 @@ def metal5(
         width=width,
         layer=layer,
         radius=radius,
+        radius_min=None,
     )
 
 
