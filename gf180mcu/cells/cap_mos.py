@@ -5,7 +5,9 @@ from gdsfactory.typings import Float2, LayerSpec
 from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
 
-# TODO: For SPICE modelling, we must deduced
+# TODO: For SPICE modelling, we must deduce the appropriate SPICE model name
+#       and parameter set for this capacitor structure (e.g., geometry- and
+#       bias-dependent parameters), and associate them with this cell.
 
 
 @gf.cell
