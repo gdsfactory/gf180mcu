@@ -14,6 +14,7 @@ info:
     spice_lib: nmos_6p0_nat_t
     spice_type: SUBCKT
 name: nfet_06v0_nvt_LG1p8_WG0p8_SCC1_ISL0p24_N1_G0p22_BNone_C_a70c57c7
+ports: {}
 settings:
   bulk: None
   con_bet_fin: 1

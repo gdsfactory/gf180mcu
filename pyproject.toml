@@ -13,7 +13,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.20.7",
+  "gdsfactory~=9.39.0",
   "vlsir>=7.0.0",
   "vlsirtools>=7.0.0"
 ]
@@ -23,7 +23,7 @@ license = {file = "LICENSE"}
 name = "gf180mcu"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-version = "0.4.0"
+version = "0.5.0"
 
 [project.optional-dependencies]
 dev = [
@@ -31,7 +31,8 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest_regressions",
-  "pytest-github-actions-annotate-failures"
+  "pytest-github-actions-annotate-failures",
+  "towncrier"
 ]
 docs = ["autodoc_pydantic", "jupytext", "jupyter-book>=0.15.1,<1.1"]
 tests = ["pytest", "pytest-cov"]
@@ -90,6 +91,10 @@ find = {}
 
 [tool.tbump]
 
+[[tool.tbump.before_commit]]
+cmd = "towncrier build --yes --version {new_version}"
+name = "create & check changelog"
+
 [[tool.tbump.file]]
 src = "README.md"
 
@@ -107,7 +112,7 @@ message_template = "Bump to {new_version}"
 tag_template = "v{new_version}"
 
 [tool.tbump.version]
-current = "0.4.0"
+current = "0.5.0"
 regex = '''
   (?P<major>\d+)
   \.
@@ -115,3 +120,13 @@ regex = '''
   \.
   (?P<patch>\d+)
   '''
+
+[tool.towncrier]
+directory = ".changelog.d"
+filename = "CHANGELOG.md"
+issue_format = "[#{issue}](https://github.com/gdsfactory/gf180mcu/issues/{issue})"
+package = "gdsfactory"
+start_string = "<!-- towncrier release notes start -->\n"
+template = ".changelog.d/changelog_template.jinja"
+title_format = "## [{version}](https://github.com/gdsfactory/gf180mcu/releases/tag/v{version}) - {project_date}"
+underlines = ["", "", ""]
