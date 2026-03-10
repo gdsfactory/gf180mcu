@@ -13,7 +13,9 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.39.0"
+  "gdsfactory~=9.39.0",
+  "vlsir>=7.0.0",
+  "vlsirtools>=7.0.0"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
@@ -34,6 +36,9 @@ dev = [
 ]
 docs = ["autodoc_pydantic", "jupytext", "jupyter-book>=0.15.1,<1.1"]
 tests = ["pytest", "pytest-cov"]
+
+[tool.codespell]
+ignore-words-list = "inout"
 
 [tool.gdsfactoryplus.pdk]
 name = "gf180mcu"
