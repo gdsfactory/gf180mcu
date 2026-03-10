@@ -1,5 +1,6 @@
 info: {}
 name: pfet_deep_nwell_DFalse_PFalse_ES0p1_0p1_EX0p1_EY0p1_NEP0p1_G0p36
+ports: {}
 settings:
   deepnwell: false
   enc_size:

@@ -1,6 +1,9 @@
 install:
 	uv sync --extra docs --extra dev
 
+all:
+	uv run python gf180mcu/samples/all_cells.py
+
 dev:
 	uv sync --all-extras
 	uv pip install -e .
@@ -12,8 +15,11 @@ tech:
 test:
 	uv run pytest -s
 
+test-ports:
+	uv run pytest -s tests/test_components.py::test_optical_port_positions
+
 test-force:
-	uv run pytest -s --force-regen
+	uv run pytest -s --update-gds-refs --force-regen
 
 cov:
 	uv run pytest --cov=gf180
