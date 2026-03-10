@@ -37,6 +37,9 @@ dev = [
 docs = ["autodoc_pydantic", "jupytext", "jupyter-book>=0.15.1,<1.1"]
 tests = ["pytest", "pytest-cov"]
 
+[tool.codespell]
+ignore-words-list = "inout"
+
 [tool.gdsfactoryplus.pdk]
 name = "gf180mcu"
 
