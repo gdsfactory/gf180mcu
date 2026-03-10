@@ -594,6 +594,8 @@ def hv_gen(c, c_inst, volt, dg_encx: float = 0.1, dg_ency: float = 0.1) -> None:
             v5x.xmin = dg.xmin
             v5x.ymin = dg.ymin
 
+    # TODO: Implement/delete
+    raise NotImplementedError()
     # return c
 
 
@@ -819,6 +821,8 @@ def bulk_gr_gen(
             )
         )
 
+    # TODO: Implement/delete
+    raise NotImplementedError()
     # return c
 
 
@@ -1437,6 +1441,24 @@ def nfet(
             )
         )
 
+    # VLSIR Simulation Metadata
+
+    # Model selection
+
+    c.info["vlsir"] = {
+        "model": "nmos_3p3" if volt == "3.3V" else "nmos_6p0",
+        "spice_type": "MOS",
+        "spice_lib": "nmos_3p3_t" if volt == "3.3V" else "nmos_6p0_t",
+        "port_order": ["d", "g", "s", "b"],
+        "port_map": {},  # TODO: Add GDSF Ports
+        "params": {
+            "w": w_gate,
+            "l": l_gate,
+            "nf": nf,
+            "m": 1,  # TODO: Mentioned in function docstring?
+        },
+    }
+
     return c
 
 
@@ -1971,6 +1993,21 @@ def pfet(
         # bulk guardring
 
     c.add_port(name="s", port=sd_diff.ports["e1"])
+
+    c.info["vlsir"] = {
+        "model": "pmos_3p3" if volt == "3.3V" else "pmos_6p0",
+        "spice_type": "MOS",
+        "spice_lib": "pmos_3p3_t" if volt == "3.3V" else "pmos_6p0_t",
+        "port_order": ["d", "g", "s", "b"],
+        "port_map": {},  # TODO: Add GDSF Ports
+        "params": {
+            "w": w_gate,
+            "l": l_gate,
+            "nf": nf,
+            "m": 1,  # TODO: Mentioned in function docstring?
+        },
+    }
+
     return c
 
 
@@ -2569,6 +2606,15 @@ def nfet_06v0_nvt(
 
     nat.xmin = dg.xmin
     nat.ymin = dg.ymin
+
+    c.info["vlsir"] = {
+        "model": "nmos_6p0_nat",
+        "spice_type": "SUBCKT",
+        "spice_lib": "nmos_6p0_nat_t",
+        "port_order": ["d", "g", "s", "b"],
+        "port_map": {},  # TODO: Add GDSF Ports
+        "params": {"w": w_gate, "l": l_gate, "nf": nf},
+    }
 
     return c
 

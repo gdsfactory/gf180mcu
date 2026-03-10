@@ -1,5 +1,222 @@
 info: {}
 name: array_gdsfactorypcomponentspcontainersparray_component__857c0b00
+ports:
+  e1_1_1:
+    center:
+    - 0
+    - 1
+    layer: 14
+    name: e1_1_1
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e1_1_2:
+    center:
+    - 150
+    - 1
+    layer: 14
+    name: e1_1_2
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e1_1_3:
+    center:
+    - 300
+    - 1
+    layer: 14
+    name: e1_1_3
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e1_1_4:
+    center:
+    - 450
+    - 1
+    layer: 14
+    name: e1_1_4
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e1_1_5:
+    center:
+    - 600
+    - 1
+    layer: 14
+    name: e1_1_5
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e1_1_6:
+    center:
+    - 750
+    - 1
+    layer: 14
+    name: e1_1_6
+    orientation: 180
+    port_type: electrical
+    width: 2
+  e2_1_1:
+    center:
+    - 2
+    - 2
+    layer: 14
+    name: e2_1_1
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e2_1_2:
+    center:
+    - 152
+    - 2
+    layer: 14
+    name: e2_1_2
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e2_1_3:
+    center:
+    - 302
+    - 2
+    layer: 14
+    name: e2_1_3
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e2_1_4:
+    center:
+    - 452
+    - 2
+    layer: 14
+    name: e2_1_4
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e2_1_5:
+    center:
+    - 602
+    - 2
+    layer: 14
+    name: e2_1_5
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e2_1_6:
+    center:
+    - 752
+    - 2
+    layer: 14
+    name: e2_1_6
+    orientation: 90
+    port_type: electrical
+    width: 4
+  e3_1_1:
+    center:
+    - 4
+    - 1
+    layer: 14
+    name: e3_1_1
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e3_1_2:
+    center:
+    - 154
+    - 1
+    layer: 14
+    name: e3_1_2
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e3_1_3:
+    center:
+    - 304
+    - 1
+    layer: 14
+    name: e3_1_3
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e3_1_4:
+    center:
+    - 454
+    - 1
+    layer: 14
+    name: e3_1_4
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e3_1_5:
+    center:
+    - 604
+    - 1
+    layer: 14
+    name: e3_1_5
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e3_1_6:
+    center:
+    - 754
+    - 1
+    layer: 14
+    name: e3_1_6
+    orientation: 0
+    port_type: electrical
+    width: 2
+  e4_1_1:
+    center:
+    - 2
+    - 0
+    layer: 14
+    name: e4_1_1
+    orientation: 270
+    port_type: electrical
+    width: 4
+  e4_1_2:
+    center:
+    - 152
+    - 0
+    layer: 14
+    name: e4_1_2
+    orientation: 270
+    port_type: electrical
+    width: 4
+  e4_1_3:
+    center:
+    - 302
+    - 0
+    layer: 14
+    name: e4_1_3
+    orientation: 270
+    port_type: electrical
+    width: 4
+  e4_1_4:
+    center:
+    - 452
+    - 0
+    layer: 14
+    name: e4_1_4
+    orientation: 270
+    port_type: electrical
+    width: 4
+  e4_1_5:
+    center:
+    - 602
+    - 0
+    layer: 14
+    name: e4_1_5
+    orientation: 270
+    port_type: electrical
+    width: 4
+  e4_1_6:
+    center:
+    - 752
+    - 0
+    layer: 14
+    name: e4_1_6
+    orientation: 270
+    port_type: electrical
+    width: 4
 settings:
   add_ports: true
   auto_rename_ports: false
