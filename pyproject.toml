@@ -14,9 +14,9 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.39.0",
-  "vlsir>=7.0.0",
-  "vlsirtools>=7.0.0"
+  "gdsfactory==9.39.3",
+  "vlsir==7.0.0",
+  "vlsirtools==7.0.0"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
