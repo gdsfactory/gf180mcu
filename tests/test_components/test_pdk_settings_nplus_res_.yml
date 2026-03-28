@@ -18,7 +18,7 @@ ports:
     center:
     - -0.11
     - 0.05
-    layer: 10
+    layer: metal1
     name: r0
     orientation: 180
     port_type: electrical
@@ -27,7 +27,7 @@ ports:
     center:
     - 0.21
     - 0.05
-    layer: 10
+    layer: metal1
     name: r1
     orientation: 0
     port_type: electrical
