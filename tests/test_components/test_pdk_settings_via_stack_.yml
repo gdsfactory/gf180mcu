@@ -5,7 +5,7 @@ ports:
     center:
     - 0.5
     - 0.5
-    layer: 10
+    layer: metal1
     name: e1
     orientation: 0
     port_type: electrical
@@ -14,7 +14,7 @@ ports:
     center:
     - 0.5
     - 0.5
-    layer: 10
+    layer: metal1
     name: e2
     orientation: 0
     port_type: electrical

@@ -5,7 +5,7 @@ ports:
     center:
     - 2
     - -2.86
-    layer: 10
+    layer: metal1
     name: guardring
     orientation: 270
     port_type: electrical

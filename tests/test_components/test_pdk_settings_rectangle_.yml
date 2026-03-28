@@ -5,7 +5,7 @@ ports:
     center:
     - 0
     - 1
-    layer: 14
+    layer: comp
     name: e1
     orientation: 180
     port_type: electrical
@@ -14,7 +14,7 @@ ports:
     center:
     - 2
     - 2
-    layer: 14
+    layer: comp
     name: e2
     orientation: 90
     port_type: electrical
@@ -23,7 +23,7 @@ ports:
     center:
     - 4
     - 1
-    layer: 14
+    layer: comp
     name: e3
     orientation: 0
     port_type: electrical
@@ -32,7 +32,7 @@ ports:
     center:
     - 2
     - 0
-    layer: 14
+    layer: comp
     name: e4
     orientation: 270
     port_type: electrical
