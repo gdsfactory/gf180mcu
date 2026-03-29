@@ -16,7 +16,7 @@ ports:
     center:
     - 0.05
     - 0.05
-    layer: 10
+    layer: metal1
     name: anode
     orientation: 0
     port_type: electrical
@@ -25,7 +25,7 @@ ports:
     center:
     - -0.53
     - 0.05
-    layer: 10
+    layer: metal1
     name: cathode
     orientation: 180
     port_type: electrical

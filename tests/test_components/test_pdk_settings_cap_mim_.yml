@@ -18,7 +18,7 @@ ports:
     center:
     - 1
     - 1
-    layer: 11
+    layer: metal2
     name: bottom
     orientation: 90
     port_type: electrical
@@ -27,7 +27,7 @@ ports:
     center:
     - 1
     - 1
-    layer: 55
+    layer: metal3
     name: top
     orientation: 90
     port_type: electrical
