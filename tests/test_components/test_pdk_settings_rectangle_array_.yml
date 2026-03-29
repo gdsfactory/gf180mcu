@@ -5,7 +5,7 @@ ports:
     center:
     - 0
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_1
     orientation: 180
     port_type: electrical
@@ -14,7 +14,7 @@ ports:
     center:
     - 150
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_2
     orientation: 180
     port_type: electrical
@@ -23,7 +23,7 @@ ports:
     center:
     - 300
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_3
     orientation: 180
     port_type: electrical
@@ -32,7 +32,7 @@ ports:
     center:
     - 450
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_4
     orientation: 180
     port_type: electrical
@@ -41,7 +41,7 @@ ports:
     center:
     - 600
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_5
     orientation: 180
     port_type: electrical
@@ -50,7 +50,7 @@ ports:
     center:
     - 750
     - 1
-    layer: 14
+    layer: comp
     name: e1_1_6
     orientation: 180
     port_type: electrical
@@ -59,7 +59,7 @@ ports:
     center:
     - 2
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_1
     orientation: 90
     port_type: electrical
@@ -68,7 +68,7 @@ ports:
     center:
     - 152
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_2
     orientation: 90
     port_type: electrical
@@ -77,7 +77,7 @@ ports:
     center:
     - 302
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_3
     orientation: 90
     port_type: electrical
@@ -86,7 +86,7 @@ ports:
     center:
     - 452
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_4
     orientation: 90
     port_type: electrical
@@ -95,7 +95,7 @@ ports:
     center:
     - 602
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_5
     orientation: 90
     port_type: electrical
@@ -104,7 +104,7 @@ ports:
     center:
     - 752
     - 2
-    layer: 14
+    layer: comp
     name: e2_1_6
     orientation: 90
     port_type: electrical
@@ -113,7 +113,7 @@ ports:
     center:
     - 4
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_1
     orientation: 0
     port_type: electrical
@@ -122,7 +122,7 @@ ports:
     center:
     - 154
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_2
     orientation: 0
     port_type: electrical
@@ -131,7 +131,7 @@ ports:
     center:
     - 304
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_3
     orientation: 0
     port_type: electrical
@@ -140,7 +140,7 @@ ports:
     center:
     - 454
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_4
     orientation: 0
     port_type: electrical
@@ -149,7 +149,7 @@ ports:
     center:
     - 604
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_5
     orientation: 0
     port_type: electrical
@@ -158,7 +158,7 @@ ports:
     center:
     - 754
     - 1
-    layer: 14
+    layer: comp
     name: e3_1_6
     orientation: 0
     port_type: electrical
@@ -167,7 +167,7 @@ ports:
     center:
     - 2
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_1
     orientation: 270
     port_type: electrical
@@ -176,7 +176,7 @@ ports:
     center:
     - 152
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_2
     orientation: 270
     port_type: electrical
@@ -185,7 +185,7 @@ ports:
     center:
     - 302
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_3
     orientation: 270
     port_type: electrical
@@ -194,7 +194,7 @@ ports:
     center:
     - 452
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_4
     orientation: 270
     port_type: electrical
@@ -203,7 +203,7 @@ ports:
     center:
     - 602
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_5
     orientation: 270
     port_type: electrical
@@ -212,7 +212,7 @@ ports:
     center:
     - 752
     - 0
-    layer: 14
+    layer: comp
     name: e4_1_6
     orientation: 270
     port_type: electrical

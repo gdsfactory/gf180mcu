@@ -5,7 +5,7 @@ ports:
     center:
     - 0.15
     - -0.05
-    layer: 10
+    layer: metal1
     name: gate
     orientation: 270
     port_type: electrical
