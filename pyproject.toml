@@ -28,6 +28,7 @@ version = "0.5.0"
 
 [project.optional-dependencies]
 dev = [
+  "gdsfactoryplus",
   "pre-commit",
   "pytest",
   "pytest-cov",
