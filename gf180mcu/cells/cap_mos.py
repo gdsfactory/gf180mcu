@@ -164,6 +164,17 @@ def cap_mos(
     Arguments:-
      l      : Float of diff length
      w      : Float of diff width.
+
+    Args:
+        type: "cap_nmos".
+        lc: 0.1.
+        wc: 0.1.
+        volt: "3.3V".
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        g_label: "".
+        sd_label: "".
     """
     c = gf.Component("cap_mos_dev")
 
@@ -542,8 +553,3 @@ def cap_mos(
     c.info["vlsir"].update({"model": f"{prefix}_{voltage}{suffix}"})
 
     return c
-
-
-if __name__ == "__main__":
-    c = cap_mos()
-    c.show()

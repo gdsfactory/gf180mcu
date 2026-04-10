@@ -24,7 +24,7 @@ def labels_gen(
 ) -> gf.Component:
     """Returns labels at given position when label is enabled.
 
-    Args :
+    Args:
         label_str : string of the label.
         position : position of the label.
         layer : layer of the label.
@@ -91,7 +91,7 @@ def alter_interdig(
 ) -> gf.Component:
     """Returns interdigitation polygons of gate with alternating poly contacts.
 
-    Args :
+    Args:
         sd_diff : source/drain diffusion rectangle.
         pc1 : first poly contact array.
         pc2 : second poly contact array.
@@ -361,7 +361,7 @@ def interdigit(
 ) -> gf.Component:
     """Returns interdigitation related polygons.
 
-    Args :
+    Args:
         sd_diff : source/drain diffusion rectangle.
         pc1: first poly contact array.
         pc2: second poly contact array.
@@ -566,7 +566,7 @@ def interdigit(
 def hv_gen(c, c_inst, volt, dg_encx: float = 0.1, dg_ency: float = 0.1) -> None:
     """Returns high voltage related polygons.
 
-    Args :
+    Args:
         c_inst : dualgate enclosed component
         volt : operating voltage
         dg_encx : dualgate enclosure in x_direction
@@ -616,7 +616,7 @@ def bulk_gr_gen(
 ) -> None:
     """Returns guardring.
 
-    Args :
+    Args:
         c_inst : component enclosed by guardring
         comp_spacing : spacing between comp polygons
         poly2_comp_spacing : spacing between comp and poly2 polygons
@@ -837,7 +837,7 @@ def nfet_deep_nwell(
 ) -> gf.Component:
     """Return nfet deepnwell.
 
-    Args :
+    Args:
         deepnwell : boolean of having deepnwell
         pcmpgr : boolean of having deepnwell guardring
         inst_size : deepnwell enclosed size
@@ -897,7 +897,7 @@ def add_inter_sd_labels(
 ) -> None:
     """Adds label to intermediate source/drain diffusion.
 
-    Args :
+    Args:
         c : instance component of the device
         nf : number of fingers
         sd_label : required source and drain labels list
@@ -946,7 +946,7 @@ def add_gate_labels(
 ) -> None:
     """Adds gate label when label is enabled.
 
-    Args :
+    Args:
         c : instance component of the device
         g_label : required gate labels list
         pc1 : component of poly array1
@@ -1474,7 +1474,7 @@ def pfet_deep_nwell(
 ) -> gf.Component:
     """Returns pfet well related polygons.
 
-    Args :
+    Args:
         deepnwell : boolaen of having deepnwell
         pcmpgr : boolean of having deepnwell guardring
         enc_size : enclosed size
@@ -2039,6 +2039,24 @@ def nfet_06v0_nvt(
         nf     : Integer of number of fingers
         grw    : Float of guard ring width [If enabled]
         bulk   : String of bulk connection type [None, Bulk Tie, Guard Ring]
+
+    Args:
+        l_gate: 1.8.
+        w_gate: 0.8.
+        sd_con_col: 1.
+        inter_sd_l: 0.24.
+        nf: 1.
+        grw: 0.22.
+        bulk: "None".
+        con_bet_fin: 1.
+        gate_con_pos: "alternating".
+        interdig: 0.
+        patt: "".
+        label: False.
+        sd_label: [].
+        g_label: [].
+        sub_label: "".
+        patt_label: False.
     """
     # used layers and dimensions
     end_cap: float = 0.22
@@ -2617,13 +2635,3 @@ def nfet_06v0_nvt(
     }
 
     return c
-
-
-if __name__ == "__main__":
-    c = pfet()
-    c.pprint_ports()
-    # c = nfet()
-    # c = nfet_06v0_nvt()
-    # c = interdigit()
-    # c = alter_interdig()
-    c.show()

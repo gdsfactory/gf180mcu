@@ -204,10 +204,3 @@ def via_stack(
         )
 
     return c
-
-
-if __name__ == "__main__":
-    c = via_stack()
-    c.show()
-    # c = vias_gen_draw(start_layer="li",end_layer="poly")
-    # c.show()
