@@ -7,6 +7,7 @@ all:
 dev:
 	uv sync --all-extras
 	uv pip install -e .
+	curl -sf https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow/main/templates/.pre-commit-config.yaml -o .pre-commit-config.yaml
 	uv run pre-commit install
 
 tech:
