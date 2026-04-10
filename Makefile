@@ -52,7 +52,7 @@ notebooks:
 
 
 docs:
-	uv run python docs/write_cells.py
-	uv run jb build docs
+	uv run --extra docs python docs/write_cells.py
+	uv run --extra docs jb build docs
 
 .PHONY: drc doc docs
