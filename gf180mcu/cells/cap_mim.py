@@ -169,9 +169,3 @@ def cap_mim(
         c.info["vlsir"].update({"model": "mim_2p0fF"})
 
     return c
-
-
-if __name__ == "__main__":
-    c = cap_mim()
-    c.pprint_ports()
-    c.show()
