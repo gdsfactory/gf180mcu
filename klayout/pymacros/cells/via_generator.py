@@ -1,4 +1,4 @@
-# Copyright 2022 Skywater 130nm pdk development
+# Copyright 2022 gf180mcu pdk development
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published
@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ########################################################################################################################
-# via Generator for skywater130
+# via Generator for gf180mcu
 ########################################################################################################################
 
 
