@@ -53,6 +53,6 @@ notebooks:
 
 docs:
 	uv run --extra docs python docs/write_cells.py
-	uv run --extra docs jb build docs
+	uv run --extra docs jupyter-book build docs
 
 .PHONY: drc doc docs
