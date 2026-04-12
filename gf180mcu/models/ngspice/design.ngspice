@@ -39,7 +39,7 @@
 **   This setting provides the most complete representation of the
 **   statistical variations during chip manufacturing.
 **   Global process variations are determined by random distributions.
-**   Mismatch is differentiated from global variation in that mismatch only 
+**   Mismatch is differentiated from global variation in that mismatch only
 **   includes intra-die variation, and it is especially critical for analog matching applications.
 **
 **   mc_skew is the monte-carlo simulation variation control.
@@ -49,7 +49,7 @@
 **       Flicker noise corner setting:
 ** -------------------------------------------
 **
-**        "fnoicor" switch is added for user to select between the best- or worst-case 
+**        "fnoicor" switch is added for user to select between the best- or worst-case
 **         flicker noise simulation options
 **         fnoicor = 0  : (default) as-extracted simulation
 **         fnoicor = 1  : worst case simulation
