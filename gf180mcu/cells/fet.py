@@ -594,9 +594,6 @@ def hv_gen(c, c_inst, volt, dg_encx: float = 0.1, dg_ency: float = 0.1) -> None:
             v5x.xmin = dg.xmin
             v5x.ymin = dg.ymin
 
-    # TODO: Implement/delete
-    raise NotImplementedError()
-    # return c
 
 
 def bulk_gr_gen(
@@ -821,9 +818,6 @@ def bulk_gr_gen(
             )
         )
 
-    # TODO: Implement/delete
-    raise NotImplementedError()
-    # return c
 
 
 @gf.cell
