@@ -8,6 +8,8 @@ import gdsfactory as gf
 from gdsfactory.cross_section import CrossSection
 from gdsfactory.typings import LayerSpec
 
+from gf180mcu.layers import LAYER, LAYER_STACK, LAYER_VIEWS  # noqa: F401
+
 ############################
 # Cross-sections functions
 ############################

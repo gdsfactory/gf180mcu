@@ -21,9 +21,9 @@ latex:
 
 html:
   home_page_in_navbar: true
-  use_edit_page_button: true
-  use_repository_button: true
-  use_issues_button: true
+  use_edit_page_button: false
+  use_repository_button: false
+  use_issues_button: false
   baseurl: https://github.com/gdsfactory/gf180
 # Information about where the book exists on the web
 
@@ -42,7 +42,6 @@ sphinx:
     - "sphinx.ext.napoleon"
     - "sphinx.ext.viewcode"
     - "matplotlib.sphinxext.plot_directive"
-    - "sphinxcontrib.autodoc_pydantic"
   config:
     #autodoc_typehints: description
     autodoc_typehints: description
