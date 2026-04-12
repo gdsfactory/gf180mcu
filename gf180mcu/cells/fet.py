@@ -595,7 +595,6 @@ def hv_gen(c, c_inst, volt, dg_encx: float = 0.1, dg_ency: float = 0.1) -> None:
             v5x.ymin = dg.ymin
 
 
-
 def bulk_gr_gen(
     c: gf.Component,
     c_inst: gf.Component,
@@ -817,7 +816,6 @@ def bulk_gr_gen(
                 grw=grw,
             )
         )
-
 
 
 @gf.cell
