@@ -7,6 +7,7 @@ all:
 dev:
 	uv sync --all-extras
 	uv pip install -e .
+	curl -sf https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow/main/templates/.pre-commit-config.yaml -o .pre-commit-config.yaml
 	uv run pre-commit install
 
 tech:
@@ -51,7 +52,7 @@ notebooks:
 
 
 docs:
-	uv run python docs/write_cells.py
-	uv run jb build docs
+	uv run --extra docs python docs/write_cells.py
+	uv run --extra docs jupyter-book build docs
 
 .PHONY: drc doc docs
