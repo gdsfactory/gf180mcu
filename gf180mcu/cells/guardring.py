@@ -189,8 +189,3 @@ def pcmpgr_gen(dn_rect=dn_rect, grw: float = 0.36) -> gf.Component:
     )
 
     return c
-
-
-if __name__ == "__main__":
-    c = pcmpgr_gen()
-    c.show()

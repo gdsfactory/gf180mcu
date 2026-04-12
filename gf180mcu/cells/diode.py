@@ -19,7 +19,7 @@ def diode_nd2ps(
 ) -> gf.Component:
     """Draw N+/LVPWELL diode (Outside DNWELL) by specifying parameters.
 
-    Args::
+    Args:
         la: Float of diff length (anode).
         wa: Float of diff width (anode).
         cw: Float of cathode width.
@@ -365,6 +365,17 @@ def diode_pd2nw(
      volt       : String of operating voltage of the diode [3.3V, 5V/6V]
      deepnwell  : Boolean of using Deep NWELL device
      pcmpgr     : Boolean of using P+ Guard Ring for Deep NWELL devices only.
+
+    Args:
+        la: 0.1.
+        wa: 0.1.
+        cw: 0.1.
+        volt: "3.3V".
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        p_label: "".
+        n_label: "".
     """
     c = gf.Component("diode_pd2nw_dev")
 
@@ -1673,7 +1684,7 @@ def sc_diode(
     def sc_cathode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Returns sc_diode cathode array element.
 
-        Args :
+        Args:
             size : size of cathode array element
         """
         c = gf.Component()
@@ -1707,7 +1718,7 @@ def sc_diode(
     def sc_anode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Returns sc_diode anode array element.
 
-        Args :
+        Args:
             size : size of anode array element
         """
         c = gf.Component()
@@ -2046,9 +2057,3 @@ def sc_diode(
 
     # creating layout and cell in klayout
     return c
-
-
-if __name__ == "__main__":
-    c = sc_diode()
-    # c = diode_pd2nw()
-    c.show()

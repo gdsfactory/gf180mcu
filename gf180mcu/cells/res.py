@@ -121,7 +121,22 @@ def plus_res_inst(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
-    """Returns 2-terminal Metal resistor by specifying parameters."""
+    """Returns 2-terminal Metal resistor by specifying parameters.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "nplus_s".
+        sub: False.
+        cmp_res_ext: 0.1.
+        con_enc: 0.1.
+        cmp_imp_layer: layer["nplus"].
+        sub_imp_layer: layer["pplus"].
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component()
 
     sub_w: float = 0.36
@@ -280,6 +295,20 @@ def nplus_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """nplus_res.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "nplus_s".
+        sub: False.
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component()
 
     lvpwell_enc_cmp = 0.43
@@ -406,6 +435,20 @@ def pplus_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """pplus_res.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "pplus_s".
+        sub: False.
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component("res_dev")
 
     nw_enc_pcmp = 0.6
@@ -526,6 +569,21 @@ def polyf_res_inst(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """polyf_res_inst.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "npolyf_s".
+        pl_res_ext: 0.1.
+        con_enc: 0.1.
+        pl_imp_layer: layer["nplus"].
+        sub_imp_layer: layer["pplus"].
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component()
 
     sub_w: float = 0.36
@@ -680,6 +738,19 @@ def npolyf_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """npolyf_res.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "npolyf_s".
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component("res_dev")
 
     lvpwell_enc_cmp = 0.43
@@ -795,6 +866,19 @@ def ppolyf_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """ppolyf_res.
+
+    Args:
+        l_res: 0.1.
+        w_res: 0.1.
+        res_type: "ppolyf_s".
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component("res_dev")
 
     sub_w = 0.36
@@ -903,6 +987,19 @@ def ppolyf_u_high_Rs_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """ppolyf_u_high_Rs_res.
+
+    Args:
+        l_res: 0.42.
+        w_res: 0.42.
+        volt: "3.3V".
+        deepnwell: False.
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component("res_dev")
 
     dn_enc_ncmp = 0.62
@@ -1131,6 +1228,18 @@ def well_res(
     r1_label: str = "",
     sub_label: str = "",
 ) -> gf.Component:
+    """well_res.
+
+    Args:
+        l_res: 0.42.
+        w_res: 0.42.
+        res_type: "nwell".
+        pcmpgr: False.
+        label: False.
+        r0_label: "".
+        r1_label: "".
+        sub_label: "".
+    """
     c = gf.Component("res_dev")
 
     nw_res_ext = 0.48
@@ -1167,6 +1276,11 @@ def well_res(
 
     @gf.cell
     def comp_related_gen(size: Float2 = (0.42, 0.42)) -> gf.Component:
+        """comp_related_gen.
+
+        Args:
+            size: (0.42, 0.42).
+        """
         c = gf.Component()
 
         cmp = c.add_ref(gf.components.rectangle(size=size, layer=layer["comp"]))
@@ -1331,8 +1445,3 @@ def well_res(
     }
 
     return c
-
-
-if __name__ == "__main__":
-    c = res()
-    c.show()
