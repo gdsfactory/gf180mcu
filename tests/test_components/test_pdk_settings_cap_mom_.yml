@@ -1,0 +1,33 @@
+info:
+  bottom_metal: metal1
+  finger_length: 4
+  finger_spacing: 0.28
+  finger_width: 0.28
+  n_fingers: 4
+  top_metal: metal3
+name: cap_mom_NF4_FL4_FS0p28_BMmetal1_TMmetal3
+ports:
+  minus:
+    center:
+    - 2.38
+    - -0.42
+    layer: metal3
+    name: minus
+    orientation: 270
+    port_type: electrical
+    width: 0.84
+  plus:
+    center:
+    - 2.38
+    - 4.7
+    layer: metal3
+    name: plus
+    orientation: 90
+    port_type: electrical
+    width: 0.84
+settings:
+  bottom_metal: metal1
+  finger_length: 4
+  finger_spacing: 0.28
+  n_fingers: 4
+  top_metal: metal3

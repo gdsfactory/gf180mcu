@@ -1,6 +1,7 @@
 """Cells."""
 
 from .cap_mim import *
+from .cap_mom import *
 from .cap_mos import *
 from .diode import *
 from .fet import *

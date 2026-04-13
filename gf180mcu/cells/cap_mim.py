@@ -3,167 +3,155 @@ import gdsfactory as gf
 from gf180mcu.cells.via_generator import via_generator
 from gf180mcu.layers import layer
 
+# (top_metal, bottom_metal, via, top_label, bottom_label) per MIM option.
+_MIM_LAYER_STACK: dict[tuple[str, str], tuple[str, str, str, str, str]] = {
+    ("MIM-A", "M3"): ("metal3", "metal2", "via2", "metal3_label", "metal2_label"),
+    ("MIM-B", "M4"): ("metal4", "metal3", "via3", "metal4_label", "metal3_label"),
+    ("MIM-B", "M5"): ("metal5", "metal4", "via4", "metal5_label", "metal4_label"),
+    ("MIM-B", "M6"): ("metaltop", "metal5", "via5", "metaltop_label", "metal5_label"),
+}
+
 
 @gf.cell
 def cap_mim(
-    mim_option: str = "A",
+    mim_option: str = "MIM-A",
     metal_level: str = "M4",
-    lc: float = 2,
-    wc: float = 2,
+    length: float = 2,
+    width: float = 2,
     label: bool = False,
     top_label: str = "",
-    bot_label: str = "",
+    bottom_label: str = "",
 ) -> gf.Component:
-    """Return mim cap.
+    """Return a MIM (Metal-Insulator-Metal) capacitor.
 
     Args:
-        min_option: MIM-A or MIM-B.
-        metal_level: metal level. M4, M5, M6.
-        lc: cap length.
-        wc: cap width.
-        label: 1 to add labels.
-        top_label: top label.
-        bot_label: bottom label.
-
+        mim_option: ``"MIM-A"`` (between M2/M3) or ``"MIM-B"`` (between M3 and
+            ``metal_level``).
+        metal_level: top metal level for ``MIM-B``: ``"M4"``, ``"M5"`` or
+            ``"M6"``. Ignored for ``MIM-A``.
+        length: capacitor length (um).
+        width: capacitor width (um).
+        label: if True, add labels to the top and bottom electrodes.
+        top_label: text for the top electrode label.
+        bottom_label: text for the bottom electrode label.
     """
-    c = gf.Component()
-    # used dimensions and layers
-
-    # MIM Option selection
-    if mim_option == "MIM-A":
-        upper_layer = layer["metal3"]
-        bottom_layer = layer["metal2"]
-        via_layer = layer["via2"]
-        up_label_layer = layer["metal3_label"]
-        bot_label_layer = layer["metal2_label"]
-
-    elif mim_option == "MIM-B":
-        if metal_level == "M4":
-            upper_layer = layer["metal4"]
-            bottom_layer = layer["metal3"]
-            via_layer = layer["via3"]
-            up_label_layer = layer["metal4_label"]
-            bot_label_layer = layer["metal3_label"]
-        elif metal_level == "M5":
-            upper_layer = layer["metal5"]
-            bottom_layer = layer["metal4"]
-            via_layer = layer["via4"]
-            up_label_layer = layer["metal5_label"]
-            bot_label_layer = layer["metal4_label"]
-        elif metal_level == "M6":
-            upper_layer = layer["metaltop"]
-            bottom_layer = layer["metal5"]
-            via_layer = layer["via5"]
-            up_label_layer = layer["metaltop_label"]
-            bot_label_layer = layer["metal5_label"]
-    else:
-        upper_layer = layer["metal3"]
-        bottom_layer = layer["metal2"]
-        via_layer = layer["via2"]
-        up_label_layer = layer["metal3_label"]
-        bot_label_layer = layer["metal2_label"]
+    key = ("MIM-A", "M3") if mim_option == "MIM-A" else (mim_option, metal_level)
+    if key not in _MIM_LAYER_STACK:
+        raise ValueError(
+            f"Unsupported (mim_option, metal_level)={key}. "
+            f"Valid combinations: {list(_MIM_LAYER_STACK)}"
+        )
+    top_metal, bottom_metal, via_name, top_label_name, bottom_label_name = (
+        _MIM_LAYER_STACK[key]
+    )
+    top_metal_layer = layer[top_metal]
+    bottom_metal_layer = layer[bottom_metal]
+    via_layer = layer[via_name]
+    top_label_layer = layer[top_label_name]
+    bottom_label_layer = layer[bottom_label_name]
 
     via_size = (0.22, 0.22)
     via_spacing = (0.5, 0.5)
-    via_enc = (0.4, 0.4)
+    via_enclosure = (0.4, 0.4)
+    bottom_enclosure = 0.6
+    marker_width = 0.1
 
-    bot_enc_top = 0.6
-    l_mk_w = 0.1
+    c = gf.Component()
 
-    # drawing cap identifier and bottom , upper layers
-
-    m_up = c.add_ref(
-        gf.components.rectangle(
-            size=(wc, lc),
-            layer=upper_layer,
-        )
+    top_plate = c.add_ref(
+        gf.components.rectangle(size=(width, length), layer=top_metal_layer)
     )
 
     fusetop = c.add_ref(
-        gf.components.rectangle(size=(m_up.xsize, m_up.ysize), layer=layer["fusetop"])
-    )
-    fusetop.xmin = m_up.xmin
-    fusetop.ymin = m_up.ymin
-
-    mim_l_mk = c.add_ref(
-        gf.components.rectangle(size=(fusetop.xsize, l_mk_w), layer=layer["mim_l_mk"])
-    )
-    mim_l_mk.xmin = fusetop.xmin
-    mim_l_mk.ymin = fusetop.ymin
-
-    m_dn = c.add_ref(
         gf.components.rectangle(
-            size=(m_up.xsize + (2 * bot_enc_top), m_up.ysize + (2 * bot_enc_top)),
-            layer=bottom_layer,
+            size=(top_plate.xsize, top_plate.ysize), layer=layer["fusetop"]
         )
     )
-    m_dn.xmin = m_up.xmin - bot_enc_top
-    m_dn.ymin = m_up.ymin - bot_enc_top
+    fusetop.xmin = top_plate.xmin
+    fusetop.ymin = top_plate.ymin
 
-    cap_mk = c.add_ref(
-        gf.components.rectangle(size=(m_dn.xsize, m_dn.ysize), layer=layer["cap_mk"])
+    mim_marker = c.add_ref(
+        gf.components.rectangle(
+            size=(fusetop.xsize, marker_width), layer=layer["mim_l_mk"]
+        )
     )
-    cap_mk.xmin = m_dn.xmin
-    cap_mk.ymin = m_dn.ymin
+    mim_marker.xmin = fusetop.xmin
+    mim_marker.ymin = fusetop.ymin
 
-    # generatingg labels
-    if label == 1:
+    bottom_plate = c.add_ref(
+        gf.components.rectangle(
+            size=(
+                top_plate.xsize + 2 * bottom_enclosure,
+                top_plate.ysize + 2 * bottom_enclosure,
+            ),
+            layer=bottom_metal_layer,
+        )
+    )
+    bottom_plate.xmin = top_plate.xmin - bottom_enclosure
+    bottom_plate.ymin = top_plate.ymin - bottom_enclosure
+
+    cap_marker = c.add_ref(
+        gf.components.rectangle(
+            size=(bottom_plate.xsize, bottom_plate.ysize), layer=layer["cap_mk"]
+        )
+    )
+    cap_marker.xmin = bottom_plate.xmin
+    cap_marker.ymin = bottom_plate.ymin
+
+    if label:
         c.add_label(
             top_label,
-            position=(m_up.xmin + (m_up.xsize / 2), m_dn.xmin + (m_dn.ysize / 2)),
-            layer=up_label_layer,
-        )
-
-        c.add_label(
-            bot_label,
             position=(
-                m_dn.xmin + (m_dn.xsize / 2),
-                m_dn.ymin + (m_up.ymin - m_dn.ymin) / 2,
+                top_plate.xmin + top_plate.xsize / 2,
+                bottom_plate.xmin + bottom_plate.ysize / 2,
             ),
-            layer=bot_label_layer,
+            layer=top_label_layer,
+        )
+        c.add_label(
+            bottom_label,
+            position=(
+                bottom_plate.xmin + bottom_plate.xsize / 2,
+                bottom_plate.ymin + (top_plate.ymin - bottom_plate.ymin) / 2,
+            ),
+            layer=bottom_label_layer,
         )
 
-    # generatingg vias
-    via = via_generator(
-        x_range=(m_up.xmin, m_up.xmax),
-        y_range=(m_up.ymin, m_up.ymax),
-        via_enclosure=via_enc,
-        via_layer=via_layer,
-        via_size=via_size,
-        via_spacing=via_spacing,
+    c.add_ref(
+        via_generator(
+            x_range=(top_plate.xmin, top_plate.xmax),
+            y_range=(top_plate.ymin, top_plate.ymax),
+            via_enclosure=via_enclosure,
+            via_layer=via_layer,
+            via_size=via_size,
+            via_spacing=via_spacing,
+        )
     )
-    c.add_ref(via)
 
-    # Add ports for top and bottom metal connections
     c.add_port(
         name="top",
-        center=(m_up.dcenter[0], m_up.dcenter[1]),
-        width=m_up.xsize,
+        center=(top_plate.dcenter[0], top_plate.dcenter[1]),
+        width=top_plate.xsize,
         orientation=90,
-        layer=upper_layer,
+        layer=top_metal_layer,
         port_type="electrical",
     )
-
     c.add_port(
         name="bottom",
-        center=(m_dn.dcenter[0], m_dn.dcenter[1]),
-        width=m_dn.xsize,
+        center=(bottom_plate.dcenter[0], bottom_plate.dcenter[1]),
+        width=bottom_plate.xsize,
         orientation=90,
-        layer=bottom_layer,
+        layer=bottom_metal_layer,
         port_type="electrical",
     )
 
-    # VLSIR Simulation Metadata
     c.info["vlsir"] = {
         "spice_type": "SUBCKT",
         "spice_lib": "mim_cap",
         "port_order": ["1", "2"],
         "port_map": {"top": "1", "bottom": "2"},
-        "params": {"c_length": lc, "c_width": wc},
+        "params": {"c_length": length, "c_width": width},
     }
-
-    # Choose correct SPICE model
-    if mim_option == "B":
+    if mim_option == "MIM-B":
         c.info["vlsir"].update({"model": "mim_1p0fF"})
     else:
         c.info["vlsir"].update({"model": "mim_2p0fF"})

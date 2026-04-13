@@ -12,7 +12,7 @@ info:
     - '2'
     spice_lib: mim_cap
     spice_type: SUBCKT
-name: cap_mim_MOA_MLM4_L2_W2_LFalse_TL_BL
+name: cap_mim_MOMIMmA_MLM4_L2_W2_LFalse_TL_BL
 ports:
   bottom:
     center:
@@ -33,10 +33,10 @@ ports:
     port_type: electrical
     width: 2
 settings:
-  bot_label: ''
+  bottom_label: ''
   label: false
-  lc: 2
+  length: 2
   metal_level: M4
-  mim_option: A
+  mim_option: MIM-A
   top_label: ''
-  wc: 2
+  width: 2
