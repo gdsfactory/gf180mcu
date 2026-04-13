@@ -199,8 +199,14 @@ def get_layer_stack(
     z_dnwell = z_substrate
     z_nwell = z_substrate
     z_comp = z_substrate
-    z_poly2 = z_substrate
-    z_contact = z_substrate + thickness_comp + thickness_poly2
+    # poly2 sits on top of the active area (gate oxide assumed negligible)
+    z_poly2 = z_comp + thickness_comp
+    # implants are embedded in the upper half of the comp (silicon) layer,
+    # so they never render above comp/poly2
+    thickness_implant = thickness_comp / 2
+    z_implant = z_comp + thickness_comp / 2
+    # contact starts at the top of comp/poly2 and reaches up to metal1
+    z_contact = z_comp + thickness_comp
     z_metal1 = z_contact + thickness_contact
     z_via1 = z_metal1 + thickness_metal1
     z_metal2 = z_via1 + thickness_via1
@@ -254,22 +260,22 @@ def get_layer_stack(
         ),
         "nplus": LayerLevel(
             layer=LAYER.nplus,
-            thickness=thickness_comp,
-            zmin=z_comp,
+            thickness=thickness_implant,
+            zmin=z_implant,
             material="si",
             mesh_order=7,
         ),
         "pplus": LayerLevel(
             layer=LAYER.pplus,
-            thickness=thickness_comp,
-            zmin=z_comp,
+            thickness=thickness_implant,
+            zmin=z_implant,
             material="si",
             mesh_order=7,
         ),
         "nat": LayerLevel(
             layer=LAYER.nat,
-            thickness=thickness_comp,
-            zmin=z_comp,
+            thickness=thickness_implant,
+            zmin=z_implant,
             material="si",
             mesh_order=7,
         ),
