@@ -105,9 +105,12 @@ def alter_interdig(
         nf : number of fingers.
     """
     c_inst = gf.Component()
-    sd_diff = gf.get_component(sd_diff)
-    pc1 = gf.get_component(pc1)
-    pc2 = gf.get_component(pc2)
+    if not hasattr(sd_diff, "xmax"):
+        sd_diff = gf.get_component(sd_diff)
+    if not hasattr(pc1, "xmax"):
+        pc1 = gf.get_component(pc1)
+    if not hasattr(pc2, "xmax"):
+        pc2 = gf.get_component(pc2)
 
     m2_spacing = 0.28
     via_size = (0.26, 0.26)
@@ -374,11 +377,14 @@ def interdigit(
         gate_con_pos : position of gate contact.
     """
     c_inst = gf.Component()
-
-    sd_diff = gf.get_component(sd_diff)
-    poly_con = gf.get_component(poly_con)
-    pc1 = gf.get_component(pc1)
-    pc2 = gf.get_component(pc2)
+    if not hasattr(sd_diff, "xmax"):
+        sd_diff = gf.get_component(sd_diff)
+    if not hasattr(poly_con, "xmax"):
+        poly_con = gf.get_component(poly_con)
+    if not hasattr(pc1, "xmax"):
+        pc1 = gf.get_component(pc1)
+    if not hasattr(pc2, "xmax"):
+        pc2 = gf.get_component(pc2)
 
     if nf == len(patt):
         pat = list(patt)

@@ -23,7 +23,7 @@ keywords = ["python"]
 license = {file = "LICENSE"}
 name = "gf180mcu"
 readme = "README.md"
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.12,<3.15"
 version = "0.5.0"
 
 [project.optional-dependencies]
