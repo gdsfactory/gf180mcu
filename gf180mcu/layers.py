@@ -236,13 +236,6 @@ def get_layer_stack(
             material="si",
             mesh_order=10,
         ),
-        "nwell": LayerLevel(
-            layer=LAYER.nwell,
-            thickness=thickness_nwell,
-            zmin=z_nwell,
-            material="si",
-            mesh_order=9,
-        ),
         "lvpwell": LayerLevel(
             layer=LAYER.lvpwell,
             thickness=thickness_nwell,  # similar to nwell
