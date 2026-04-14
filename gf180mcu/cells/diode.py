@@ -297,7 +297,7 @@ def _inner_metal1(c: gf.Component, wa: float, la: float) -> None:
 # diode_nd2ps
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def diode_nd2ps(
     la: float = 0.45,
     wa: float = 0.45,
@@ -447,7 +447,7 @@ def diode_nd2ps(
 # diode_pd2nw
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def diode_pd2nw(
     la: float = 0.45,
     wa: float = 0.45,
@@ -640,7 +640,7 @@ def diode_pd2nw(
 # diode_nw2ps  (ported from KLayout draw_diode_nw2ps)
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def diode_nw2ps(
     la: float = 0.1,
     wa: float = 0.1,
@@ -777,7 +777,7 @@ def diode_nw2ps(
 # diode_pw2dw  (ported from KLayout draw_diode_pw2dw)
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def diode_pw2dw(
     la: float = 0.1,
     wa: float = 0.1,
@@ -1085,7 +1085,7 @@ def diode_pw2dw(
 # diode_dw2ps  (ported from KLayout draw_diode_dw2ps)
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def diode_dw2ps(
     la: float = 0.1,
     wa: float = 0.1,
@@ -1505,7 +1505,7 @@ def diode_dw2ps(
 # sc_diode  (ported from KLayout draw_sc_diode)
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "diode"})
 def sc_diode(
     la: float = 0.1,
     wa: float = 0.1,
@@ -1542,7 +1542,7 @@ def sc_diode(
     con_sp = 0.28
     con_comp_enc = 0.07
 
-    @gf.cell
+    @gf.cell(tags={"type": "diode"})
     def sc_cathode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Return sc_diode cathode array element."""
         c = gf.Component()
@@ -1572,7 +1572,7 @@ def sc_diode(
 
         return c
 
-    @gf.cell
+    @gf.cell(tags={"type": "diode"})
     def sc_anode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Return sc_diode anode array element."""
         c = gf.Component()

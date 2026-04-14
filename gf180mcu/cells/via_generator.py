@@ -7,7 +7,7 @@ from gdsfactory.typings import Float2, LayerSpec, Size, Spacing
 from gf180mcu.layers import layer
 
 
-@gf.cell
+@gf.cell(tags={"type": "via_generator"})
 def via_generator(
     x_range: Float2 = (0, 1),
     y_range: Float2 = (0, 1),
@@ -83,7 +83,7 @@ def via_generator(
     return c
 
 
-@gf.cell
+@gf.cell(tags={"type": "via_generator"})
 def via_stack(
     x_range: Float2 = (0, 1),
     y_range: Float2 = (0, 1),
