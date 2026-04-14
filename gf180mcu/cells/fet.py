@@ -366,16 +366,17 @@ def _guard_ring_implant(c, gx, gy, implant_layer, rules):
 # Device implant
 # ---------------------------------------------------------------------------
 
-def _device_implant(c, active_ext, gate_ext, implant_layer,
-                    diff_bloat=0.16, gate_bloat=0.23):
-    """Draw device implant (nplus for NFET, pplus for PFET).
+def _device_implant_region(finger_results, bloat, channel_bloat=None,
+                           gate_bloat=0.23, use_gate=True):
+    """Build a kdb.Region for the device implant or v5_xtor.
 
-    The CIF implant is the union of:
-    1. Diffusion region (active_ext) bloated by diff_bloat (0.16)
-    2. Gate region (gate_ext) bloated by gate_bloat (0.23, = diff_extension)
+    For each finger, creates the typed-diffusion shape:
+    - Channel region (hw in Y, full X extent)
+    - Dogbone extensions (cdwmin/2 in Y, only at S/D contact positions)
+    Then bloats by the specified amount.
 
-    For small W (dogbone), these overlap and produce a single rectangle.
-    For larger W, the gate bloat creates extension pieces beyond the main body.
+    The gate region is computed as the UNION of all fingers' gates, then bloated
+    once (not per-finger) to avoid artifacts at finger boundaries.
     """
     import klayout.db as kdb
 
@@ -384,25 +385,40 @@ def _device_implant(c, active_ext, gate_ext, implant_layer,
 
     region = kdb.Region()
 
-    # Diffusion extent bloated
-    ax0, ay0, ax1, ay1 = active_ext
-    region.insert(kdb.Box(
-        um(ax0 - diff_bloat), um(ay0 - diff_bloat),
-        um(ax1 + diff_bloat), um(ay1 + diff_bloat)))
+    for r in finger_results:
+        # Channel extent (hw in Y, full X)
+        cx0, cy0, cx1, cy1 = r["channel"]
+        cb = channel_bloat if channel_bloat is not None else bloat
+        region.insert(kdb.Box(um(cx0 - cb), um(cy0 - cb),
+                              um(cx1 + cb), um(cy1 + cb)))
 
-    # Gate extent bloated
-    gx0, gy0, gx1, gy1 = gate_ext
-    region.insert(kdb.Box(
-        um(gx0 - gate_bloat), um(gy0 - gate_bloat),
-        um(gx1 + gate_bloat), um(gy1 + gate_bloat)))
+        # Active extent (may be taller due to dogbone)
+        ax0, ay0, ax1, ay1 = r["active"]
+        if abs(ay0 - cy0) > 0.001 or abs(ay1 - cy1) > 0.001:
+            # Dogbone: active is taller than channel
+            region.insert(kdb.Box(um(ax0 - bloat), um(ay0 - bloat),
+                                  um(ax1 + bloat), um(ay1 + bloat)))
 
-    region = region.merged()
+    # Gate region: compute the BOUNDING BOX of all gates, then bloat once
+    if use_gate and finger_results:
+        gate_x0 = min(r["gate"][0] for r in finger_results)
+        gate_y0 = min(r["gate"][1] for r in finger_results)
+        gate_x1 = max(r["gate"][2] for r in finger_results)
+        gate_y1 = max(r["gate"][3] for r in finger_results)
+        region.insert(kdb.Box(
+            um(gate_x0 - gate_bloat), um(gate_y0 - gate_bloat),
+            um(gate_x1 + gate_bloat), um(gate_y1 + gate_bloat)))
 
+    return region.merged()
+
+
+def _draw_region(c, region, layer_spec):
+    """Draw a kdb.Region as polygons on the given layer."""
     for poly in region.each():
         points = [(_snap(p.x / 1000.0), _snap(p.y / 1000.0))
                   for p in poly.each_point_hull()]
         if len(points) >= 3:
-            c.add_polygon(points, layer=implant_layer)
+            c.add_polygon(points, layer=layer_spec)
 
 
 # ---------------------------------------------------------------------------
@@ -653,9 +669,16 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
     gate_bot = cy - hw
     gate_top = cy + hw
 
+    # Channel extent (just the gate channel, hw in Y)
+    chan_left = act_left
+    chan_right = act_right
+    chan_bot = cy - hw
+    chan_top = cy + hw
+
     return dict(
         cext=(_snap(ext_left), _snap(ext_bot), _snap(ext_right), _snap(ext_top)),
         active=(_snap(act_left), _snap(act_bot), _snap(act_right), _snap(act_top)),
+        channel=(_snap(chan_left), _snap(chan_bot), _snap(chan_right), _snap(chan_top)),
         gate=(_snap(gate_left), _snap(gate_bot), _snap(gate_right), _snap(gate_top)),
     )
 
@@ -717,32 +740,18 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
     # Draw device fingers
     start_x = -(nf - 1) * dx / 2.0
     evens = 1
-    all_active_exts = []
-    all_gate_exts = []
+    all_finger_results = []
     for i in range(nf):
         fx = start_x + i * dx
         result = _draw_mos_finger(c, fx, 0, geom, rules,
                                   evens=evens, topc=topc, botc=botc)
-        all_active_exts.append(result["active"])
-        all_gate_exts.append(result["gate"])
+        all_finger_results.append(result)
         evens = 1 - evens
 
-    # Device implant = union of (active bloated 0.16) and (gate bloated 0.23)
-    if all_active_exts:
-        act_x0 = min(e[0] for e in all_active_exts)
-        act_y0 = min(e[1] for e in all_active_exts)
-        act_x1 = max(e[2] for e in all_active_exts)
-        act_y1 = max(e[3] for e in all_active_exts)
-
-        gate_x0 = min(e[0] for e in all_gate_exts)
-        gate_y0 = min(e[1] for e in all_gate_exts)
-        gate_x1 = max(e[2] for e in all_gate_exts)
-        gate_y1 = max(e[3] for e in all_gate_exts)
-
-        _device_implant(c,
-                        (act_x0, act_y0, act_x1, act_y1),
-                        (gate_x0, gate_y0, gate_x1, gate_y1),
-                        dev_implant)
+    # Device implant
+    if all_finger_results:
+        impl_region = _device_implant_region(all_finger_results, bloat=0.16)
+        _draw_region(c, impl_region, dev_implant)
 
     # Dualgate and V5_XTOR for 5V/6V
     volt = rules.get("volt", "3.3V")
@@ -754,11 +763,12 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
               gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
-    if volt == "5.0V":
-        half_w = max(w / 2.0, cdwmin / 2.0)
-        v5_enc = 0.10
-        _rect(c, -(corex / 2 + v5_enc), -(half_w + v5_enc),
-              corex / 2 + v5_enc, half_w + v5_enc, _L_V5XTOR)
+    if volt == "5.0V" and all_finger_results:
+        # V5_XTOR: typed diffusion shape bloated by 0.10 (no gate bloat)
+        v5_region = _device_implant_region(all_finger_results, bloat=0.10,
+                                           channel_bloat=0.10,
+                                           use_gate=False)
+        _draw_region(c, v5_region, _L_V5XTOR)
 
     # prBoundary (FIXED_BBOX scaled by 10x)
     _rect(c, -(gx / 2) * 10, -(gy / 2) * 10,
