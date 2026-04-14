@@ -506,10 +506,19 @@ def _mos_geometry(w, l, rules, topc=True, botc=True):
     # where diff_grow includes gate_to_diffcont + contact_size/2.
     fw = 2 * (hl + max(diff_grow_d, diff_grow_s) + diff_surround)
 
-    # fh: From poly contact pad extent.
-    # Contact pad = gate_to_polycont above hw, then poly_surround + contact_size/2
-    top_ext = poly_ext_top + poly_surround + contact_size / 2.0 if topc else poly_ext_top
-    bot_ext = poly_ext_bot + poly_surround + contact_size / 2.0 if botc else poly_ext_bot
+    # fh: From the max of (poly gate extent) and (poly contact pad extent).
+    # Poly gate: hw + poly_ext_top (= gate_extension or gate_to_polycont)
+    # Contact pad: hw + gate_to_polycont + poly_surround + contact_size/2
+    if topc:
+        top_ext = max(poly_ext_top,
+                      gate_to_polycont + poly_surround + contact_size / 2.0)
+    else:
+        top_ext = poly_ext_top
+    if botc:
+        bot_ext = max(poly_ext_bot,
+                      gate_to_polycont + poly_surround + contact_size / 2.0)
+    else:
+        bot_ext = poly_ext_bot
     fh = hw + top_ext + hw + bot_ext
 
     # But we also need to account for diffusion contact extent in Y
@@ -800,6 +809,24 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
                 v5_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
         v5_region = v5_region.merged().sized(100)  # bloat 0.10 um = 100 nm
         _draw_region(c, v5_region, _L_V5XTOR)
+
+    # NVT: nat and dualgate layers
+    if volt == "nvt" and all_finger_results:
+        # NAT layer = channel extent bloated by 0.26 (simple rectangle)
+        chan_x0 = min(r["channel"][0] for r in all_finger_results)
+        chan_y0 = min(r["channel"][1] for r in all_finger_results)
+        chan_x1 = max(r["channel"][2] for r in all_finger_results)
+        chan_y1 = max(r["channel"][3] for r in all_finger_results)
+        _rect(c, chan_x0 - 0.26, chan_y0 - 0.26,
+              chan_x1 + 0.26, chan_y1 + 0.26, _L_NAT)
+
+        # Dualgate for NVT
+        sub_surround = rules["sub_surround"]
+        hx_c = contact_size / 2.0
+        sub_ext = hx_c + diff_surround + sub_surround
+        dg_enc = 0.08
+        _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
+              gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
     # prBoundary (FIXED_BBOX scaled by 10x)
     _rect(c, -(gx / 2) * 10, -(gy / 2) * 10,
