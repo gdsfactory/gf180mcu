@@ -14,7 +14,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory<9.40.2",
+  "gdsfactory~=9.40.1",
   "vlsir>=7.0.0",
   "vlsirtools>=7.0.0"
 ]
