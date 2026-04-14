@@ -820,16 +820,29 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         _draw_region(c, impl_region, dev_implant)
 
     # --- DSS: add SAB layer ---
-    # SAB covers the device active area bloated by gate_extension (0.22)
+    # SAB = device comp shape bloated by gate_extension (0.22).
+    # The comp shape: main rect at ±hw from active_x0 to active_x1, plus
+    # dogbone tabs at ±cdwmin/2 at S/D contact positions.
     if dss and all_finger_results:
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
         sab_enc = rules["gate_extension"]
-        # Compute bounding box of all device active regions
+        sab_region = kdb.Region()
+        hw_v = geom["hw"]
+        cdwmin_v = geom["cdwmin"]
+        # Main comp rect for all fingers (merged active X extent at ±hw)
         act_x0 = min(r["active"][0] for r in all_finger_results)
-        act_y0 = min(r["active"][1] for r in all_finger_results)
         act_x1 = max(r["active"][2] for r in all_finger_results)
-        act_y1 = max(r["active"][3] for r in all_finger_results)
-        _rect(c, act_x0 - sab_enc, act_y0 - sab_enc,
-              act_x1 + sab_enc, act_y1 + sab_enc, _L_SAB)
+        sab_region.insert(kdb.Box(um(act_x0), um(-hw_v), um(act_x1), um(hw_v)))
+        # Dogbone extensions at each S/D contact
+        if w < cdwmin_v - 0.0001:
+            for r in all_finger_results:
+                for tab in r.get("dogbone_tabs", []):
+                    t0, t1, t2, t3 = tab
+                    sab_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
+        sab_region = sab_region.merged().sized(round(sab_enc * 1000))
+        _draw_region(c, sab_region, _L_SAB)
 
     # --- 10V asymmetric: MVSD, dualgate, v5_xtor ---
     volt = rules.get("volt", "3.3V")
