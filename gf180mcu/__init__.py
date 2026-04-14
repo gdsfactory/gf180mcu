@@ -1,7 +1,7 @@
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
-from gf180mcu import cells, fixed, layers
+from gf180mcu import cells, fixed, logic, layers
 from gf180mcu.config import PATH
 from gf180mcu.layers import (
     LAYER,
@@ -27,7 +27,7 @@ __all__ = [
 ]
 __version__ = "0.5.0"
 
-_cells = get_cells([cells, fixed])
+_cells = get_cells([cells, fixed, logic])
 
 
 PDK = Pdk(
