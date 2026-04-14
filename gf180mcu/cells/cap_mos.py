@@ -417,13 +417,5 @@ def cap_mos(
     prefix  = "nmoscap" if is_nmos else "pmoscap"
     voltage = "3p3" if not is_6v else "6p0"
     suffix  = "_b" if "_b" in type else ""
-    c.info["vlsir"] = {
-        "spice_type": "SUBCKT",
-        "spice_lib": "moscap",
-        "port_order": ["1", "2"],
-        "port_map": {"source_drain": "1", "gate": "2"},
-        "params": {"c_length": lc, "c_width": wc},
-        "model": f"{prefix}_{voltage}{suffix}",
-    }
 
     return c

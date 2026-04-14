@@ -202,13 +202,5 @@ def cap_mim(
     )
 
     # VLSIR Simulation Metadata
-    c.info["vlsir"] = {
-        "spice_type": "SUBCKT",
-        "spice_lib": "mim_cap",
-        "port_order": ["1", "2"],
-        "port_map": {"top": "1", "bottom": "2"},
-        "params": {"c_length": lc, "c_width": wc},
-        "model": "mim_2p0fF",
-    }
 
     return c
