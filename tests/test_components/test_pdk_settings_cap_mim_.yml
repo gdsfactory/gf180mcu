@@ -2,8 +2,8 @@ info:
   vlsir:
     model: mim_2p0fF
     params:
-      c_length: 2
-      c_width: 2
+      c_length: 5
+      c_width: 5
     port_map:
       bottom: '2'
       top: '1'
@@ -12,31 +12,31 @@ info:
     - '2'
     spice_lib: mim_cap
     spice_type: SUBCKT
-name: cap_mim_MOA_MLM4_L2_W2_LFalse_TL_BL
+name: cap_mim_MOA_MLM4_L5_W5_LFalse_TL_BL
 ports:
   bottom:
     center:
-    - 1
-    - 1
+    - 0
+    - 0
     layer: metal2
     name: bottom
     orientation: 90
     port_type: electrical
-    width: 3.2
+    width: 8.69
   top:
     center:
-    - 1
-    - 1
+    - -1.245
+    - 0
     layer: metal3
     name: top
     orientation: 90
     port_type: electrical
-    width: 2
+    width: 5
 settings:
   bot_label: ''
   label: false
-  lc: 2
+  lc: 5
   metal_level: M4
   mim_option: A
   top_label: ''
-  wc: 2
+  wc: 5

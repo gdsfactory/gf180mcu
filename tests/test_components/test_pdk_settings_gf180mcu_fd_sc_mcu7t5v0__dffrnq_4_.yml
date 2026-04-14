@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__dffrnq_4
+ports:
+  CLK:
+    center:
+    - 0.84
+    - 1.96
+    layer: metal1
+    name: CLK
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  D:
+    center:
+    - 3.64
+    - 1.96
+    layer: metal1
+    name: D
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Q:
+    center:
+    - 21
+    - 1.96
+    layer: metal1
+    name: Q
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  RN:
+    center:
+    - 15.4
+    - 0.84
+    layer: metal1
+    name: RN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 1.4
+    - 3.92
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.4
+    - 0
+    layer: metal1
+    name: VSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+settings: {}

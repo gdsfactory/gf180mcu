@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__nor3_2
+ports:
+  A1:
+    center:
+    - 3.64
+    - 2.52
+    layer: metal1
+    name: A1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A2:
+    center:
+    - 1.96
+    - 2.52
+    layer: metal1
+    name: A2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A3:
+    center:
+    - 6.44
+    - 3.08
+    layer: metal1
+    name: A3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 3.92
+    - 5.49
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 3.92
+    - -0.45
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ZN:
+    center:
+    - 0.84
+    - 1.4
+    layer: metal1
+    name: ZN
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+settings: {}
