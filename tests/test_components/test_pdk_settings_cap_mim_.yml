@@ -1,17 +1,4 @@
-info:
-  vlsir:
-    model: mim_2p0fF
-    params:
-      c_length: 5
-      c_width: 5
-    port_map:
-      bottom: '2'
-      top: '1'
-    port_order:
-    - '1'
-    - '2'
-    spice_lib: mim_cap
-    spice_type: SUBCKT
+info: {}
 name: cap_mim_MOA_MLM4_L5_W5_LFalse_TL_BL
 ports:
   bottom:

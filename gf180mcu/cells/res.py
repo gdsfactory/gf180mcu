@@ -1307,13 +1307,5 @@ def res(
         )
 
     # VLSIR Simulation Metadata
-    out.info["vlsir"] = {
-        "model": res_type,
-        "spice_type": "SUBCKT",
-        "spice_lib": "res",
-        "port_order": ["1", "2"],
-        "port_map": {"r0": "1", "r1": "2"},
-        "params": {"r_length": l_res, "r_width": w_res},
-    }
 
     return out
