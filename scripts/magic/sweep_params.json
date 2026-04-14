@@ -717,7 +717,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "3.3V"
+        "volt": "3.3V",
+        "dss": true
       },
       "sweep": [
         {
@@ -757,7 +758,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "3.3V"
+        "volt": "3.3V",
+        "dss": true
       },
       "sweep": [
         {
@@ -797,7 +799,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "6.0V"
+        "volt": "6.0V",
+        "dss": true
       },
       "sweep": [
         {
@@ -837,7 +840,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "6.0V"
+        "volt": "6.0V",
+        "dss": true
       },
       "sweep": [
         {
@@ -877,7 +881,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "10.0V"
+        "volt": "10.0V",
+        "asym": true
       },
       "sweep": [
         {
@@ -907,7 +912,8 @@
       "cell_module": "gf180mcu.cells.fet",
       "param_map_ref": "_mosfet",
       "extra_params": {
-        "volt": "10.0V"
+        "volt": "10.0V",
+        "asym": true
       },
       "sweep": [
         {
