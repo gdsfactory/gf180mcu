@@ -1,5 +1,17 @@
 # gf180mcu 0.5.0
 
+<!-- BADGES:START -->
+[![Docs](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml)
+[![Tests](https://github.com/gdsfactory/gf180mcu/actions/workflows/test_code.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/test_code.yml)
+[![DRC](https://github.com/gdsfactory/gf180mcu/actions/workflows/drc.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/drc.yml)
+[![Model Regression](https://github.com/gdsfactory/gf180mcu/actions/workflows/model_regression.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/model_regression.yml)
+[![Test Coverage](https://github.com/gdsfactory/gf180mcu/raw/badges/coverage.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/test_coverage.yml)
+[![Model Coverage](https://github.com/gdsfactory/gf180mcu/raw/badges/model_coverage.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/model_coverage.yml)
+[![Issues](https://github.com/gdsfactory/gf180mcu/raw/badges/issues.svg)](https://github.com/gdsfactory/gf180mcu/issues)
+[![PRs](https://github.com/gdsfactory/gf180mcu/raw/badges/prs.svg)](https://github.com/gdsfactory/gf180mcu/pulls)
+<!-- BADGES:END -->
+
+
 GlobalFoundries 180nm MCU based on [Google open source PDK](https://github.com/google/globalfoundries-pdk-libs-gf180mcu_fd_pr)
 
 This is a pure python implementation of the PDK.
