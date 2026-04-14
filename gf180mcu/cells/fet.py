@@ -820,9 +820,8 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         _draw_region(c, impl_region, dev_implant)
 
     # --- DSS: add SAB layer ---
-    # SAB = device comp shape bloated by gate_extension (0.22).
-    # The comp shape: main rect at ±hw from active_x0 to active_x1, plus
-    # dogbone tabs at ±cdwmin/2 at S/D contact positions.
+    # SAB = device comp shape bloated by gate_extension (0.22), with
+    # morphological closing to fill tiny CIF notches (matching Magic output).
     if dss and all_finger_results:
         import klayout.db as kdb
         def um(v):
@@ -831,17 +830,29 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         sab_region = kdb.Region()
         hw_v = geom["hw"]
         cdwmin_v = geom["cdwmin"]
-        # Main comp rect for all fingers (merged active X extent at ±hw)
+        # Main comp rect: full active X extent at ±hw
         act_x0 = min(r["active"][0] for r in all_finger_results)
         act_x1 = max(r["active"][2] for r in all_finger_results)
         sab_region.insert(kdb.Box(um(act_x0), um(-hw_v), um(act_x1), um(hw_v)))
-        # Dogbone extensions at each S/D contact
+        # Dogbone contact surrounds at ±cdwmin/2
         if w < cdwmin_v - 0.0001:
+            dog_half = cdwmin_v / 2.0
             for r in all_finger_results:
-                for tab in r.get("dogbone_tabs", []):
-                    t0, t1, t2, t3 = tab
-                    sab_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
-        sab_region = sab_region.merged().sized(round(sab_enc * 1000))
+                # Drain contact surround
+                dcx = r["drain_cx"]
+                ds_hw = contact_size / 2.0 + diff_surround
+                sab_region.insert(kdb.Box(
+                    um(dcx - ds_hw), um(-dog_half),
+                    um(dcx + ds_hw), um(dog_half)))
+                # Source contact surround
+                scx = r["source_cx"]
+                sab_region.insert(kdb.Box(
+                    um(scx - ds_hw), um(-dog_half),
+                    um(scx + ds_hw), um(dog_half)))
+        sab_region = sab_region.merged()
+        sab_region = sab_region.sized(round(sab_enc * 1000))
+        # Morphological closing: fill tiny CIF notches (< 0.10 um)
+        sab_region = sab_region.sized(50).sized(-50)
         _draw_region(c, sab_region, _L_SAB)
 
     # --- 10V asymmetric: MVSD, dualgate, v5_xtor ---
