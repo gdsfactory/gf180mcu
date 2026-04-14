@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 requires = ["flit_core >=3.2,<4"]
 
 [project]
-authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
+authors = [{name = "gdsfactory~=9.40.2", email = "contact@gdsfactory.com"}]
 classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -14,7 +14,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.40.0",
+  "gdsfactory~=9.40.2",
   "vlsir>=7.0.0",
   "vlsirtools>=7.0.0"
 ]
@@ -28,7 +28,7 @@ version = "0.5.0"
 
 [project.optional-dependencies]
 dev = [
-  "gdsfactoryplus",
+  "gdsfactory~=9.40.2",
   "pre-commit",
   "pytest",
   "pytest-cov",
@@ -132,7 +132,7 @@ regex = '''
 directory = ".changelog.d"
 filename = "CHANGELOG.md"
 issue_format = "[#{issue}](https://github.com/gdsfactory/gf180mcu/issues/{issue})"
-package = "gdsfactory"
+package = "gdsfactory~=9.40.2"
 start_string = "<!-- towncrier release notes start -->\n"
 template = ".changelog.d/changelog_template.jinja"
 title_format = "## [{version}](https://github.com/gdsfactory/gf180mcu/releases/tag/v{version}) - {project_date}"
