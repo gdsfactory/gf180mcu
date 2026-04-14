@@ -1,994 +1,1084 @@
-from functools import partial
-from math import ceil, floor
+"""GF180MCU MOSFET parametric cells — rewritten to match Magic VLSI geometry.
+
+This module implements nfet(), pfet(), and nfet_06v0_nvt() generators that
+produce layout geometry matching the open_pdks Magic VLSI generators
+polygon-for-polygon.
+
+The algorithm faithfully replicates the Magic Tcl procedures:
+  - gf180mcu::mos_device   (single finger drawing)
+  - gf180mcu::mos_draw     (tiling + guard ring)
+  - gf180mcu::draw_contact (contact + surround + metal)
+  - gf180mcu::guard_ring   (substrate guard ring)
+
+All geometric computations use Magic's "painted" dimension values (contact_size
+= 0.23, diff_surround = 0.065, etc.).  At the point of polygon output, these
+are converted to physical GDS dimensions:
+  - contact cut = 0.22 (painted 0.23 shrunk by 0.005/side in CIF)
+  - active surround = 0.07 (painted 0.065 grown by 0.005/side in CIF)
+  - metal surround  = 0.06 (painted 0.055 grown by 0.005/side in CIF)
+
+The total envelope is conserved (0.23/2 + 0.065 = 0.22/2 + 0.07 = 0.18).
+"""
+
+from __future__ import annotations
+
+from math import floor
 
 import gdsfactory as gf
-from gdsfactory.typings import Float2, LayerSpec, Strs
+from gdsfactory.typings import Strs
 
-from gf180mcu.cells.guardring import pcmpgr_gen
-from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
 
-rectangle = partial(gf.components.rectangle, layer=layer["comp"])
-rectangle_array = partial(gf.components.array, component=rectangle)
+# ---------------------------------------------------------------------------
+# Grid snapping — Magic CIF output grid is 5 nm
+# ---------------------------------------------------------------------------
+
+_GRID = 0.005  # 5 nm
 
 
-@gf.cell
-def labels_gen(
-    label_str: str = "",
-    position: Float2 = (0.1, 0.1),
-    layer: LayerSpec = layer["metal1_label"],
-    label: bool = False,
-    labels: Strs | None = None,
-    label_valid_len: int = 1,
-    index: int = 0,
-) -> gf.Component:
-    """Returns labels at given position when label is enabled.
+def _snap(v: float) -> float:
+    """Round *v* to the nearest 5 nm grid point."""
+    return round(round(v / _GRID) * _GRID, 4)
 
-    Args:
-        label_str : string of the label.
-        position : position of the label.
-        layer : layer of the label.
-        label : boolean of having the label.
-        labels : list of given labels.
-        label_valid_len : valid length of labels.
+
+# ---------------------------------------------------------------------------
+# Magic ruleset (from gf180mcu::ruleset in open_pdks gf180mcu.tcl)
+# These are the "painted" values used for all geometric computations.
+# ---------------------------------------------------------------------------
+
+_RULES = dict(
+    contact_size=0.23,
+    poly_surround=0.065,
+    diff_surround=0.065,
+    gate_to_diffcont=0.26,
+    gate_to_polycont=0.28,
+    gate_extension=0.22,
+    diff_extension=0.23,
+    metal_surround=0.055,
+    sub_surround=0.12,
+    diff_spacing=0.33,
+    poly_spacing=0.24,
+    diff_poly_space=0.10,
+    diff_gate_space=0.11,
+    metal_spacing=0.23,
+)
+
+# Physical GDS dimensions (after CIF conversion)
+_CIF_CONTACT_CUT = 0.22         # contact cut on GDS layer 33
+_CIF_DIFF_SURROUND = 0.07       # active/poly surround in GDS
+_CIF_POLY_SURROUND = 0.07       # poly surround in GDS
+_CIF_METAL_SURROUND = 0.06      # metal1 surround in GDS
+_CIF_CONTACT_GAP = 0.25         # min gap between contact cuts
+_CIF_CONTACT_PITCH = 0.47       # _CIF_CONTACT_CUT + _CIF_CONTACT_GAP
+
+# Layer aliases
+_L_COMP = layer["comp"]
+_L_POLY = layer["poly2"]
+_L_PPLUS = layer["pplus"]
+_L_NPLUS = layer["nplus"]
+_L_CONTACT = layer["contact"]
+_L_METAL1 = layer["metal1"]
+_L_NWELL = layer["nwell"]
+_L_LVPWELL = layer["lvpwell"]
+_L_DUALGATE = layer["dualgate"]
+_L_V5XTOR = layer["v5_xtor"]
+_L_SAB = layer["sab"]
+_L_RESMK = layer["res_mk"]
+_L_NAT = layer["nat"]
+_L_MVSD = layer["mvsd"]
+_L_MVPSD = layer["mvpsd"]
+_L_PR_BNDRY = layer["pr_bndry"]
+
+
+# ---------------------------------------------------------------------------
+# Helper: add a snapped rectangle
+# ---------------------------------------------------------------------------
+
+def _rect(c, x0, y0, x1, y1, layer_spec):
+    x0, y0, x1, y1 = _snap(x0), _snap(y0), _snap(x1), _snap(y1)
+    if abs(x1 - x0) < 1e-6 or abs(y1 - y0) < 1e-6:
+        return
+    c.add_polygon([(x0, y0), (x1, y0), (x1, y1), (x0, y1)], layer=layer_spec)
+
+
+# ---------------------------------------------------------------------------
+# Contact cut array — places 0.22 x 0.22 cuts with 0.47 pitch
+# ---------------------------------------------------------------------------
+
+def _contact_cuts(c, cx, cy, w_envelope, h_envelope):
+    """Place contact cuts within an envelope of size (w_envelope, h_envelope)
+    centered at (cx, cy).
+
+    The envelope is the painted region size (using Magic's contact_size).
+    Physical cuts are 0.22x0.22 within this envelope.
     """
-    c = gf.Component()
+    cut = _CIF_CONTACT_CUT
+    pitch = _CIF_CONTACT_PITCH
 
-    if label == 1:
-        if len(labels) == label_valid_len:
-            if label_str == "None":
-                c.add_label(labels[index], position=position, layer=layer)
-            else:
-                c.add_label(label_str, position=position, layer=layer)
+    # Available space for cuts (envelope minus the 0.005 CIF shrink per side)
+    # The envelope matches the painted contact region. Within it, cuts are placed.
+    # Number of cuts based on the envelope size converted to physical space.
+    # Effective size = envelope (which is already the physical contact extent)
+    # Actually, the envelope equals the painted size, and in the CIF output,
+    # the contact region shrinks by 0.005/side. So physical contact region
+    # = envelope - 2*0.005 per axis. For a single contact:
+    # painted 0.23 -> physical 0.22 cut. For larger regions, multiple cuts
+    # are placed within the physical area.
 
-    return c
+    # For a region painted as contact_size x H:
+    # If H = 0.23, one cut of 0.22 fits.
+    # If H > 0.23, multiple cuts of 0.22 with 0.25 gap.
+    # Physical area = H - 0.01 (0.005 shrink per side)
+    # Number of cuts = floor((phys_H - cut) / pitch) + 1
+
+    phys_w = max(w_envelope - 0.01, cut)
+    phys_h = max(h_envelope - 0.01, cut)
+
+    nx = max(1, floor((phys_w - cut) / pitch + 1 + 1e-6))
+    ny = max(1, floor((phys_h - cut) / pitch + 1 + 1e-6))
+
+    span_x = (nx - 1) * pitch
+    span_y = (ny - 1) * pitch
+
+    for ix in range(nx):
+        for iy in range(ny):
+            x = _snap(cx - span_x / 2.0 + ix * pitch)
+            y = _snap(cy - span_y / 2.0 + iy * pitch)
+            _rect(c, x - cut / 2, y - cut / 2,
+                  x + cut / 2, y + cut / 2, _L_CONTACT)
 
 
-def get_patt_label(nl_b, nl, nt, nt_e, g_label, nl_u, nt_o):
-    """Returns list of odd,even gate label patterns for alternating gate connection.
+# ---------------------------------------------------------------------------
+# draw_contact — replicates gf180mcu::draw_contact
+# ---------------------------------------------------------------------------
 
-    Args:
-        nl_b : number of bottom connected gates transistors.
-        nl : number of transistor.
-        nt : patterns of tansistor [with out redundancy].
-        nt_e : number of transistor with even order.
-        g_label : list of transistors gate label.
-        nl_u :  number of upper connected gates transistors.
-        nt_o : number of transistor with odd order.
+def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert",
+                   no_cuts=False):
+    """Draw contact with surrounding active/poly and metal1.
 
+    w, h: requested contact area size (painted dimensions).
+    cx, cy: center position.
+    orient: "vert" (metal grows N/S), "horz" (metal grows E/W).
+    no_cuts: if True, skip contact cut placement (for DSS/asymmetric).
+
+    Returns (ax0, ay0, ax1, ay1): active/poly surround bounding box.
     """
-    g_label_e = []
-    g_label_o = []
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    metal_surround = rules["metal_surround"]
 
-    if nt == len(g_label):
-        for i in range(nl_b):
-            for j in range(nl):
-                if nt[j] == nt_e[i]:
-                    g_label_e.extend(g_label[j])
+    # Enforce minimum painted size
+    cw = max(w, contact_size)
+    ch = max(h, contact_size)
 
-        for i in range(nl_u):
-            for j in range(nl):
-                if nt[j] == nt_o[i]:
-                    g_label_o.extend(g_label[j])
+    hw = cw / 2.0
+    hh = ch / 2.0
 
-    return [g_label_e, g_label_o]
+    # Contact cuts (physical 0.22 within the painted region)
+    if not no_cuts:
+        _contact_cuts(c, cx, cy, cw, ch)
+
+    # Active/poly surround (CIF bloats painted diff_surround to physical)
+    # The total extent = hw + diff_surround (painted) stays the same.
+    # But in GDS, the active extends to the same boundary.
+    ds = diff_surround
+    ax0 = _snap(cx - hw - ds)
+    ay0 = _snap(cy - hh - ds)
+    ax1 = _snap(cx + hw + ds)
+    ay1 = _snap(cy + hh + ds)
+    _rect(c, ax0, ay0, ax1, ay1, active_layer)
+
+    # Metal1 surround
+    ms = metal_surround
+    mx0, my0, mx1, my1 = cx - hw, cy - hh, cx + hw, cy + hh
+    if orient in ("vert", "full"):
+        my0 = cy - hh - ms
+        my1 = cy + hh + ms
+    if orient in ("horz", "full"):
+        mx0 = cx - hw - ms
+        mx1 = cx + hw + ms
+    _rect(c, mx0, my0, mx1, my1, _L_METAL1)
+
+    return (ax0, ay0, ax1, ay1)
 
 
-@gf.cell
-def alter_interdig(
-    sd_diff=rectangle,
-    pc1=rectangle_array,
-    pc2=rectangle_array,
-    sd_l=0.36,
-    nf=1,
-    pat="",
-    pc_x=0.1,
-    pc_spacing=0.1,
-    label: bool = False,
-    g_label: Strs | None = None,
-    nl: int = 1,
-    patt_label: bool = False,
-) -> gf.Component:
-    """Returns interdigitation polygons of gate with alternating poly contacts.
+# ---------------------------------------------------------------------------
+# Guard ring — replicates gf180mcu::guard_ring
+# ---------------------------------------------------------------------------
 
-    Args:
-        sd_diff : source/drain diffusion rectangle.
-        pc1 : first poly contact array.
-        pc2 : second poly contact array.
-        sd_l : source/drain length.
-        nf : number of fingers.
-        pat: string of the required pattern.
-        poly_con : component of poly contact.
-        sd_diff_inter : inter source/drain diffusion rectangle.
-        l_gate : gate length.
-        inter_sd_l : inter diffusion length.
-        nf : number of fingers.
+def _guard_ring(c, gx, gy, rules, sub_layer, full_metal=True,
+                glc=True, grc=True, gtc=False, gbc=False):
+    """Draw guard ring centered at origin.
+
+    gx, gy: guard ring size measured to contact centers (painted coords).
     """
-    c_inst = gf.Component()
-    if not hasattr(sd_diff, "xmax"):
-        sd_diff = gf.get_component(sd_diff)
-    if not hasattr(pc1, "xmax"):
-        pc1 = gf.get_component(pc1)
-    if not hasattr(pc2, "xmax"):
-        pc2 = gf.get_component(pc2)
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    metal_surround = rules["metal_surround"]
+    metal_spacing = rules["metal_spacing"]
+    sub_surround = rules["sub_surround"]
 
-    m2_spacing = 0.28
-    via_size = (0.26, 0.26)
-    via_enc = (0.06, 0.06)
-    via_spacing = (0.26, 0.26)
+    hx = contact_size / 2.0
+    hw = gx / 2.0
+    hh = gy / 2.0
 
-    pat_o = []
-    pat_e = []
+    difft = contact_size + 2 * diff_surround
+    hdifft = difft / 2.0
+    hdiffw = (gx + difft) / 2.0
+    hdiffh = (gy + difft) / 2.0
 
-    if pat:
-        for i in range(int(nf)):
-            if i % 2 == 0:
-                pat_e.append(pat[i])
-            else:
-                pat_o.append(pat[i])
+    # Guard ring diffusion (comp layer) — 4 bars forming a ring
+    _rect(c, -hdiffw, hh - hdifft, hdiffw, hh + hdifft, _L_COMP)    # top
+    _rect(c, -hdiffw, -hh - hdifft, hdiffw, -hh + hdifft, _L_COMP)  # bottom
+    _rect(c, hw - hdifft, -hdiffh, hw + hdifft, hdiffh, _L_COMP)    # right
+    _rect(c, -hw - hdifft, -hdiffh, -hw + hdifft, hdiffh, _L_COMP)  # left
 
-    nt = []
-    [nt.append(dx) for dx in pat if dx not in nt]
+    # Full metal ring
+    if full_metal:
+        hmetw = (gx + contact_size) / 2.0
+        hmeth = (gy + contact_size) / 2.0
+        _rect(c, -hmetw, hh - hx, hmetw, hh + hx, _L_METAL1)      # top
+        _rect(c, -hmetw, -hh - hx, hmetw, -hh + hx, _L_METAL1)    # bottom
+        _rect(c, hw - hx, -hmeth, hw + hx, hmeth, _L_METAL1)       # right
+        _rect(c, -hw - hx, -hmeth, -hw + hx, hmeth, _L_METAL1)     # left
 
-    nt_o = []
-    [nt_o.append(dx) for dx in pat_o if dx not in nt_o]
+    # Contact height/width for side/top-bottom contacts
+    ch = gy - contact_size - 2 * (metal_surround + metal_spacing)
+    if ch < contact_size:
+        ch = contact_size
+    cw = gx - contact_size - 2 * (metal_surround + metal_spacing)
+    if cw < contact_size:
+        cw = contact_size
 
-    nt_e = []
-    [nt_e.append(dx) for dx in pat_e if dx not in nt_e]
+    # Side contacts
+    if grc:
+        _draw_contact(c, hw, 0, 0, ch, rules, _L_COMP, "vert")
+    if glc:
+        _draw_contact(c, -hw, 0, 0, ch, rules, _L_COMP, "vert")
+    if gtc:
+        _draw_contact(c, 0, hh, cw, 0, rules, _L_COMP, "horz")
+    if gbc:
+        _draw_contact(c, 0, -hh, cw, 0, rules, _L_COMP, "horz")
 
-    nl = len(nt)
-    nl_b = len(nt_e)
-    nl_u = len(nt_o)
+    # Substrate/well layer
+    sub_ext = hx + diff_surround + sub_surround
+    _rect(c, -hw - sub_ext, -hh - sub_ext,
+          hw + sub_ext, hh + sub_ext, sub_layer)
 
-    if pat:
-        g_label_e, g_label_o = get_patt_label(nl_b, nl, nt, nt_e, g_label, nl_u, nt_o)
-
-    m2_y = via_size[1] + 2 * via_enc[1]
-    m2 = gf.components.rectangle(
-        size=(sd_diff.xmax - sd_diff.xmin, m2_y),
-        layer=layer["metal2"],
-    )
-
-    m2_arrb = c_inst.add_ref(
-        component=m2,
-        columns=1,
-        rows=nl_b,
-        row_pitch=-m2_y - m2_spacing,
-    )
-    m2_arrb.movey(pc1.ymin - m2_spacing - m2_y)
-
-    m2_arru = c_inst.add_ref(
-        component=m2,
-        columns=1,
-        rows=nl_u,
-        row_pitch=m2_y + m2_spacing,
-    )
-    m2_arru.movey(pc2.ymax + m2_spacing)
-
-    for i in range(nl_u):
-        for j in range(floor(nf / 2)):
-            if pat_o[j] == nt_o[i]:
-                m1 = c_inst.add_ref(
-                    gf.components.rectangle(
-                        size=(
-                            pc_x,
-                            ((pc2.ymax + (i + 1) * (m2_spacing + m2_y)) - pc2.ymin),
-                        ),
-                        layer=layer["metal1"],
-                    )
-                )
-                m1.xmin = pc2.xmin + j * (pc_spacing)
-                m1.ymin = pc2.ymin
-
-                via1_dr = via_generator(
-                    x_range=(m1.xmin, m1.xmax),
-                    y_range=(
-                        m2_arru.ymin + i * (m2_y + m2_spacing),
-                        m2_arru.ymin + i * (m2_y + m2_spacing) + m2_y,
-                    ),
-                    via_enclosure=via_enc,
-                    via_layer=layer["via1"],
-                    via_size=via_size,
-                    via_spacing=via_spacing,
-                )
-                via1 = c_inst.add_ref(via1_dr)
-
-                c_inst.add_ref(
-                    labels_gen(
-                        label_str="None",
-                        position=(
-                            (via1.xmax + via1.xmin) / 2,
-                            (via1.ymax + via1.ymin) / 2,
-                        ),
-                        layer=layer["metal2_label"],
-                        label=patt_label,
-                        labels=pat_o,
-                        label_valid_len=len(pat_o),
-                        index=j,
-                    )
-                )
-
-                # adding gate_label
-                c_inst.add_ref(
-                    labels_gen(
-                        label_str="None",
-                        position=(
-                            m1.xmin + (m1.xsize / 2),
-                            pc2.ymin + (pc2.ysize / 2),
-                        ),
-                        layer=layer["metal1_label"],
-                        label=label,
-                        labels=g_label_o,
-                        label_valid_len=nl_u,
-                        index=i,
-                    )
-                )
-
-    for i in range(nl_b):
-        for j in range(ceil(nf / 2)):
-            if pat_e[j] == nt_e[i]:
-                m1 = c_inst.add_ref(
-                    gf.components.rectangle(
-                        size=(
-                            # poly_con.xmax - poly_con.xmin,
-                            pc_x,
-                            ((pc1.ymax + (i + 1) * (m2_spacing + m2_y)) - pc1.ymin),
-                        ),
-                        layer=layer["metal1"],
-                    )
-                )
-                m1.xmin = pc1.xmin + j * (pc_spacing)
-                m1.ymin = -(m1.ymax - m1.ymin) + (pc1.ymax)
-                via1_dr = via_generator(
-                    x_range=(m1.xmin, m1.xmax),
-                    y_range=(
-                        m2_arrb.ymax - i * (m2_spacing + m2_y) - m2_y,
-                        m2_arrb.ymax - i * (m2_spacing + m2_y),
-                    ),
-                    via_enclosure=via_enc,
-                    via_layer=layer["via1"],
-                    via_size=via_size,
-                    via_spacing=via_spacing,
-                )
-                via1 = c_inst.add_ref(via1_dr)
-
-                c_inst.add_ref(
-                    labels_gen(
-                        label_str="None",
-                        position=(
-                            (via1.xmax + via1.xmin) / 2,
-                            (via1.ymax + via1.ymin) / 2,
-                        ),
-                        layer=layer["metal2_label"],
-                        label=patt_label,
-                        labels=pat_e,
-                        label_valid_len=len(pat_e),
-                        index=j,
-                    )
-                )
-
-                # adding gate_label
-                c_inst.add_ref(
-                    labels_gen(
-                        label_str="None",
-                        position=(
-                            m1.xmin + (m1.xsize / 2),
-                            pc1.ymin + (pc1.ysize / 2),
-                        ),
-                        layer=layer["metal1_label"],
-                        label=label,
-                        labels=g_label_e,
-                        label_valid_len=nl_b,
-                        index=i,
-                    )
-                )
-
-    m3_x = via_size[0] + 2 * via_enc[0]
-    m3_spacing = m2_spacing
-
-    for i in range(nl_b):
-        for j in range(nl_u):
-            if nt_e[i] == nt_o[j]:
-                m2_join_b = c_inst.add_ref(
-                    gf.components.rectangle(
-                        size=(
-                            m2_y + sd_l + (i + 1) * (m3_spacing + m3_x),
-                            m2_y,
-                        ),
-                        layer=layer["metal2"],
-                    ).move(
-                        (
-                            m2_arrb.xmin
-                            - (m2_y + sd_l + (i + 1) * (m3_spacing + m3_x)),
-                            m2_arrb.ymax - i * (m2_spacing + m2_y) - m2_y,
-                        )
-                    )
-                )
-                m2_join_u = c_inst.add_ref(
-                    gf.components.rectangle(
-                        size=(
-                            m2_y + sd_l + (i + 1) * (m3_spacing + m3_x),
-                            m2_y,
-                        ),
-                        layer=layer["metal2"],
-                    ).move(
-                        (
-                            m2_arru.xmin
-                            - (m2_y + sd_l + (i + 1) * (m3_spacing + m3_x)),
-                            m2_arru.ymin + j * (m2_spacing + m2_y),
-                        )
-                    )
-                )
-                m3 = c_inst.add_ref(
-                    gf.components.rectangle(
-                        size=(
-                            m3_x,
-                            m2_join_u.ymax - m2_join_b.ymin,
-                        ),
-                        layer=layer["metal1"],
-                    )
-                )
-                m3.move((m2_join_b.xmin, m2_join_b.ymin))
-                via2_dr = via_generator(
-                    x_range=(m3.xmin, m3.xmax),
-                    y_range=(m2_join_b.ymin, m2_join_b.ymax),
-                    via_enclosure=via_enc,
-                    via_size=via_size,
-                    via_layer=layer["via1"],
-                    via_spacing=via_spacing,
-                )
-                c_inst.add_ref(
-                    component=via2_dr,
-                    columns=1,
-                    rows=2,
-                    row_pitch=m2_join_u.ymin - m2_join_b.ymin,
-                )  # via2_draw
-    return c_inst
+    return (-hw - sub_ext, -hh - sub_ext, hw + sub_ext, hh + sub_ext)
 
 
-@gf.cell
-def interdigit(
-    sd_diff=rectangle,
-    pc1=rectangle_array,
-    pc2=rectangle_array,
-    poly_con=rectangle,
-    sd_l: float = 0.15,
-    nf=1,
-    patt=[""],
-    gate_con_pos="top",
-    pc_x=0.1,
-    pc_spacing=0.1,
-    label: bool = False,
-    g_label: Strs | None = None,
-    patt_label: bool = False,
-) -> gf.Component:
-    """Returns interdigitation related polygons.
+# ---------------------------------------------------------------------------
+# Guard ring implant
+# ---------------------------------------------------------------------------
 
-    Args:
-        sd_diff : source/drain diffusion rectangle.
-        pc1: first poly contact array.
-        pc2: second poly contact array.
-        poly_con: poly contact.
-        sd_diff_inter : inter source/drain diffusion rectangle.
-        l_gate : gate length.
-        inter_sd_l : inter diffusion length.
-        nf : number of fingers.
-        pat : string of the required pattern.
-        gate_con_pos : position of gate contact.
+def _guard_ring_implant(c, gx, gy, implant_layer, rules):
+    """Draw implant for the guard ring.
+
+    Magic's CIF output generates implant shapes around the guard ring
+    diffusion with technology-specific bloat/shrink rules.
+
+    For pplus (NFET guard ring): 8 rectangles with ~0.02/0.03 bloat
+    For nplus (PFET guard ring): 4 rectangles with ~0.16 bloat
     """
-    c_inst = gf.Component()
-    if not hasattr(sd_diff, "xmax"):
-        sd_diff = gf.get_component(sd_diff)
-    if not hasattr(poly_con, "xmax"):
-        poly_con = gf.get_component(poly_con)
-    if not hasattr(pc1, "xmax"):
-        pc1 = gf.get_component(pc1)
-    if not hasattr(pc2, "xmax"):
-        pc2 = gf.get_component(pc2)
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    metal_surround = rules["metal_surround"]
+    metal_spacing = rules["metal_spacing"]
 
-    if nf == len(patt):
-        pat = list(patt)
-        nt = []  # list to store the symbols of transistors and their number nt(number of transistors)
-        [nt.append(dx) for dx in pat if dx not in nt]
-        nl = len(nt)
+    hw = gx / 2.0
+    hh = gy / 2.0
+    difft = contact_size + 2 * diff_surround
+    hdifft = difft / 2.0
+    hdiffw = (gx + difft) / 2.0
+    hdiffh = (gy + difft) / 2.0
 
-        m2_spacing = 0.28
-        via_size = (0.26, 0.26)
-        via_enc = (0.06, 0.06)
-        via_spacing = (0.26, 0.26)
+    # GR comp bar extents
+    bar_outer_x = _snap(hdiffw)
+    bar_outer_y = _snap(hh + hdifft)
+    bar_inner_y = _snap(hh - hdifft)
+    side_outer_x = _snap(hw + hdifft)
+    side_inner_x = _snap(hw - hdifft)
 
-        m2_y = via_size[1] + 2 * via_enc[1]
-        m2 = gf.components.rectangle(
-            size=(sd_diff.xmax - sd_diff.xmin, m2_y), layer=layer["metal2"]
-        )
+    # Guard ring side contact height (from guard_ring function)
+    ch = gy - contact_size - 2 * (metal_surround + metal_spacing)
+    if ch < contact_size:
+        ch = contact_size
+    # Contact painted region half-height
+    ch_actual = max(ch, contact_size)
+    # Side bar implant Y extent = contact surround + CIF bloat
+    # The psd/nsd painted region extends ch_actual/2 + diff_surround from center
+    # Plus the CIF implant bloat
+    side_bloat_y = 0.03  # CIF Y-direction bloat for side bars
+    side_impl_half_y = _snap(ch_actual / 2.0 + diff_surround + side_bloat_y)
 
-        if gate_con_pos == "alternating":
-            c_inst.add_ref(
-                alter_interdig(
-                    sd_diff=sd_diff,
-                    pc1=pc1,
-                    pc2=pc2,
-                    sd_l=sd_l,
-                    nf=nf,
-                    pat=pat,
-                    pc_x=pc_x,
-                    pc_spacing=pc_spacing,
-                    label=label,
-                    g_label=g_label,
-                    nl=nl,
-                    patt_label=patt_label,
-                )
-            )
+    if implant_layer == _L_PPLUS:
+        # NFET guard ring: pplus with small CIF bloat (~0.02-0.03)
+        enc_tb = 0.02   # top/bottom bar bloat
+        enc_side_x = 0.03  # side bar X bloat
 
-        elif gate_con_pos == "top":
-            m2_arr = c_inst.add_ref(
-                component=m2,
-                columns=1,
-                rows=nl,
-                row_pitch=m2.ymax - m2.ymin + m2_spacing,
-            )
-            m2_arr.movey(pc2.ymax + m2_spacing)
+        # Top bar
+        _rect(c, -bar_outer_x - enc_tb, bar_inner_y - enc_tb,
+              bar_outer_x + enc_tb, bar_outer_y + enc_tb, implant_layer)
+        # Bottom bar
+        _rect(c, -bar_outer_x - enc_tb, -bar_outer_y - enc_tb,
+              bar_outer_x + enc_tb, -bar_inner_y + enc_tb, implant_layer)
+        # Left side bar (main body)
+        _rect(c, -side_outer_x - enc_side_x, -side_impl_half_y,
+              -side_inner_x + enc_side_x, side_impl_half_y, implant_layer)
+        # Right side bar (main body)
+        _rect(c, side_inner_x - enc_side_x, -side_impl_half_y,
+              side_outer_x + enc_side_x, side_impl_half_y, implant_layer)
+        # Corner pieces (bridge between bars and side bars)
+        # Top-left corner
+        _rect(c, -bar_outer_x - enc_tb, side_impl_half_y,
+              -side_inner_x + enc_side_x, bar_inner_y - enc_tb, implant_layer)
+        # Top-right corner
+        _rect(c, side_inner_x - enc_side_x, side_impl_half_y,
+              bar_outer_x + enc_tb, bar_inner_y - enc_tb, implant_layer)
+        # Bottom-left corner
+        _rect(c, -bar_outer_x - enc_tb, -bar_inner_y + enc_tb,
+              -side_inner_x + enc_side_x, -side_impl_half_y, implant_layer)
+        # Bottom-right corner
+        _rect(c, side_inner_x - enc_side_x, -bar_inner_y + enc_tb,
+              bar_outer_x + enc_tb, -side_impl_half_y, implant_layer)
 
-            for i in range(nl):
-                for j in range(int(nf)):
-                    if pat[j] == nt[i]:
-                        m1 = c_inst.add_ref(
-                            gf.components.rectangle(
-                                size=(
-                                    pc_x,
-                                    # poly_con.xmax - poly_con.xmin,
-                                    (
-                                        (pc2.ymax + (i + 1) * (m2_spacing + m2_y))
-                                        - ((1 - j % 2) * pc1.ymin)
-                                        - (j % 2) * pc2.ymin
-                                    ),
-                                ),
-                                layer=layer["metal1"],
-                            )
-                        )
-                        m1.xmin = pc1.xmin + j * (pc2.xmin - pc1.xmin)
-                        m1.ymin = pc1.ymin
-
-                        via1_dr = via_generator(
-                            x_range=(m1.xmin, m1.xmax),
-                            y_range=(
-                                m2_arr.ymin + i * (m2_spacing + m2_y),
-                                m2_arr.ymin + i * (m2_spacing + m2_y) + m2_y,
-                            ),
-                            via_enclosure=via_enc,
-                            via_layer=layer["via1"],
-                            via_size=via_size,
-                            via_spacing=via_spacing,
-                        )
-                        via1 = c_inst.add_ref(via1_dr)
-
-                        c_inst.add_ref(
-                            labels_gen(
-                                label_str="None",
-                                position=(
-                                    (via1.xmax + via1.xmin) / 2,
-                                    (via1.ymax + via1.ymin) / 2,
-                                ),
-                                layer=layer["metal2_label"],
-                                label=patt_label,
-                                labels=pat,
-                                label_valid_len=nl,
-                                index=j,
-                            )
-                        )
-
-                        # adding gate_label
-                        c_inst.add_ref(
-                            labels_gen(
-                                label_str="None",
-                                position=(
-                                    m1.xmin + (m1.xsize / 2),
-                                    pc1.ymin + (pc1.ysize / 2),
-                                ),
-                                layer=layer["metal1_label"],
-                                label=label,
-                                labels=g_label,
-                                label_valid_len=nl,
-                                index=i,
-                            )
-                        )
-
-        elif gate_con_pos == "bottom":
-            m2_arr = c_inst.add_ref(
-                component=m2,
-                columns=1,
-                rows=nl,
-                row_pitch=-m2_y - m2_spacing,
-            )
-            m2_arr.movey(pc2.ymin - m2_spacing - m2_y)
-
-            for i in range(nl):
-                for j in range(int(nf)):
-                    if pat[j] == nt[i]:
-                        m1 = c_inst.add_ref(
-                            gf.components.rectangle(
-                                size=(
-                                    # poly_con.xmax - poly_con.xmin,
-                                    pc_x,
-                                    (
-                                        (pc1.ymax + (i + 1) * (m2_spacing + m2_y))
-                                        - (j % 2) * pc1.ymin
-                                        - (1 - j % 2) * pc2.ymin
-                                    ),
-                                ),
-                                layer=layer["metal1"],
-                            )
-                        )
-                        m1.xmin = pc1.xmin + j * (pc2.xmin - pc1.xmin)
-                        m1.ymax = pc1.ymax
-
-                        via1_dr = via_generator(
-                            x_range=(m1.xmin, m1.xmax),
-                            y_range=(
-                                m2_arr.ymax - i * (m2_spacing + m2_y) - m2_y,
-                                m2_arr.ymax - i * (m2_spacing + m2_y),
-                            ),
-                            via_enclosure=via_enc,
-                            via_layer=layer["via1"],
-                            via_size=via_size,
-                            via_spacing=via_spacing,
-                        )
-                        via1 = c_inst.add_ref(via1_dr)
-
-                        c_inst.add_ref(
-                            labels_gen(
-                                label_str="None",
-                                position=(
-                                    (via1.xmax + via1.xmin) / 2,
-                                    (via1.ymax + via1.ymin) / 2,
-                                ),
-                                layer=layer["metal2_label"],
-                                label=patt_label,
-                                labels=pat,
-                                label_valid_len=nl,
-                                index=j,
-                            )
-                        )
-
-                        # adding gate_label
-                        c_inst.add_ref(
-                            labels_gen(
-                                label_str="None",
-                                position=(
-                                    m1.xmin + (m1.xsize / 2),
-                                    pc1.ymin + (pc1.ysize / 2),
-                                ),
-                                layer=layer["metal1_label"],
-                                label=label,
-                                labels=g_label,
-                                label_valid_len=nl,
-                                index=i,
-                            )
-                        )
-
-    return c_inst
-
-
-def hv_gen(c, c_inst, volt, dg_encx: float = 0.1, dg_ency: float = 0.1) -> None:
-    """Returns high voltage related polygons.
-
-    Args:
-        c_inst : dualgate enclosed component
-        volt : operating voltage
-        dg_encx : dualgate enclosure in x_direction
-        dg_ency : dualgate enclosure in y_direction
-    """
-    if volt == "5V" or volt == "6V":
-        dg = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    c_inst.xsize + (2 * dg_encx),
-                    c_inst.ysize + (2 * dg_ency),
-                ),
-                layer=layer["dualgate"],
-            )
-        )
-        dg.xmin = c_inst.xmin - dg_encx
-        dg.ymin = c_inst.ymin - dg_ency
-
-        if volt == "5V":
-            v5x = c.add_ref(
-                gf.components.rectangle(
-                    size=(dg.xsize, dg.ysize), layer=layer["v5_xtor"]
-                )
-            )
-            v5x.xmin = dg.xmin
-            v5x.ymin = dg.ymin
-
-
-def bulk_gr_gen(
-    c: gf.Component,
-    c_inst: gf.Component,
-    comp_spacing: float = 0.1,
-    poly2_comp_spacing: float = 0.1,
-    volt: str = "3.3V",
-    grw: float = 0.36,
-    l_d: float = 0.1,
-    implant_layer: LayerSpec = layer["pplus"],
-    label: bool = False,
-    sub_label: str = "",
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    nw_enc_pcmp: float = 0.1,
-) -> None:
-    """Returns guardring.
-
-    Args:
-        c_inst : component enclosed by guardring
-        comp_spacing : spacing between comp polygons
-        poly2_comp_spacing : spacing between comp and poly2 polygons
-        volt : operating voltage
-        grw : guardring width
-        l_d : total diffusion length
-        implant_layer : layer of comp implant (nplus,pplus)
-    """
-    # c = gf.Component()
-
-    comp_pp_enc: float = 0.16
-
-    con_size = 0.22
-    con_sp = 0.28
-    con_comp_enc = 0.07
-    dg_enc_cmp = 0.24
-
-    c_temp = gf.Component("temp_store")
-    rect_bulk_in = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (c_inst.xmax - c_inst.xmin) + 2 * comp_spacing,
-                (c_inst.ymax - c_inst.ymin) + 2 * poly2_comp_spacing,
-            ),
-            layer=layer["comp"],
-        )
-    )
-    rect_bulk_in.move((c_inst.xmin - comp_spacing, c_inst.ymin - poly2_comp_spacing))
-    rect_bulk_out = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (rect_bulk_in.xmax - rect_bulk_in.xmin) + 2 * grw,
-                (rect_bulk_in.ymax - rect_bulk_in.ymin) + 2 * grw,
-            ),
-            layer=layer["comp"],
-        )
-    )
-    rect_bulk_out.move((rect_bulk_in.xmin - grw, rect_bulk_in.ymin - grw))
-    B = c.add_ref(
-        gf.boolean(
-            A=rect_bulk_out,
-            B=rect_bulk_in,
-            operation="A-B",
-            layer=layer["comp"],
-        )
-    )
-
-    psdm_in = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (rect_bulk_in.xmax - rect_bulk_in.xmin) - 2 * comp_pp_enc,
-                (rect_bulk_in.ymax - rect_bulk_in.ymin) - 2 * comp_pp_enc,
-            ),
-            layer=layer["pplus"],
-        )
-    )
-    psdm_in.move((rect_bulk_in.xmin + comp_pp_enc, rect_bulk_in.ymin + comp_pp_enc))
-    psdm_out = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (rect_bulk_out.xmax - rect_bulk_out.xmin) + 2 * comp_pp_enc,
-                (rect_bulk_out.ymax - rect_bulk_out.ymin) + 2 * comp_pp_enc,
-            ),
-            layer=layer["pplus"],
-        )
-    )
-    psdm_out.move(
-        (
-            rect_bulk_out.xmin - comp_pp_enc,
-            rect_bulk_out.ymin - comp_pp_enc,
-        )
-    )
-    c.add_ref(
-        gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=implant_layer)
-    )  # implant_draw(pplus or nplus)
-
-    # generatingg contacts
-
-    c.add_ref(
-        via_generator(
-            x_range=(
-                rect_bulk_in.xmin + con_size,
-                rect_bulk_in.xmax - con_size,
-            ),
-            y_range=(rect_bulk_out.ymin, rect_bulk_in.ymin),
-            via_enclosure=(con_comp_enc, con_comp_enc),
-            via_layer=layer["contact"],
-            via_size=(con_size, con_size),
-            via_spacing=(con_sp, con_sp),
-        )
-    )  # bottom contact
-
-    c.add_ref(
-        via_generator(
-            x_range=(
-                rect_bulk_in.xmin + con_size,
-                rect_bulk_in.xmax - con_size,
-            ),
-            y_range=(rect_bulk_in.ymax, rect_bulk_out.ymax),
-            via_enclosure=(con_comp_enc, con_comp_enc),
-            via_layer=layer["contact"],
-            via_size=(con_size, con_size),
-            via_spacing=(con_sp, con_sp),
-        )
-    )  # upper contact
-
-    c.add_ref(
-        via_generator(
-            x_range=(rect_bulk_out.xmin, rect_bulk_in.xmin),
-            y_range=(
-                rect_bulk_in.ymin + con_size,
-                rect_bulk_in.ymax - con_size,
-            ),
-            via_enclosure=(con_comp_enc, con_comp_enc),
-            via_layer=layer["contact"],
-            via_size=(con_size, con_size),
-            via_spacing=(con_sp, con_sp),
-        )
-    )  # right contact
-
-    c.add_ref(
-        via_generator(
-            x_range=(rect_bulk_in.xmax, rect_bulk_out.xmax),
-            y_range=(
-                rect_bulk_in.ymin + con_size,
-                rect_bulk_in.ymax - con_size,
-            ),
-            via_enclosure=(con_comp_enc, con_comp_enc),
-            via_layer=layer["contact"],
-            via_size=(con_size, con_size),
-            via_spacing=(con_sp, con_sp),
-        )
-    )  # left contact
-
-    comp_m1_in = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (l_d) + 2 * comp_spacing,
-                (c_inst.ymax - c_inst.ymin) + 2 * poly2_comp_spacing,
-            ),
-            layer=layer["metal1"],
-        )
-    )
-    comp_m1_in.move((-comp_spacing, c_inst.ymin - poly2_comp_spacing))
-    comp_m1_out = c_temp.add_ref(
-        gf.components.rectangle(
-            size=(
-                (rect_bulk_in.xmax - rect_bulk_in.xmin) + 2 * grw,
-                (rect_bulk_in.ymax - rect_bulk_in.ymin) + 2 * grw,
-            ),
-            layer=layer["metal1"],
-        )
-    )
-    comp_m1_out.move((rect_bulk_in.xmin - grw, rect_bulk_in.ymin - grw))
-    c.add_ref(
-        gf.boolean(
-            A=rect_bulk_out,
-            B=rect_bulk_in,
-            operation="A-B",
-            layer=layer["metal1"],
-        )
-    )  # metal1_guardring
-
-    # c.add_ref(hv_gen(c_inst=B, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_cmp))
-    hv_gen(c, c_inst=B, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_cmp)
-
-    c.add_ref(
-        labels_gen(
-            label_str=sub_label,
-            position=(
-                B.xmin + (grw + 2 * (comp_pp_enc)) / 2,
-                B.ymin + (B.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=[sub_label],
-            label_valid_len=1,
-        )
-    )
-
-    if implant_layer == layer["pplus"]:
-        c.add_ref(
-            nfet_deep_nwell(
-                deepnwell=deepnwell,
-                pcmpgr=pcmpgr,
-                inst_size=(B.xsize, B.ysize),
-                inst_xmin=B.xmin,
-                inst_ymin=B.ymin,
-                grw=grw,
-            )
-        )
     else:
-        c.add_ref(
-            pfet_deep_nwell(
-                deepnwell=deepnwell,
-                pcmpgr=pcmpgr,
-                enc_size=(B.xsize, B.ysize),
-                enc_xmin=B.xmin,
-                enc_ymin=B.ymin,
-                nw_enc_pcmp=nw_enc_pcmp,
-                grw=grw,
-            )
-        )
+        # PFET guard ring: nplus with outer bloat 0.16, inner bloat varies
+        enc_out = 0.16
+        # Inner bloat depends on voltage variant (from CIF rules)
+        volt = rules.get("volt", "3.3V")
+        if volt in ("5.0V", "6.0V", "10.0V"):
+            enc_in = 0.07
+        else:
+            enc_in = 0.11
+
+        # Inner boundary of the nplus ring
+        inner_x = _snap(side_inner_x - enc_in)  # inner X
+        inner_y = _snap(bar_inner_y - enc_in)    # inner Y
+
+        # Top bar (full width, from inner_y to outer top)
+        _rect(c, -bar_outer_x - enc_out, inner_y,
+              bar_outer_x + enc_out, bar_outer_y + enc_out, implant_layer)
+        # Bottom bar
+        _rect(c, -bar_outer_x - enc_out, -bar_outer_y - enc_out,
+              bar_outer_x + enc_out, -inner_y, implant_layer)
+        # Left side bar (between inner_y bounds)
+        _rect(c, -side_outer_x - enc_out, -inner_y,
+              -inner_x, inner_y, implant_layer)
+        # Right side bar
+        _rect(c, inner_x, -inner_y,
+              side_outer_x + enc_out, inner_y, implant_layer)
 
 
-@gf.cell
-def nfet_deep_nwell(
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    inst_size: Float2 = (0.1, 0.1),
-    inst_xmin: float = 0.1,
-    inst_ymin: float = 0.1,
-    grw: float = 0.36,
-) -> gf.Component:
-    """Return nfet deepnwell.
+# ---------------------------------------------------------------------------
+# Device implant
+# ---------------------------------------------------------------------------
 
-    Args:
-        deepnwell : boolean of having deepnwell
-        pcmpgr : boolean of having deepnwell guardring
-        inst_size : deepnwell enclosed size
-        inst_xmin : deepnwell enclosed dxmin
-        inst_ymin : deepnwell enclosed dymin
-        grw : guardring width
+def _device_implant_region(finger_results, bloat, channel_bloat=None,
+                           gate_bloat=0.23, use_gate=True):
+    """Build a kdb.Region for the device implant or v5_xtor.
+
+    For each finger, creates the typed-diffusion shape:
+    - Channel region (hw in Y, full X extent)
+    - Dogbone extensions (cdwmin/2 in Y, only at S/D contact positions)
+    Then bloats by the specified amount.
+
+    The gate region is computed as the UNION of all fingers' gates, then bloated
+    once (not per-finger) to avoid artifacts at finger boundaries.
     """
-    c = gf.Component()
+    import klayout.db as kdb
 
-    dn_enc_lvpwell = 2.5
-    lvpwell_enc_ncmp = 0.43
+    def um(v):
+        return round(v * 1000)
 
-    if deepnwell == 1:
-        lvp_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    inst_size[0] + (2 * lvpwell_enc_ncmp),
-                    inst_size[1] + (2 * lvpwell_enc_ncmp),
-                ),
-                layer=layer["lvpwell"],
-            )
-        )
+    region = kdb.Region()
 
-        lvp_rect.xmin = inst_xmin - lvpwell_enc_ncmp
-        lvp_rect.ymin = inst_ymin - lvpwell_enc_ncmp
+    for r in finger_results:
+        # Channel extent (hw in Y, full X)
+        cx0, cy0, cx1, cy1 = r["channel"]
+        cb = channel_bloat if channel_bloat is not None else bloat
+        region.insert(kdb.Box(um(cx0 - cb), um(cy0 - cb),
+                              um(cx1 + cb), um(cy1 + cb)))
 
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    lvp_rect.xsize + (2 * dn_enc_lvpwell),
-                    lvp_rect.ysize + (2 * dn_enc_lvpwell),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
+        # Dogbone tabs (individual rectangles, not bounding box)
+        for tab in r.get("dogbone_tabs", []):
+            t0, t1, t2, t3 = tab
+            region.insert(kdb.Box(um(t0 - bloat), um(t1 - bloat),
+                                  um(t2 + bloat), um(t3 + bloat)))
 
-        dn_rect.xmin = lvp_rect.xmin - dn_enc_lvpwell
-        dn_rect.ymin = lvp_rect.ymin - dn_enc_lvpwell
+    # Gate region: for dogbone devices (w < cdwmin), add each finger's gate
+    # individually so the gap between fingers is preserved (nplus notch at
+    # shared contacts). For non-dogbone, use bounding box of all gates.
+    if use_gate and finger_results:
+        # Detect dogbone: channel Y extent < active Y extent
+        r0 = finger_results[0]
+        is_dogbone = abs(r0["channel"][3] - r0["channel"][1]) < \
+                     abs(r0["active"][3] - r0["active"][1]) - 0.001
+        if is_dogbone and len(finger_results) > 1:
+            for r in finger_results:
+                gx0, gy0, gx1, gy1 = r["gate"]
+                region.insert(kdb.Box(
+                    um(gx0 - gate_bloat), um(gy0 - gate_bloat),
+                    um(gx1 + gate_bloat), um(gy1 + gate_bloat)))
+        else:
+            gate_x0 = min(r["gate"][0] for r in finger_results)
+            gate_y0 = min(r["gate"][1] for r in finger_results)
+            gate_x1 = max(r["gate"][2] for r in finger_results)
+            gate_y1 = max(r["gate"][3] for r in finger_results)
+            region.insert(kdb.Box(
+                um(gate_x0 - gate_bloat), um(gate_y0 - gate_bloat),
+                um(gate_x1 + gate_bloat), um(gate_y1 + gate_bloat)))
 
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=grw))
-
-    return c
+    return region.merged()
 
 
-def add_inter_sd_labels(
-    c: gf.Component,
-    nf: int,
-    sd_label: Strs | None,
-    poly1: gf.Component,
-    l_gate: float,
-    inter_sd_l: float,
-    sd_diff_intr: gf.Component,
-    label: bool,
-    layer: LayerSpec,
-    con_bet_fin: int,
-) -> None:
-    """Adds label to intermediate source/drain diffusion.
+def _draw_region(c, region, layer_spec):
+    """Draw a kdb.Region as polygons on the given layer."""
+    for poly in region.each():
+        points = [(_snap(p.x / 1000.0), _snap(p.y / 1000.0))
+                  for p in poly.each_point_hull()]
+        if len(points) >= 3:
+            c.add_polygon(points, layer=layer_spec)
 
-    Args:
-        c : instance component of the device
-        nf : number of fingers
-        sd_label : required source and drain labels list
-        poly1 : component of poly array
-        l_gate : length of fet gate
-        inter_sd_l : length of intermediate source/drain diffusion
-        sd_diff_inter : component of intermediate source/drain polygon
-        label: boolean of having labels
-        layer : layer of label
-        con_bet_fin : boolean of having contact between fingers
+
+# ---------------------------------------------------------------------------
+# Single MOS device geometry computation
+# ---------------------------------------------------------------------------
+
+def _mos_geometry(w, l, rules, topc=True, botc=True):
+    """Compute geometry for one MOS finger using Magic's algorithm.
+
+    Returns dict with all coordinates needed for drawing and tiling.
+    All values in Magic's "painted" coordinate space.
     """
-    if con_bet_fin == 1:
-        label_layer = layer["metal1_label"]
+    eps = 0.0005
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    poly_surround = rules["poly_surround"]
+    metal_surround = rules["metal_surround"]
+    gate_to_diffcont = rules["gate_to_diffcont"]
+    gate_to_polycont = rules["gate_to_polycont"]
+    gate_extension = rules["gate_extension"]
+    diff_extension = rules["diff_extension"]
+    diff_poly_space = rules["diff_poly_space"]
+
+    hw = w / 2.0
+    hl = l / 2.0
+
+    # --- Dogbone Rule 1: diffusion contact ---
+    cdwmin = contact_size + 2 * diff_surround
+    cstem = gate_to_diffcont - cdwmin / 2.0
+    cgrow = diff_poly_space - cstem
+    diffcont_orient = "vert"
+    ddover = 0.0
+
+    if (w + eps) < cdwmin:
+        if cgrow > 0:
+            gate_to_diffcont += cgrow
+            diffcont_orient = "horz"
+        ddover = (cdwmin - w) / 2.0
+
+    # --- Rule 2: poly contact dogbone ---
+    cplmin = contact_size + 2 * poly_surround
+    cstem_p = gate_to_polycont - cplmin / 2.0
+    cgrow_p = diff_poly_space - cstem_p
+    if (l + eps) < cplmin:
+        if cgrow_p > 0:
+            gate_to_polycont += cgrow_p
+
+    # --- Rule 3: both dogbone ---
+    if (w + eps) < cdwmin and (l + eps) < cplmin:
+        cgrow3 = (cplmin - w) / 2.0
+        gate_to_polycont += cgrow3
+
+    # --- Contact dimensions ---
+    cdw = w - 2 * diff_surround
+    cpl = l - 2 * poly_surround
+
+    # --- Diffusion extent from gate edge ---
+    hc = contact_size / 2.0
+    if diff_extension > gate_to_diffcont:
+        diff_grow_d = diff_extension  # drain side
+        diff_grow_s = diff_extension  # source side
     else:
-        label_layer = layer["comp_label"]
+        diff_grow_d = gate_to_diffcont + hc
+        diff_grow_s = gate_to_diffcont + hc
 
-    for i in range(int(nf - 1)):
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(
-                    poly1.xmin + l_gate + (inter_sd_l / 2) + i * (l_gate + inter_sd_l),
-                    sd_diff_intr.ymin + (sd_diff_intr.ysize / 2),
-                ),
-                layer=label_layer,
-                label=label,
-                labels=sd_label,
-                label_valid_len=nf + 1,
-                index=i + 1,
-            )
-        )
+    # --- Poly extent ---
+    if gate_extension > gate_to_polycont:
+        poly_ext_top = gate_extension
+        poly_ext_bot = gate_extension
+    else:
+        poly_ext_top = gate_to_polycont if topc else gate_extension
+        poly_ext_bot = gate_to_polycont if botc else gate_extension
+
+    # --- Single device bounding box (used for tiling) ---
+    # fw and fh are the bounding box extents returned by mos_device (cext).
+    # They include all drawn elements: diffusion + contact surround + poly pads.
+    #
+    # fw: The diffusion contact's active surround extends diff_surround beyond
+    # the painted contact region. So the total X extent from gate center is:
+    #   hl + diff_grow + diff_surround
+    # where diff_grow includes gate_to_diffcont + contact_size/2.
+    fw = 2 * (hl + max(diff_grow_d, diff_grow_s) + diff_surround)
+
+    # fh: From the max of (poly gate extent) and (poly contact pad extent).
+    # Poly gate: hw + poly_ext_top (= gate_extension or gate_to_polycont)
+    # Contact pad: hw + gate_to_polycont + poly_surround + contact_size/2
+    if topc:
+        top_ext = max(poly_ext_top,
+                      gate_to_polycont + poly_surround + contact_size / 2.0)
+    else:
+        top_ext = poly_ext_top
+    if botc:
+        bot_ext = max(poly_ext_bot,
+                      gate_to_polycont + poly_surround + contact_size / 2.0)
+    else:
+        bot_ext = poly_ext_bot
+    fh = hw + top_ext + hw + bot_ext
+
+    # But we also need to account for diffusion contact extent in Y
+    # When dogbone, the contact extent in Y = cdwmin/2 + diff_surround
+    # When not dogbone, it's hw + diff_surround? No...
+    # Actually fh in Magic is computed from cext which is the union of all drawn elements
+    # The critical Y extents come from:
+    # 1. Poly contact pads: hw + gate_to_polycont + poly_surround + contact_size/2
+    # 2. Diffusion contacts (if dogbone): ddover + diff_surround (above/below gate center)
+    #    = cdwmin/2 + diff_surround
+    # These are typically smaller than the poly extent, so fh is dominated by poly pads.
+
+    return dict(
+        w=w, l=l, hw=hw, hl=hl,
+        gate_to_diffcont=gate_to_diffcont,
+        gate_to_polycont=gate_to_polycont,
+        gate_extension=gate_extension,
+        diff_grow_d=diff_grow_d, diff_grow_s=diff_grow_s,
+        poly_ext_top=poly_ext_top, poly_ext_bot=poly_ext_bot,
+        diffcont_orient=diffcont_orient,
+        ddover=ddover,
+        cdw=cdw, cpl=cpl,
+        fw=fw, fh=fh,
+        cdwmin=cdwmin, cplmin=cplmin,
+    )
 
 
-def add_gate_labels(
-    c: gf.Component,
-    g_label: Strs | None,
-    pc1: gf.Component,
-    c_pc: gf.Component,
-    pc_spacing: float,
-    nc1: int,
-    nc2: int,
-    pc2: gf.Component,
-    label: bool,
-    layer: LayerSpec,
-    nf: int,
-) -> None:
-    """Adds gate label when label is enabled.
+# ---------------------------------------------------------------------------
+# Draw single MOS device finger
+# ---------------------------------------------------------------------------
 
-    Args:
-        c : instance component of the device
-        g_label : required gate labels list
-        pc1 : component of poly array1
-        c_pc : component of poly array element
-        pc_spacing : float of space between labels
-        nc1 : number of columns in poly array1
-        nc2 : number of columns in poly array2
-        pc2 : component of poly array2
-        label : boolean of having labels
-        layer : layer of labels
-        nf : number of fingers
-    """
-    for i in range(nc1):
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(
-                    pc1.xmin + (c_pc.xsize / 2) + i * (pc_spacing),
-                    pc1.ymin + (c_pc.ysize / 2),
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=g_label,
-                label_valid_len=nf,
-                index=2 * i,
-            )
-        )
+def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
+                     dss=False, asym=False):
+    """Draw one MOS finger at (cx, cy). Returns device extents."""
+    w = geom["w"]
+    l = geom["l"]
+    hw = geom["hw"]
+    hl = geom["hl"]
+    gate_to_diffcont = geom["gate_to_diffcont"]
+    gate_to_polycont = geom["gate_to_polycont"]
+    gate_extension = geom["gate_extension"]
+    diff_grow_d = geom["diff_grow_d"]
+    diff_grow_s = geom["diff_grow_s"]
+    diffcont_orient = geom["diffcont_orient"]
+    cdw = geom["cdw"]
+    cpl = geom["cpl"]
+    cdwmin = geom["cdwmin"]
 
-    for i in range(nc2):
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(
-                    pc2.xmin + (c_pc.xsize / 2) + i * (pc_spacing),
-                    pc2.ymin + (c_pc.ysize / 2),
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=g_label,
-                label_valid_len=nf,
-                index=(2 * i) + 1,
-            )
-        )
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    poly_surround = rules["poly_surround"]
 
+    # Drain/source sides
+    if evens == 1:
+        dside = -1  # drain left
+    else:
+        dside = 1   # drain right
+    sside = -dside
+
+    # --- Diffusion (comp) painting ---
+    # Magic paints drain diff and source diff separately
+    # Drain side
+    if dside == -1:
+        drain_left = cx - hl - diff_grow_d
+        drain_right = cx + hl
+    else:
+        drain_left = cx - hl
+        drain_right = cx + hl + diff_grow_d
+
+    if sside == -1:
+        source_left = cx - hl - diff_grow_s
+        source_right = cx + hl
+    else:
+        source_left = cx - hl
+        source_right = cx + hl + diff_grow_s
+
+    comp_left = min(drain_left, source_left)
+    comp_right = max(drain_right, source_right)
+
+    # Main comp (device active)
+    if asym:
+        # Asymmetric: source side comp extends from -(hl - sub_surround)
+        # to source contact outer. Drain comp is only from draw_contact.
+        sub_surround_v = rules.get("sub_surround", 0.12)
+        if sside == -1:
+            # Source on left, drain on right
+            _rect(c, source_left, cy - hw,
+                  cx + hl - sub_surround_v, cy + hw, _L_COMP)
+        else:
+            # Source on right, drain on left
+            _rect(c, cx - hl + sub_surround_v, cy - hw,
+                  source_right, cy + hw, _L_COMP)
+    else:
+        _rect(c, comp_left, cy - hw, comp_right, cy + hw, _L_COMP)
+
+    # Dogbone extensions for diffusion contacts
+    if w < cdwmin - 0.0001:
+        dog_hw = cdwmin / 2.0
+        # The dogbone is created by the draw_contact's active surround
+        # extending beyond the device channel width.
+        # We paint the comp extension here as separate rectangles
+        # for the parts that extend beyond the channel.
+        drain_cx = cx + dside * (hl + gate_to_diffcont)
+        source_cx = cx + sside * (hl + gate_to_diffcont)
+
+        # Drain dogbone comp extension (above and below channel)
+        d_ext_left = drain_cx - contact_size / 2 - diff_surround
+        d_ext_right = drain_cx + contact_size / 2 + diff_surround
+        _rect(c, d_ext_left, cy + hw, d_ext_right, cy + dog_hw, _L_COMP)
+        _rect(c, d_ext_left, cy - dog_hw, d_ext_right, cy - hw, _L_COMP)
+
+        # Source dogbone comp extension
+        s_ext_left = source_cx - contact_size / 2 - diff_surround
+        s_ext_right = source_cx + contact_size / 2 + diff_surround
+        _rect(c, s_ext_left, cy + hw, s_ext_right, cy + dog_hw, _L_COMP)
+        _rect(c, s_ext_left, cy - dog_hw, s_ext_right, cy - hw, _L_COMP)
+
+    # --- Poly gate ---
+    poly_top = cy + hw + geom["poly_ext_top"]
+    poly_bot = cy - hw - geom["poly_ext_bot"]
+    _rect(c, cx - hl, poly_bot, cx + hl, poly_top, _L_POLY)
+
+    # --- Diffusion contacts ---
+    drain_cx = cx + dside * (hl + gate_to_diffcont)
+    source_cx = cx + sside * (hl + gate_to_diffcont)
+
+    # DSS: skip all S/D contact cuts (keep metal and comp surround)
+    # Asymmetric: skip drain contact cuts, use L-shaped drain comp
+    drain_no_cuts = dss or asym
+    source_no_cuts = dss
+
+    if asym:
+        # Asymmetric drain: L-shaped comp (ldndiffc CIF output)
+        # Outer part (metal surround area): full hw
+        # Inner part (contact cut area): hw - diff_surround
+        metal_surround = rules["metal_surround"]
+        cw_d = max(0, contact_size)
+        ch_d = max(cdw, contact_size)
+        ms_phys = _CIF_METAL_SURROUND  # 0.06
+        hc_half = contact_size / 2.0
+
+        # Draw the L-shaped drain comp
+        # Outer: from drain outer surround to drain center + metal_surround_phys
+        # at ±hw
+        d_outer_edge = _snap(drain_cx - hc_half - diff_surround)  # outer
+        d_mid_edge = _snap(drain_cx + ms_phys)  # metal surround boundary
+        d_inner_edge = _snap(drain_cx + hc_half)  # contact right edge
+        hw_reduced = _snap(hw - diff_surround)
+        if dside == -1:
+            # Drain on left
+            _rect(c, d_outer_edge, cy - hw, d_mid_edge, cy + hw, _L_COMP)
+            _rect(c, d_mid_edge, cy - hw_reduced, d_inner_edge,
+                  cy + hw_reduced, _L_COMP)
+        else:
+            # Drain on right
+            d_outer_edge = _snap(drain_cx + hc_half + diff_surround)
+            d_mid_edge = _snap(drain_cx - ms_phys)
+            d_inner_edge = _snap(drain_cx - hc_half)
+            _rect(c, d_inner_edge, cy - hw_reduced, d_mid_edge,
+                  cy + hw_reduced, _L_COMP)
+            _rect(c, d_mid_edge, cy - hw, d_outer_edge, cy + hw, _L_COMP)
+        # Still draw drain metal (no comp from draw_contact for asym drain)
+        cw_m = max(0, contact_size)
+        ch_m = max(cdw, contact_size)
+        _rect(c, drain_cx - cw_m / 2, cy - ch_m / 2 - metal_surround,
+              drain_cx + cw_m / 2, cy + ch_m / 2 + metal_surround, _L_METAL1)
+    else:
+        _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
+                      no_cuts=drain_no_cuts)
+    _draw_contact(c, source_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
+                  no_cuts=source_no_cuts)
+
+    # --- Poly contacts ---
+    if topc:
+        pc_cy = cy + hw + gate_to_polycont
+        _draw_contact(c, cx, pc_cy, cpl, 0, rules, _L_POLY, "horz")
+    if botc:
+        pc_cy = cy - hw - gate_to_polycont
+        _draw_contact(c, cx, pc_cy, cpl, 0, rules, _L_POLY, "horz")
+
+    # --- Compute TWO extents: ---
+    # 1. cext: full bounding box including poly pads (for tiling computation)
+    # 2. active_ext: only the active diffusion area (for device implant)
+
+    # Active area extent for device implant.
+    # The implant is based on the total typed-diffusion (ndiff/pdiff) extent,
+    # which includes: gate painting + contact's active surround.
+    # X: hl + gate_to_diffcont + contact_size/2 + diff_surround
+    # Y: max(hw, cdwmin/2) — the max of gate height and contact dogbone height
+    act_half_x = hl + gate_to_diffcont + contact_size / 2.0 + diff_surround
+    act_left = cx - act_half_x
+    act_right = cx + act_half_x
+
+    # Y extent: the typed diffusion height
+    if w < cdwmin - 0.0001:
+        act_half_y = cdwmin / 2.0  # dogbone height
+    else:
+        act_half_y = hw  # device width
+    act_bot = cy - act_half_y
+    act_top = cy + act_half_y
+
+    # Full extent including poly pads
+    ext_left = act_left
+    ext_right = act_right
+    ext_bot = act_bot
+    ext_top = act_top
+
+    if topc:
+        pad_top = cy + hw + gate_to_polycont + contact_size / 2 + poly_surround
+        ext_top = max(ext_top, pad_top)
+    if botc:
+        pad_bot = cy - hw - gate_to_polycont - contact_size / 2 - poly_surround
+        ext_bot = min(ext_bot, pad_bot)
+
+    # Gate extent (just the gate polygon area, for implant gate bloat)
+    gate_left = cx - hl
+    gate_right = cx + hl
+    gate_bot = cy - hw
+    gate_top = cy + hw
+
+    # Channel extent (just the gate channel, hw in Y)
+    chan_left = act_left
+    chan_right = act_right
+    chan_bot = cy - hw
+    chan_top = cy + hw
+
+    # Dogbone tab rectangles (for v5_xtor cross-shape construction)
+    dogbone_tabs = []
+    if w < cdwmin - 0.0001:
+        dog_hw = cdwmin / 2.0
+        drain_cx = cx + dside * (hl + gate_to_diffcont)
+        source_cx = cx + sside * (hl + gate_to_diffcont)
+        d_left = _snap(drain_cx - contact_size / 2 - diff_surround)
+        d_right = _snap(drain_cx + contact_size / 2 + diff_surround)
+        s_left = _snap(source_cx - contact_size / 2 - diff_surround)
+        s_right = _snap(source_cx + contact_size / 2 + diff_surround)
+        # Top and bottom tabs for each S/D contact
+        for left, right in [(d_left, d_right), (s_left, s_right)]:
+            dogbone_tabs.append((left, _snap(cy + hw), right, _snap(cy + dog_hw)))
+            dogbone_tabs.append((left, _snap(cy - dog_hw), right, _snap(cy - hw)))
+
+    return dict(
+        cext=(_snap(ext_left), _snap(ext_bot), _snap(ext_right), _snap(ext_top)),
+        active=(_snap(act_left), _snap(act_bot), _snap(act_right), _snap(act_top)),
+        channel=(_snap(chan_left), _snap(chan_bot), _snap(chan_right), _snap(chan_top)),
+        gate=(_snap(gate_left), _snap(gate_bot), _snap(gate_right), _snap(gate_top)),
+        dogbone_tabs=dogbone_tabs,
+        drain_cx=_snap(drain_cx),
+        source_cx=_snap(source_cx),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Main MOS drawing — replicates gf180mcu::mos_draw
+# ---------------------------------------------------------------------------
+
+def _mos_draw(c, w, l, nf, rules, is_nfet=True,
+              topc=True, botc=True, guard=True, full_metal=True,
+              dss=False, asym=False):
+    """Draw complete MOSFET with guard ring."""
+    contact_size = rules["contact_size"]
+    diff_surround = rules["diff_surround"]
+    diff_spacing = rules["diff_spacing"]
+    diff_gate_space = rules["diff_gate_space"]
+    gate_extension = rules["gate_extension"]
+
+    geom = _mos_geometry(w, l, rules, topc, botc)
+    fw = geom["fw"]
+    fh = geom["fh"]
+
+    # Tiling pitch (doverlap=1): overlap diffusion contacts
+    dx = fw - (diff_surround * 2 + contact_size)
+
+    # Core dimensions
+    corex = (nf - 1) * dx + fw
+    corey = fh
+
+    # Guard ring adjustments for dogbone
+    cdwmin = contact_size + 2 * diff_surround
+    if guard and (w + 0.0005) < cdwmin:
+        inset = (contact_size + 2 * diff_surround - w) / 2.0
+        sdiff = inset + diff_spacing - (gate_extension + diff_gate_space)
+        if sdiff > 0:
+            if not topc:
+                corey += sdiff
+            if not botc:
+                corey += sdiff
+
+    # Guard ring size (to contact centers)
+    gx = corex + 2 * (diff_spacing + diff_surround) + contact_size
+    gy = corey + 2 * (diff_gate_space + diff_surround) + contact_size
+
+    # Layer configuration
+    if is_nfet:
+        gr_implant = _L_PPLUS
+        dev_implant = _L_NPLUS
+        sub_layer = _L_LVPWELL
+    else:
+        gr_implant = _L_NPLUS
+        dev_implant = _L_PPLUS
+        sub_layer = _L_NWELL
+
+    # Draw guard ring
+    if guard:
+        _guard_ring(c, gx, gy, rules, sub_layer, full_metal)
+        _guard_ring_implant(c, gx, gy, gr_implant, rules)
+
+    # Draw device fingers
+    start_x = -(nf - 1) * dx / 2.0
+    evens = 1
+    all_finger_results = []
+    for i in range(nf):
+        fx = start_x + i * dx
+        result = _draw_mos_finger(c, fx, 0, geom, rules,
+                                  evens=evens, topc=topc, botc=botc,
+                                  dss=dss, asym=asym)
+        all_finger_results.append(result)
+        evens = 1 - evens
+
+    # Device implant
+    volt = rules.get("volt", "3.3V")
+    if dss and volt in ("3.3V",) and all_finger_results:
+        # 3.3V DSS (ndiffres/pdiffres): implant is active bbox bloated by 0.18.
+        act_x0 = min(r["active"][0] for r in all_finger_results)
+        act_y0 = min(r["active"][1] for r in all_finger_results)
+        act_x1 = max(r["active"][2] for r in all_finger_results)
+        act_y1 = max(r["active"][3] for r in all_finger_results)
+        _rect(c, act_x0 - 0.18, act_y0 - 0.18,
+              act_x1 + 0.18, act_y1 + 0.18, dev_implant)
+    elif asym and all_finger_results:
+        # 10V asymmetric: gate region bloated by 0.23 (bounding box)
+        # + source side channel bloated by 0.16 (no drain channel contribution).
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+        impl_region = kdb.Region()
+        hw_v = geom["hw"]
+        # Gate region: bounding box of all gates, bloated by 0.23
+        gate_x0 = min(r["gate"][0] for r in all_finger_results)
+        gate_y0 = min(r["gate"][1] for r in all_finger_results)
+        gate_x1 = max(r["gate"][2] for r in all_finger_results)
+        gate_y1 = max(r["gate"][3] for r in all_finger_results)
+        impl_region.insert(kdb.Box(
+            um(gate_x0 - 0.23), um(gate_y0 - 0.23),
+            um(gate_x1 + 0.23), um(gate_y1 + 0.23)))
+        # Source side channel: bloated by 0.16
+        for r in all_finger_results:
+            scx = r["source_cx"]
+            dcx = r["drain_cx"]
+            cx0, cy0, cx1, cy1 = r["channel"]
+            # Source channel region: from gate edge to source outer
+            if scx > dcx:
+                # Source on right
+                s_x0 = (cx0 + cx1) / 2 - geom["hl"]  # gate left edge
+                s_x1 = cx1  # source outer
+            else:
+                # Source on left
+                s_x0 = cx0  # source outer
+                s_x1 = (cx0 + cx1) / 2 + geom["hl"]  # gate right edge
+            impl_region.insert(kdb.Box(
+                um(s_x0 - 0.16), um(-hw_v - 0.16),
+                um(s_x1 + 0.16), um(hw_v + 0.16)))
+        impl_region = impl_region.merged()
+        _draw_region(c, impl_region, dev_implant)
+    elif all_finger_results:
+        # Normal and 6V DSS (mvndiffres/mvpdiffres): standard implant computation.
+        impl_region = _device_implant_region(all_finger_results, bloat=0.16)
+        _draw_region(c, impl_region, dev_implant)
+
+    # --- DSS: add SAB layer ---
+    # SAB = device comp shape bloated by gate_extension (0.22), with
+    # morphological closing to fill tiny CIF notches (matching Magic output).
+    if dss and all_finger_results:
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+        sab_enc = rules["gate_extension"]
+        sab_region = kdb.Region()
+        hw_v = geom["hw"]
+        cdwmin_v = geom["cdwmin"]
+        # Main comp rect: full active X extent at ±hw
+        act_x0 = min(r["active"][0] for r in all_finger_results)
+        act_x1 = max(r["active"][2] for r in all_finger_results)
+        sab_region.insert(kdb.Box(um(act_x0), um(-hw_v), um(act_x1), um(hw_v)))
+        # Dogbone contact surrounds at ±cdwmin/2
+        if w < cdwmin_v - 0.0001:
+            dog_half = cdwmin_v / 2.0
+            for r in all_finger_results:
+                # Drain contact surround
+                dcx = r["drain_cx"]
+                ds_hw = contact_size / 2.0 + diff_surround
+                sab_region.insert(kdb.Box(
+                    um(dcx - ds_hw), um(-dog_half),
+                    um(dcx + ds_hw), um(dog_half)))
+                # Source contact surround
+                scx = r["source_cx"]
+                sab_region.insert(kdb.Box(
+                    um(scx - ds_hw), um(-dog_half),
+                    um(scx + ds_hw), um(dog_half)))
+        sab_region = sab_region.merged()
+        sab_region = sab_region.sized(round(sab_enc * 1000))
+        # Morphological closing: fill tiny CIF notches (< 0.10 um)
+        sab_region = sab_region.sized(50).sized(-50)
+        _draw_region(c, sab_region, _L_SAB)
+
+    # --- 10V asymmetric: MVSD ---
+    volt = rules.get("volt", "3.3V")
+
+    if asym and all_finger_results:
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+
+        # MVSD/MVPSD layer: L-shaped region covering drain side.
+        # Derived from reference analysis across multiple parameter combinations.
+        hw_v = geom["hw"]
+        gate_to_diffcont_v = geom["gate_to_diffcont"]
+        hl_v = geom["hl"]
+        diff_poly_space_v = rules.get("diff_poly_space", 0.10)
+        gy_half = gy / 2.0
+        gx_half = gx / 2.0
+        sub_surround_v = rules["sub_surround"]
+        mvsd_layer = _L_MVSD if is_nfet else _L_MVPSD
+
+        # Y outer extent: gy/2 - 0.14 (constant for 10V process rules)
+        mvsd_y_outer = _snap(gy_half - 0.14)
+        # Y inner step: hw - 0.865 (empirically derived from references)
+        inner_y = _snap(hw_v - 0.865)
+
+        mvsd_region = kdb.Region()
+        for r in all_finger_results:
+            dcx = r["drain_cx"]
+            scx = r["source_cx"]
+            finger_cx = (r["channel"][0] + r["channel"][2]) / 2.0
+
+            # X outer: -(gx/2 + gate_to_diffcont) on drain side
+            # X right: gate_to_diffcont - hl + diff_poly_space from finger center
+            x1_rel = gate_to_diffcont_v - hl_v + diff_poly_space_v
+            x_step_rel = x1_rel - diff_surround - _CIF_DIFF_SURROUND
+
+            if dcx < scx:
+                # Drain left, source right
+                x0 = _snap(-gx_half - gate_to_diffcont_v)
+                x_step = _snap(finger_cx + x_step_rel)
+                x1 = _snap(finger_cx + x1_rel)
+            else:
+                # Drain right, source left
+                x1 = _snap(gx_half + gate_to_diffcont_v)
+                x_step = _snap(finger_cx - x_step_rel)
+                x0 = _snap(finger_cx - x1_rel)
+
+            if dcx < scx:
+                # Drain left: main body from x0 (outer left) to x_step
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(-mvsd_y_outer), um(x_step), um(mvsd_y_outer)))
+                # Wings from x_step to x1
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(-mvsd_y_outer), um(x1), um(-inner_y)))
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(inner_y), um(x1), um(mvsd_y_outer)))
+            else:
+                # Drain right: main body from x_step to x1 (outer right)
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(-mvsd_y_outer), um(x1), um(mvsd_y_outer)))
+                # Wings from x0 to x_step
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(-mvsd_y_outer), um(x_step), um(-inner_y)))
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(inner_y), um(x_step), um(mvsd_y_outer)))
+
+        mvsd_region = mvsd_region.merged()
+        _draw_region(c, mvsd_region, mvsd_layer)
+
+    # Dualgate and V5_XTOR for 5V/6V/10V
+    if volt in ("5.0V", "6.0V", "10.0V"):
+        sub_surround = rules["sub_surround"]
+        hx_c = contact_size / 2.0
+        sub_ext = hx_c + diff_surround + sub_surround
+        dg_enc = 0.08
+        _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
+              gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
+
+    if volt in ("5.0V", "10.0V") and all_finger_results:
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+
+        v5_region = kdb.Region()
+        if asym:
+            # 10V asymmetric: v5_xtor covers source side only
+            # Source active: from -hl to source contact outer, at ±hw
+            hw_v = geom["hw"]
+            for r in all_finger_results:
+                scx = r["source_cx"]
+                dcx = r["drain_cx"]
+                finger_cx = (r["channel"][0] + r["channel"][2]) / 2.0
+                hl_v = geom["hl"]
+                if scx > dcx:
+                    # Source right: from gate left edge to source outer
+                    src_x0 = finger_cx - hl_v
+                    src_x1 = _snap(scx + contact_size / 2 + diff_surround)
+                else:
+                    # Source left
+                    src_x0 = _snap(scx - contact_size / 2 - diff_surround)
+                    src_x1 = finger_cx + hl_v
+                v5_region.insert(kdb.Box(um(src_x0), um(-hw_v),
+                                         um(src_x1), um(hw_v)))
+        else:
+            for r in all_finger_results:
+                # Channel comp (main body)
+                cx0, cy0, cx1, cy1 = r["channel"]
+                v5_region.insert(kdb.Box(um(cx0), um(cy0), um(cx1), um(cy1)))
+                # Dogbone tabs (if any)
+                for tab in r.get("dogbone_tabs", []):
+                    t0, t1, t2, t3 = tab
+                    v5_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
+        v5_region = v5_region.merged().sized(100)  # bloat 0.10 um = 100 nm
+        _draw_region(c, v5_region, _L_V5XTOR)
+
+    # NVT: nat and dualgate layers
+    if volt == "nvt" and all_finger_results:
+        # NAT layer = channel extent bloated by 0.26 (simple rectangle)
+        chan_x0 = min(r["channel"][0] for r in all_finger_results)
+        chan_y0 = min(r["channel"][1] for r in all_finger_results)
+        chan_x1 = max(r["channel"][2] for r in all_finger_results)
+        chan_y1 = max(r["channel"][3] for r in all_finger_results)
+        _rect(c, chan_x0 - 0.26, chan_y0 - 0.26,
+              chan_x1 + 0.26, chan_y1 + 0.26, _L_NAT)
+
+        # Dualgate for NVT
+        sub_surround = rules["sub_surround"]
+        hx_c = contact_size / 2.0
+        sub_ext = hx_c + diff_surround + sub_surround
+        dg_enc = 0.08
+        _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
+              gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
+
+    # prBoundary removed — Magic's 10x FIXED_BBOX is unnecessarily large
+
+
+# ---------------------------------------------------------------------------
+# nfet
+# ---------------------------------------------------------------------------
 
 @gf.cell
 def nfet(
@@ -1011,511 +1101,22 @@ def nfet(
     g_label: Strs = (),
     sub_label: str = "",
     patt_label: bool = False,
+    dss: bool = False,
+    asym: bool = False,
 ) -> gf.Component:
-    """Return nfet.
-
-    Args:
-        l : Float of gate length
-        w : Float of gate width
-        sd_l : Float of source and drain diffusion length
-        inter_sd_l : Float of source and drain diffusion length between fingers
-        nf : integer of number of fingers
-        M : integer of number of multipliers
-        grw : guard ring width when enabled
-        type : string of the device type
-        bulk : String of bulk connection type (None, Bulk Tie, Guard Ring)
-        con_bet_fin : boolean of having contacts for diffusion between fingers
-        gate_con_pos : string of choosing the gate contact position (bottom, top, alternating )
-
-    """
-    # used layers and dimensions
-
-    end_cap: float = 0.22
-    if volt == "3.3V":
-        comp_spacing: float = 0.28
-    else:
-        comp_spacing: float = 0.36
-
-    gate_np_enc: float = 0.23
-    comp_np_enc: float = 0.16
-    comp_pp_enc: float = 0.16
-    poly2_spacing: float = 0.24
-    pc_ext: float = 0.04
-
-    con_size = 0.22
-    con_sp = 0.28
-    con_comp_enc = 0.07
-    con_pl_enc = 0.07
-    dg_enc_cmp = 0.24
-    dg_enc_poly = 0.4
-
-    sd_l_con = (
-        ((sd_con_col) * con_size) + ((sd_con_col - 1) * con_sp) + 2 * con_comp_enc
-    )
-    sd_l = sd_l_con
-
-    # gds components to store a single instance and the generated device
+    """Return NFET transistor matching Magic VLSI geometry."""
     c = gf.Component()
-
-    c_inst = gf.Component()
-
-    # generatingg sd diffusion
-
-    if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
-        nf = len(patt)
-
-    l_d = (
-        nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc)
-    )  # diffution total length
-    rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
-    sd_diff_intr = c_inst.add_ref(rect_d_intr)
-
-    #  generatingg sd contacts
-
-    if w_gate <= con_size + 2 * con_comp_enc:
-        cmpc_y = con_comp_enc + con_size + con_comp_enc
-
-    else:
-        cmpc_y = w_gate
-
-    cmpc_size = (sd_l_con, cmpc_y)
-
-    sd_diff = c_inst.add_ref(
-        component=gf.components.rectangle(size=cmpc_size, layer=layer["comp"]),
-        rows=1,
-        columns=2,
-        column_pitch=(cmpc_size[0] + sd_diff_intr.xsize),
-    )
-
-    sd_diff.xmin = sd_diff_intr.xmin - cmpc_size[0]
-    sd_diff.ymin = sd_diff_intr.ymin - (sd_diff.ysize - sd_diff_intr.ysize) / 2
-
-    sd_con = via_stack(
-        x_range=(sd_diff.xmin, sd_diff_intr.xmin),
-        y_range=(sd_diff.ymin, sd_diff.ymax),
-        base_layer=layer["comp"],
-        metal_level=1,
-    )
-    if (
-        column_pitch := sd_l + nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc)
-    ) != 0:
-        c_inst.add_ref(component=sd_con, columns=2, column_pitch=column_pitch)
-    else:
-        c_inst.add_ref(component=sd_con)
-
-    if con_bet_fin == 1 and nf > 1:
-        inter_sd_con = via_stack(
-            x_range=(
-                sd_diff_intr.xmin + con_comp_enc + l_gate,
-                sd_diff_intr.xmin + con_comp_enc + l_gate + inter_sd_l,
-            ),
-            y_range=(0, w_gate),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(
-            component=inter_sd_con,
-            columns=nf - 1,
-            rows=1,
-            column_pitch=(l_gate + inter_sd_l),
-        )
-
-    ### adding source/drain labels
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmin + (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=0,
-        )
-    )
-
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmax - (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=nf,
-        )
-    )
-
-    # generatingg poly
-
-    if l_gate <= con_size + 2 * con_pl_enc:
-        pc_x = con_pl_enc + con_size + con_pl_enc
-
-    else:
-        pc_x = l_gate
-
-    pc_size = (pc_x, con_pl_enc + con_size + con_pl_enc)
-
-    c_pc = gf.Component()
-
-    rect_pc = c_pc.add_ref(gf.components.rectangle(size=pc_size, layer=layer["poly2"]))
-
-    poly_con = via_stack(
-        x_range=(rect_pc.xmin, rect_pc.xmax),
-        y_range=(rect_pc.ymin, rect_pc.ymax),
-        base_layer=layer["poly2"],
-        metal_level=1,
-        li_enc_dir="H",
-    )
-    c_pc.add_ref(poly_con)
-
-    if nf == 1:
-        poly = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(l_gate, w_gate + 2 * end_cap), layer=layer["poly2"]
-            )
-        )
-        poly.xmin = sd_diff_intr.xmin + con_comp_enc
-        poly.ymin = sd_diff_intr.ymin - end_cap
-
-        if gate_con_pos == "bottom":
-            mv = 0
-            nr = 1
-        elif gate_con_pos == "top":
-            mv = pc_size[1] + w_gate + 2 * end_cap
-            nr = 1
-        else:
-            mv = 0
-            nr = 2
-
-        pc = c_inst.add_ref(
-            component=c_pc, rows=nr, row_pitch=pc_size[1] + w_gate + 2 * end_cap
-        )
-        pc.move((poly.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv))
-
-        # gate_lablel
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(pc.xmin + c_pc.xsize / 2, pc.ymin + c_pc.ysize / 2),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=g_label,
-                label_valid_len=nf,
-                index=0,
-            )
-        )
-
-    else:
-        w_p1 = end_cap + w_gate + end_cap  # poly total width
-
-        if inter_sd_l < (poly2_spacing + 2 * pc_ext):
-            if gate_con_pos == "alternating":
-                w_p1 += 0.2
-                w_p2 = w_p1
-                e_c = 0.2
-            else:
-                w_p2 = w_p1 + con_pl_enc + con_size + con_pl_enc + poly2_spacing + 0.1
-                e_c = 0
-
-            if gate_con_pos == "bottom":
-                p_mv = -end_cap - (w_p2 - w_p1)
-            else:
-                p_mv = -end_cap
-
-        else:
-            w_p2 = w_p1
-            p_mv = -end_cap
-            e_c = 0
-
-        rect_p1 = gf.components.rectangle(size=(l_gate, w_p1), layer=layer["poly2"])
-        rect_p2 = gf.components.rectangle(size=(l_gate, w_p2), layer=layer["poly2"])
-        poly1 = c_inst.add_ref(
-            rect_p1,
-            rows=1,
-            columns=ceil(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly1.xmin = sd_diff_intr.xmin + con_comp_enc
-        poly1.ymin = sd_diff_intr.ymin - end_cap - e_c
-
-        poly2 = c_inst.add_ref(
-            rect_p2,
-            rows=1,
-            columns=floor(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly2.xmin = poly1.xmin + l_gate + inter_sd_l
-        poly2.ymin = p_mv
-
-        # generatingg poly contacts setups
-
-        if gate_con_pos == "bottom":
-            mv_1 = 0
-            mv_2 = -(w_p2 - w_p1)
-        elif gate_con_pos == "top":
-            mv_1 = pc_size[1] + w_p1
-            mv_2 = pc_size[1] + w_p2
-        else:
-            mv_1 = -e_c
-            mv_2 = pc_size[1] + w_p2
-
-        nc1 = ceil(nf / 2)
-        nc2 = floor(nf / 2)
-
-        pc_spacing = 2 * (inter_sd_l + l_gate)
-
-        # generatingg poly contacts
-
-        pc1 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
-        )
-        pc1.move((poly1.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv_1))
-
-        pc2 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc2, column_pitch=pc_spacing
-        )
-        pc2.move(
-            (
-                poly1.xmin - ((pc_x - l_gate) / 2) + (inter_sd_l + l_gate),
-                -pc_size[1] - end_cap + mv_2,
-            )
-        )
-
-        add_inter_sd_labels(
-            c,
-            nf,
-            sd_label,
-            poly1,
-            l_gate,
-            inter_sd_l,
-            sd_diff_intr,
-            label,
-            layer,
-            con_bet_fin,
-        )
-
-        # add_gate_labels(c, g_label, pc1, c_pc, pc_spacing, nc1, nc2, pc2, label, layer, nf)
-
-        if interdig == 1:
-            c_inst.add_ref(
-                interdigit(
-                    sd_diff=sd_diff,
-                    pc1=pc1,
-                    pc2=pc2,
-                    poly_con=poly_con,
-                    sd_l=sd_l,
-                    nf=nf,
-                    patt=patt,
-                    gate_con_pos=gate_con_pos,
-                    pc_x=pc_x,
-                    pc_spacing=pc_spacing,
-                    label=label,
-                    g_label=g_label,
-                    patt_label=patt_label,
-                )
-            )
-        else:
-            add_gate_labels(
-                c, g_label, pc1, c_pc, pc_spacing, nc1, nc2, pc2, label, layer, nf
-            )
-
-    # generatingg bulk
-    if bulk == "None":
-        nplus = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_np_enc, w_gate + 2 * gate_np_enc),
-                layer=layer["nplus"],
-            )
-        )
-        nplus.xmin = sd_diff.xmin - comp_np_enc
-        nplus.ymin = sd_diff_intr.ymin - gate_np_enc
-
-    elif bulk == "Bulk Tie":
-        rect_bulk = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_l + con_sp, sd_diff.ysize), layer=layer["comp"]
-            )
-        )
-        rect_bulk.xmin = sd_diff.xmax
-        rect_bulk.ymin = sd_diff.ymin
-        nsdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    sd_diff.xmax - sd_diff.xmin + comp_np_enc,
-                    w_gate + 2 * gate_np_enc,
-                ),
-                layer=layer["nplus"],
-            )
-        )
-        nsdm.xmin = sd_diff.xmin - comp_np_enc
-        nsdm.ymin = sd_diff_intr.ymin - gate_np_enc
-        psdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    rect_bulk.xmax - rect_bulk.xmin + comp_pp_enc,
-                    w_gate + 2 * comp_pp_enc,
-                ),
-                layer=layer["pplus"],
-            )
-        )
-        psdm.connect("e1", nsdm.ports["e3"])
-
-        bulk_con = via_stack(
-            x_range=(rect_bulk.xmin + 0.1, rect_bulk.xmax - 0.1),
-            y_range=(rect_bulk.ymin, rect_bulk.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(bulk_con)
-
-        c.add_ref(
-            labels_gen(
-                label_str=sub_label,
-                position=(
-                    bulk_con.xmin + bulk_con.xsize / 2,
-                    bulk_con.ymin + bulk_con.ysize / 2,
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=[sub_label],
-                label_valid_len=1,
-            )
-        )
-
-    if bulk == "Guard Ring":
-        nsdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_np_enc, w_gate + 2 * gate_np_enc),
-                layer=layer["nplus"],
-            )
-        )
-        nsdm.xmin = sd_diff.xmin - comp_np_enc
-        nsdm.ymin = sd_diff_intr.ymin - gate_np_enc
-        c.add_ref(c_inst)
-
-        # b_gr = c.add_ref(
-        bulk_gr_gen(
-            c,
-            c_inst=c_inst,
-            comp_spacing=comp_spacing,
-            poly2_comp_spacing=comp_spacing,
-            volt=volt,
-            grw=grw,
-            l_d=l_d,
-            implant_layer=layer["pplus"],
-            label=label,
-            sub_label=sub_label,
-            deepnwell=deepnwell,
-            pcmpgr=pcmpgr,
-        )
-
-    # if bulk != "Guard Ring":
-    else:
-        c.add_ref(c_inst)
-
-        inst_size = (c_inst.xsize, c_inst.ysize)
-        inst_xmin = c_inst.xmin
-        inst_ymin = c_inst.ymin
-
-        # c.add_ref(
-        #     hv_gen(c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-        # )
-        hv_gen(c, c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-
-        c.add_ref(
-            nfet_deep_nwell(
-                deepnwell=deepnwell,
-                pcmpgr=pcmpgr,
-                inst_size=inst_size,
-                inst_xmin=inst_xmin,
-                inst_ymin=inst_ymin,
-                grw=grw,
-            )
-        )
-
-    # VLSIR Simulation Metadata
-
-    # Model selection
-
-    c.info["vlsir"] = {
-        "model": "nmos_3p3" if volt == "3.3V" else "nmos_6p0",
-        "spice_type": "MOS",
-        "spice_lib": "nmos_3p3_t" if volt == "3.3V" else "nmos_6p0_t",
-        "port_order": ["d", "g", "s", "b"],
-        "port_map": {},  # TODO: Add GDSF Ports
-        "params": {
-            "w": w_gate,
-            "l": l_gate,
-            "nf": nf,
-            "m": 1,  # TODO: Mentioned in function docstring?
-        },
-    }
-
-    return c
-
-
-@gf.cell
-def pfet_deep_nwell(
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    enc_size: Float2 = (0.1, 0.1),
-    enc_xmin: float = 0.1,
-    enc_ymin: float = 0.1,
-    nw_enc_pcmp: float = 0.1,
-    grw: float = 0.36,
-) -> gf.Component:
-    """Returns pfet well related polygons.
-
-    Args:
-        deepnwell : boolaen of having deepnwell
-        pcmpgr : boolean of having deepnwell guardring
-        enc_size : enclosed size
-        enc_xmin : enclosed dxmin
-        enc_ymin : enclosed dymin
-        nw_enc_pcmp : nwell enclosure of pcomp
-        grw : guardring width
-    """
-    c = gf.Component()
-
-    dnwell_enc_pcmp = 1.1
-
-    if deepnwell == 1:
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    enc_size[0] + (2 * dnwell_enc_pcmp),
-                    enc_size[1] + (2 * dnwell_enc_pcmp),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-
-        dn_rect.xmin = enc_xmin - dnwell_enc_pcmp
-        dn_rect.ymin = enc_ymin - dnwell_enc_pcmp
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=grw))
-
-    else:
-        # nwell generation
-        nw = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    enc_size[0] + (2 * nw_enc_pcmp),
-                    enc_size[1] + (2 * nw_enc_pcmp),
-                ),
-                layer=layer["nwell"],
-            )
-        )
-        nw.xmin = enc_xmin - nw_enc_pcmp
-        nw.ymin = enc_ymin - nw_enc_pcmp
-
+    rules = dict(_RULES)
+    rules["volt"] = volt
+
+    if volt in ("5.0V", "6.0V", "10.0V"):
+        rules["diff_poly_space"] = 0.30
+        rules["diff_gate_space"] = 0.30
+        rules["diff_spacing"] = 0.36
+        rules["sub_surround"] = 0.16
+
+    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0,
+              dss=dss, asym=asym)
     return c
 
 
@@ -1540,472 +1141,22 @@ def pfet(
     g_label: Strs = (),
     sub_label: str = "",
     patt_label: bool = False,
+    dss: bool = False,
+    asym: bool = False,
 ) -> gf.Component:
-    """Return pfet.
-
-    Args:
-        l: Float of gate length
-        w: Float of gate width
-        sd_l: Float of source and drain diffusion length
-        inter_sd_l: Float of source and drain diffusion length between fingers
-        nf: integer of number of fingers
-        M: integer of number of multipliers
-        grw: guard ring width when enabled
-        type: string of the device type
-        bulk: String of bulk connection type (None, Bulk Tie, Guard Ring)
-        con_bet_fin: boolean of having contacts for diffusion between fingers
-        gate_con_pos: string of choosing the gate contact position (bottom, top, alternating )
-    """
-    # used layers and dimensions
-
-    end_cap: float = 0.22
-    if volt == "3.3V":
-        comp_spacing: float = 0.28
-        nw_enc_pcmp = 0.43
-    else:
-        comp_spacing: float = 0.36
-        nw_enc_pcmp = 0.6
-
-    gate_pp_enc: float = 0.23
-    comp_np_enc: float = 0.16
-    comp_pp_enc: float = 0.16
-    poly2_spacing: float = 0.24
-    pc_ext: float = 0.04
-
-    con_size = 0.22
-    con_sp = 0.28
-    con_comp_enc = 0.07
-    con_pl_enc = 0.07
-    dg_enc_cmp = 0.24
-    dg_enc_poly = 0.4
-
-    sd_l_con = (
-        ((sd_con_col) * con_size) + ((sd_con_col - 1) * con_sp) + 2 * con_comp_enc
-    )
-    sd_l = sd_l_con
-
-    # gds components to store a single instance and the generated device
+    """Return PFET transistor matching Magic VLSI geometry."""
     c = gf.Component()
+    rules = dict(_RULES)
+    rules["volt"] = volt
 
-    c_inst = gf.Component()
+    if volt in ("5.0V", "6.0V", "10.0V"):
+        rules["diff_poly_space"] = 0.30
+        rules["diff_gate_space"] = 0.30
+        rules["diff_spacing"] = 0.36
+        rules["sub_surround"] = 0.16
 
-    # generatingg sd diffusion
-
-    if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
-        nf = len(patt)
-
-    l_d = (
-        nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc)
-    )  # diffution total length
-    rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
-    sd_diff_intr = c_inst.add_ref(rect_d_intr)
-
-    # generatingg sd contacts
-
-    if w_gate <= con_size + 2 * con_comp_enc:
-        cmpc_y = con_comp_enc + con_size + con_comp_enc
-
-    else:
-        cmpc_y = w_gate
-
-    cmpc_size = (sd_l_con, cmpc_y)
-
-    sd_diff = c_inst.add_ref(
-        component=gf.components.rectangle(size=cmpc_size, layer=layer["comp"]),
-        rows=1,
-        columns=2,
-        column_pitch=(cmpc_size[0] + sd_diff_intr.xsize),
-    )
-    sd_diff.xmin = sd_diff_intr.xmin - cmpc_size[0]
-    sd_diff.ymin = sd_diff_intr.ymin - (sd_diff.ysize - sd_diff_intr.ysize) / 2
-
-    sd_con = via_stack(
-        x_range=(sd_diff.xmin, sd_diff_intr.xmin),
-        y_range=(sd_diff.ymin, sd_diff.ymax),
-        base_layer=layer["comp"],
-        metal_level=1,
-    )
-    c_inst.add_ref(
-        component=sd_con,
-        columns=2,
-        rows=1,
-        column_pitch=sd_l + nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc),
-    )
-
-    if con_bet_fin == 1 and nf > 1:
-        inter_sd_con = via_stack(
-            x_range=(
-                sd_diff_intr.xmin + con_comp_enc + l_gate,
-                sd_diff_intr.xmin + con_comp_enc + l_gate + inter_sd_l,
-            ),
-            y_range=(0, w_gate),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(
-            component=inter_sd_con,
-            columns=nf - 1,
-            rows=1,
-            column_pitch=l_gate + inter_sd_l,
-        )
-
-    ### adding source/drain labels
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmin + (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=0,
-        )
-    )
-
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmax - (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=nf,
-        )
-    )
-
-    # generatingg poly
-
-    if l_gate <= con_size + 2 * con_pl_enc:
-        pc_x = con_pl_enc + con_size + con_pl_enc
-
-    else:
-        pc_x = l_gate
-
-    pc_size = (pc_x, con_pl_enc + con_size + con_pl_enc)
-
-    c_pc = gf.Component()
-
-    rect_pc = c_pc.add_ref(gf.components.rectangle(size=pc_size, layer=layer["poly2"]))
-
-    poly_con = via_stack(
-        x_range=(rect_pc.xmin, rect_pc.xmax),
-        y_range=(rect_pc.ymin, rect_pc.ymax),
-        base_layer=layer["poly2"],
-        metal_level=1,
-        li_enc_dir="H",
-    )
-    c_pc.add_ref(poly_con)
-
-    if nf == 1:
-        poly = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(l_gate, w_gate + 2 * end_cap), layer=layer["poly2"]
-            )
-        )
-        poly.xmin = sd_diff_intr.xmin + con_comp_enc
-        poly.ymin = sd_diff_intr.ymin - end_cap
-
-        if gate_con_pos == "bottom":
-            mv = 0
-            nr = 1
-        elif gate_con_pos == "top":
-            mv = pc_size[1] + w_gate + 2 * end_cap
-            nr = 1
-        else:
-            mv = 0
-            nr = 2
-
-        pc = c_inst.add_ref(
-            component=c_pc,
-            rows=nr,
-            columns=1,
-            row_pitch=pc_size[1] + w_gate + 2 * end_cap,
-        )
-        pc.move((poly.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv))
-
-        # gate_lablel
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(pc.xmin + c_pc.xsize / 2, pc.ymin + c_pc.ysize / 2),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=g_label,
-                label_valid_len=nf,
-                index=0,
-            )
-        )
-
-    else:
-        w_p1 = end_cap + w_gate + end_cap  # poly total width
-
-        if inter_sd_l < (poly2_spacing + 2 * pc_ext):
-            if gate_con_pos == "alternating":
-                w_p1 += 0.2
-                w_p2 = w_p1
-                e_c = 0.2
-            else:
-                w_p2 = w_p1 + con_pl_enc + con_size + con_pl_enc + poly2_spacing + 0.1
-                e_c = 0
-
-            if gate_con_pos == "bottom":
-                p_mv = -end_cap - (w_p2 - w_p1)
-            else:
-                p_mv = -end_cap
-
-        else:
-            w_p2 = w_p1
-            p_mv = -end_cap
-            e_c = 0
-
-        rect_p1 = gf.components.rectangle(size=(l_gate, w_p1), layer=layer["poly2"])
-        rect_p2 = gf.components.rectangle(size=(l_gate, w_p2), layer=layer["poly2"])
-        poly1 = c_inst.add_ref(
-            rect_p1,
-            rows=1,
-            columns=ceil(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly1.xmin = sd_diff_intr.xmin + con_comp_enc
-
-        poly2 = c_inst.add_ref(
-            rect_p2,
-            rows=1,
-            columns=floor(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly2.xmin = poly1.xmin + l_gate + inter_sd_l
-        poly2.ymin = p_mv
-
-        # generatingg poly contacts setups
-
-        if gate_con_pos == "bottom":
-            mv_1 = 0
-            mv_2 = -(w_p2 - w_p1)
-        elif gate_con_pos == "top":
-            mv_1 = pc_size[1] + w_p1
-            mv_2 = pc_size[1] + w_p2
-        else:
-            mv_1 = -e_c
-            mv_2 = pc_size[1] + w_p2
-
-        nc1 = ceil(nf / 2)
-        nc2 = floor(nf / 2)
-
-        pc_spacing = 2 * (inter_sd_l + l_gate)
-
-        # generatingg poly contacts
-
-        pc1 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
-        )
-        pc1.move((poly1.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv_1))
-
-        pc2 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc2, column_pitch=pc_spacing
-        )
-        pc2.move(
-            (
-                poly1.xmin - ((pc_x - l_gate) / 2) + (inter_sd_l + l_gate),
-                -pc_size[1] - end_cap + mv_2,
-            )
-        )
-
-        add_inter_sd_labels(
-            c,
-            nf,
-            sd_label,
-            poly1,
-            l_gate,
-            inter_sd_l,
-            sd_diff_intr,
-            label,
-            layer,
-            con_bet_fin,
-        )
-
-        add_gate_labels(
-            c, g_label, pc1, c_pc, pc_spacing, nc1, nc2, pc2, label, layer, nf
-        )
-
-        if interdig == 1:
-            c_inst.add_ref(
-                interdigit(
-                    sd_diff=sd_diff,
-                    pc1=pc1,
-                    pc2=pc2,
-                    poly_con=poly_con,
-                    sd_l=sd_l,
-                    nf=nf,
-                    patt=patt,
-                    gate_con_pos=gate_con_pos,
-                    pc_x=pc_x,
-                    pc_spacing=pc_spacing,
-                    label=label,
-                    g_label=g_label,
-                    patt_label=patt_label,
-                )
-            )
-
-    # generatingg bulk
-    if bulk == "None":
-        pplus = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_pp_enc, w_gate + 2 * gate_pp_enc),
-                layer=layer["pplus"],
-            )
-        )
-        pplus.xmin = sd_diff.xmin - comp_pp_enc
-        pplus.ymin = sd_diff_intr.ymin - gate_pp_enc
-
-        c.add_ref(c_inst)
-
-        # deep nwell and nwell generation
-
-        c.add_ref(
-            pfet_deep_nwell(
-                deepnwell=deepnwell,
-                pcmpgr=pcmpgr,
-                enc_size=(sd_diff.xsize, sd_diff.ysize),
-                enc_xmin=sd_diff.xmin,
-                enc_ymin=sd_diff.ymin,
-                nw_enc_pcmp=nw_enc_pcmp,
-                grw=grw,
-            )
-        )
-
-        # dualgate generation
-
-        # c.add_ref(
-        #     hv_gen(c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-        # )
-        hv_gen(c, c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-
-    elif bulk == "Bulk Tie":
-        rect_bulk = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_l + con_sp, sd_diff.ysize), layer=layer["comp"]
-            )
-        )
-        rect_bulk.xmin = sd_diff.xmax
-        rect_bulk.ymin = sd_diff.ymin
-        psdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    sd_diff.xmax - sd_diff.xmin + comp_pp_enc,
-                    w_gate + 2 * gate_pp_enc,
-                ),
-                layer=layer["pplus"],
-            )
-        )
-        psdm.xmin = sd_diff.xmin - comp_pp_enc
-        psdm.ymin = sd_diff_intr.ymin - gate_pp_enc
-        nsdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    rect_bulk.xmax - rect_bulk.xmin + comp_np_enc,
-                    w_gate + 2 * comp_np_enc,
-                ),
-                layer=layer["nplus"],
-            )
-        )
-        nsdm.connect("e1", psdm.ports["e3"])
-
-        bulk_con = via_stack(
-            x_range=(rect_bulk.xmin + 0.1, rect_bulk.xmax - 0.1),
-            y_range=(rect_bulk.ymin, rect_bulk.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(bulk_con)
-
-        c.add_ref(c_inst)
-
-        c.add_ref(
-            labels_gen(
-                label_str=sub_label,
-                position=(
-                    bulk_con.xmin + bulk_con.xsize / 2,
-                    bulk_con.ymin + bulk_con.ysize / 2,
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=[sub_label],
-                label_valid_len=1,
-            )
-        )
-
-        # deep nwell generation
-
-        c.add_ref(
-            pfet_deep_nwell(
-                deepnwell=deepnwell,
-                pcmpgr=pcmpgr,
-                enc_size=(sd_diff.xsize + rect_bulk.xsize, sd_diff.ysize),
-                enc_xmin=sd_diff.xmin,
-                enc_ymin=sd_diff.ymin,
-                nw_enc_pcmp=nw_enc_pcmp,
-                grw=grw,
-            )
-        )
-
-        # dualgate generation
-        # c.add_ref(
-        #     hv_gen(c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-        # )
-        hv_gen(c, c_inst=c_inst, volt=volt, dg_encx=dg_enc_cmp, dg_ency=dg_enc_poly)
-
-    elif bulk == "Guard Ring":
-        psdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_np_enc, w_gate + 2 * gate_pp_enc),
-                layer=layer["pplus"],
-            )
-        )
-        psdm.xmin = sd_diff.xmin - comp_pp_enc
-        psdm.ymin = sd_diff_intr.ymin - gate_pp_enc
-        c.add_ref(c_inst)
-
-        bulk_gr_gen(
-            c,
-            c_inst=c_inst,
-            comp_spacing=comp_spacing,
-            poly2_comp_spacing=comp_spacing,
-            volt=volt,
-            grw=grw,
-            l_d=l_d,
-            implant_layer=layer["nplus"],
-            label=label,
-            sub_label=sub_label,
-            deepnwell=deepnwell,
-            pcmpgr=pcmpgr,
-            nw_enc_pcmp=nw_enc_pcmp,
-        )
-        # bulk guardring
-
-    c.add_port(name="s", port=sd_diff.ports["e1"])
-
-    c.info["vlsir"] = {
-        "model": "pmos_3p3" if volt == "3.3V" else "pmos_6p0",
-        "spice_type": "MOS",
-        "spice_lib": "pmos_3p3_t" if volt == "3.3V" else "pmos_6p0_t",
-        "port_order": ["d", "g", "s", "b"],
-        "port_map": {},  # TODO: Add GDSF Ports
-        "params": {
-            "w": w_gate,
-            "l": l_gate,
-            "nf": nf,
-            "m": 1,  # TODO: Mentioned in function docstring?
-        },
-    }
-
+    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0,
+              dss=dss, asym=asym)
     return c
 
 
@@ -2028,608 +1179,12 @@ def nfet_06v0_nvt(
     sub_label: str = "",
     patt_label: bool = False,
 ) -> gf.Component:
-    """Draw Native NFET 6V transistor by specifying parameters.
-
-    Arg:
-        l      : Float of gate length
-        w      : Float of gate width
-        ld     : Float of diffusion length
-        nf     : Integer of number of fingers
-        grw    : Float of guard ring width [If enabled]
-        bulk   : String of bulk connection type [None, Bulk Tie, Guard Ring]
-
-    Args:
-        l_gate: 1.8.
-        w_gate: 0.8.
-        sd_con_col: 1.
-        inter_sd_l: 0.24.
-        nf: 1.
-        grw: 0.22.
-        bulk: "None".
-        con_bet_fin: 1.
-        gate_con_pos: "alternating".
-        interdig: 0.
-        patt: "".
-        label: False.
-        sd_label: [].
-        g_label: [].
-        sub_label: "".
-        patt_label: False.
-    """
-    # used layers and dimensions
-    end_cap: float = 0.22
-
-    comp_spacing: float = 0.36
-    poly2_comp_spacing: float = 0.3
-
-    gate_np_enc: float = 0.23
-    comp_np_enc: float = 0.16
-    comp_pp_enc: float = 0.16
-    poly2_spacing: float = 0.24
-    pc_ext: float = 0.04
-
-    con_size = 0.22
-    con_sp = 0.28
-    con_comp_enc = 0.07
-    con_pl_enc = 0.07
-    dg_enc_cmp = 0.24
-    dg_enc_poly = 0.4
-
-    sd_l_con = (
-        ((sd_con_col) * con_size) + ((sd_con_col - 1) * con_sp) + 2 * con_comp_enc
-    )
-    sd_l = sd_l_con
-
-    # gds components to store a single instance and the generated device
-    c = gf.Component("sky_nfet_nvt_dev")
-
-    c_inst = gf.Component("dev_temp")
-
-    # generatingg sd diffusion
-
-    if interdig == 1 and nf > 1 and nf != len(patt) and patt != "":
-        nf = len(patt)
-
-    l_d = (
-        nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc)
-    )  # diffution total length
-    rect_d_intr = gf.components.rectangle(size=(l_d, w_gate), layer=layer["comp"])
-    sd_diff_intr = c_inst.add_ref(rect_d_intr)
-
-    # generating sd contacts
-
-    if w_gate <= con_size + 2 * con_comp_enc:
-        cmpc_y = con_comp_enc + con_size + con_comp_enc
-
-    else:
-        cmpc_y = w_gate
-
-    cmpc_size = (sd_l_con, cmpc_y)
-
-    sd_diff = c_inst.add_ref(
-        component=gf.components.rectangle(size=cmpc_size, layer=layer["comp"]),
-        rows=1,
-        columns=2,
-        column_pitch=cmpc_size[0] + sd_diff_intr.xsize,
-    )
-
-    sd_diff.xmin = sd_diff_intr.xmin - cmpc_size[0]
-    sd_diff.ymin = sd_diff_intr.ymin - (sd_diff.ysize - sd_diff_intr.ysize) / 2
-
-    sd_con = via_stack(
-        x_range=(sd_diff.xmin, sd_diff_intr.xmin),
-        y_range=(sd_diff.ymin, sd_diff.ymax),
-        base_layer=layer["comp"],
-        metal_level=1,
-    )
-    c_inst.add_ref(
-        component=sd_con,
-        columns=2,
-        rows=1,
-        column_pitch=sd_l + nf * l_gate + (nf - 1) * inter_sd_l + 2 * (con_comp_enc),
-    )
-
-    if con_bet_fin == 1 and nf > 1:
-        inter_sd_con = via_stack(
-            x_range=(
-                sd_diff_intr.xmin + con_comp_enc + l_gate,
-                sd_diff_intr.xmin + con_comp_enc + l_gate + inter_sd_l,
-            ),
-            y_range=(0, w_gate),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(
-            component=inter_sd_con,
-            columns=nf - 1,
-            rows=1,
-            column_pitch=l_gate + inter_sd_l,
-        )
-
-    ### adding source/drain labels
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmin + (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=0,
-        )
-    )
-
-    c.add_ref(
-        labels_gen(
-            label_str="None",
-            position=(
-                sd_diff.xmax - (sd_l / 2),
-                sd_diff.ymin + (sd_diff.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-            label=label,
-            labels=sd_label,
-            label_valid_len=nf + 1,
-            index=nf,
-        )
-    )
-
-    # generatingg poly
-
-    if l_gate <= con_size + 2 * con_pl_enc:
-        pc_x = con_pl_enc + con_size + con_pl_enc
-
-    else:
-        pc_x = l_gate
-
-    pc_size = (pc_x, con_pl_enc + con_size + con_pl_enc)
-
-    c_pc = gf.Component("poly con")
-
-    rect_pc = c_pc.add_ref(gf.components.rectangle(size=pc_size, layer=layer["poly2"]))
-
-    poly_con = via_stack(
-        x_range=(rect_pc.xmin, rect_pc.xmax),
-        y_range=(rect_pc.ymin, rect_pc.ymax),
-        base_layer=layer["poly2"],
-        metal_level=1,
-        li_enc_dir="H",
-    )
-    c_pc.add_ref(poly_con)
-
-    if nf == 1:
-        poly = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(l_gate, w_gate + 2 * end_cap), layer=layer["poly2"]
-            )
-        )
-        poly.xmin = sd_diff_intr.xmin + con_comp_enc
-        poly.ymin = sd_diff_intr.ymin - end_cap
-
-        if gate_con_pos == "bottom":
-            mv = 0
-            nr = 1
-        elif gate_con_pos == "top":
-            mv = pc_size[1] + w_gate + 2 * end_cap
-            nr = 1
-        else:
-            mv = 0
-            nr = 2
-
-        pc = c_inst.add_ref(
-            component=c_pc,
-            rows=nr,
-            columns=1,
-            row_pitch=pc_size[1] + w_gate + 2 * end_cap,
-        )
-        pc.move((poly.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv))
-
-        # gate_lablel
-        c.add_ref(
-            labels_gen(
-                label_str="None",
-                position=(pc.xmin + c_pc.xsize / 2, pc.ymin + c_pc.ysize / 2),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=g_label,
-                label_valid_len=nf,
-                index=0,
-            )
-        )
-
-    else:
-        w_p1 = end_cap + w_gate + end_cap  # poly total width
-
-        if inter_sd_l < (poly2_spacing + 2 * pc_ext):
-            if gate_con_pos == "alternating":
-                w_p1 += 0.2
-                w_p2 = w_p1
-                e_c = 0.2
-            else:
-                w_p2 = w_p1 + con_pl_enc + con_size + con_pl_enc + poly2_spacing + 0.1
-                e_c = 0
-
-            if gate_con_pos == "bottom":
-                p_mv = -end_cap - (w_p2 - w_p1)
-            else:
-                p_mv = -end_cap
-
-        else:
-            w_p2 = w_p1
-            p_mv = -end_cap
-            e_c = 0
-
-        rect_p1 = gf.components.rectangle(size=(l_gate, w_p1), layer=layer["poly2"])
-        rect_p2 = gf.components.rectangle(size=(l_gate, w_p2), layer=layer["poly2"])
-        poly1 = c_inst.add_ref(
-            rect_p1,
-            rows=1,
-            columns=ceil(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly1.xmin = sd_diff_intr.xmin + con_comp_enc
-        poly1.ymin = sd_diff_intr.ymin - end_cap - e_c
-
-        poly2 = c_inst.add_ref(
-            rect_p2,
-            rows=1,
-            columns=floor(nf / 2),
-            column_pitch=2 * (inter_sd_l + l_gate),
-        )
-        poly2.xmin = poly1.xmin + l_gate + inter_sd_l
-        poly2.ymin = p_mv
-
-        # generatingg poly contacts setups
-
-        if gate_con_pos == "bottom":
-            mv_1 = 0
-            mv_2 = -(w_p2 - w_p1)
-        elif gate_con_pos == "top":
-            mv_1 = pc_size[1] + w_p1
-            mv_2 = pc_size[1] + w_p2
-        else:
-            mv_1 = -e_c
-            mv_2 = pc_size[1] + w_p2
-
-        nc1 = ceil(nf / 2)
-        nc2 = floor(nf / 2)
-
-        pc_spacing = 2 * (inter_sd_l + l_gate)
-
-        # generatingg poly contacts
-
-        pc1 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc1, column_pitch=pc_spacing
-        )
-        pc1.move((poly1.xmin - ((pc_x - l_gate) / 2), -pc_size[1] - end_cap + mv_1))
-
-        pc2 = c_inst.add_ref(
-            component=c_pc, rows=1, columns=nc2, column_pitch=pc_spacing
-        )
-        pc2.move(
-            (
-                poly1.xmin - ((pc_x - l_gate) / 2) + (inter_sd_l + l_gate),
-                -pc_size[1] - end_cap + mv_2,
-            )
-        )
-
-        add_inter_sd_labels(
-            c,
-            nf,
-            sd_label,
-            poly1,
-            l_gate,
-            inter_sd_l,
-            sd_diff_intr,
-            label,
-            layer,
-            con_bet_fin,
-        )
-
-        add_gate_labels(
-            c, g_label, pc1, c_pc, pc_spacing, nc1, nc2, pc2, label, layer, nf
-        )
-
-        if interdig == 1:
-            c_inst.add_ref(
-                interdigit(
-                    sd_diff=sd_diff,
-                    pc1=pc1,
-                    pc2=pc2,
-                    poly_con=poly_con,
-                    sd_l=sd_l,
-                    nf=nf,
-                    patt=patt,
-                    gate_con_pos=gate_con_pos,
-                    pc_x=pc_x,
-                    pc_spacing=pc_spacing,
-                    label=label,
-                    g_label=g_label,
-                    patt_label=patt_label,
-                )
-            )
-
-    # generatingg bulk
-    if bulk == "None":
-        nplus = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_np_enc, w_gate + 2 * gate_np_enc),
-                layer=layer["nplus"],
-            )
-        )
-        nplus.xmin = sd_diff.xmin - comp_np_enc
-        nplus.ymin = sd_diff_intr.ymin - gate_np_enc
-
-    elif bulk == "Bulk Tie":
-        rect_bulk = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_l + con_sp, sd_diff.ysize), layer=layer["comp"]
-            )
-        )
-        rect_bulk.xmin = sd_diff.xmax
-        rect_bulk.ymin = sd_diff.ymin
-        nsdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    sd_diff.xmax - sd_diff.xmin + comp_np_enc,
-                    w_gate + 2 * gate_np_enc,
-                ),
-                layer=layer["nplus"],
-            )
-        )
-        nsdm.xmin = sd_diff.xmin - comp_np_enc
-        nsdm.ymin = sd_diff_intr.ymin - gate_np_enc
-        psdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(
-                    rect_bulk.xmax - rect_bulk.xmin + comp_pp_enc,
-                    w_gate + 2 * comp_pp_enc,
-                ),
-                layer=layer["pplus"],
-            )
-        )
-        psdm.connect("e1", nsdm.ports["e3"])
-
-        bulk_con = via_stack(
-            x_range=(rect_bulk.xmin + 0.1, rect_bulk.xmax - 0.1),
-            y_range=(rect_bulk.ymin, rect_bulk.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-        c_inst.add_ref(bulk_con)
-
-        c.add_ref(
-            labels_gen(
-                label_str=sub_label,
-                position=(
-                    bulk_con.xmin + bulk_con.xsize / 2,
-                    bulk_con.ymin + bulk_con.ysize / 2,
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=[sub_label],
-                label_valid_len=1,
-            )
-        )
-
-    elif bulk == "Guard Ring":
-        nsdm = c_inst.add_ref(
-            gf.components.rectangle(
-                size=(sd_diff.xsize + 2 * comp_np_enc, w_gate + 2 * gate_np_enc),
-                layer=layer["nplus"],
-            )
-        )
-        nsdm.xmin = sd_diff.xmin - comp_np_enc
-        nsdm.ymin = sd_diff_intr.ymin - gate_np_enc
-        c.add_ref(c_inst)
-
-        c_temp = gf.Component("temp_store")
-        rect_bulk_in = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (c_inst.xmax - c_inst.xmin) + 2 * comp_spacing,
-                    (c_inst.ymax - c_inst.ymin) + 2 * poly2_comp_spacing,
-                ),
-                layer=layer["comp"],
-            )
-        )
-        rect_bulk_in.move(
-            (c_inst.xmin - comp_spacing, c_inst.ymin - poly2_comp_spacing)
-        )
-        rect_bulk_out = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (rect_bulk_in.xmax - rect_bulk_in.xmin) + 2 * grw,
-                    (rect_bulk_in.ymax - rect_bulk_in.ymin) + 2 * grw,
-                ),
-                layer=layer["comp"],
-            )
-        )
-        rect_bulk_out.move((rect_bulk_in.xmin - grw, rect_bulk_in.ymin - grw))
-        B = c.add_ref(
-            gf.boolean(
-                A=rect_bulk_out,
-                B=rect_bulk_in,
-                operation="A-B",
-                layer=layer["comp"],
-            )
-        )
-
-        psdm_in = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (rect_bulk_in.xmax - rect_bulk_in.xmin) - 2 * comp_pp_enc,
-                    (rect_bulk_in.ymax - rect_bulk_in.ymin) - 2 * comp_pp_enc,
-                ),
-                layer=layer["pplus"],
-            )
-        )
-        psdm_in.move((rect_bulk_in.xmin + comp_pp_enc, rect_bulk_in.ymin + comp_pp_enc))
-        psdm_out = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (rect_bulk_out.xmax - rect_bulk_out.xmin) + 2 * comp_pp_enc,
-                    (rect_bulk_out.ymax - rect_bulk_out.ymin) + 2 * comp_pp_enc,
-                ),
-                layer=layer["pplus"],
-            )
-        )
-        psdm_out.move(
-            (
-                rect_bulk_out.xmin - comp_pp_enc,
-                rect_bulk_out.ymin - comp_pp_enc,
-            )
-        )
-        psdm = c.add_ref(
-            gf.boolean(A=psdm_out, B=psdm_in, operation="A-B", layer=layer["pplus"])
-        )
-
-        # generatingg contacts
-
-        c.add_ref(
-            via_generator(
-                x_range=(
-                    rect_bulk_in.xmin + con_size,
-                    rect_bulk_in.xmax - con_size,
-                ),
-                y_range=(rect_bulk_out.ymin, rect_bulk_in.ymin),
-                via_enclosure=(con_comp_enc, con_comp_enc),
-                via_layer=layer["contact"],
-                via_size=(con_size, con_size),
-                via_spacing=(con_sp, con_sp),
-            )
-        )  # bottom contact
-
-        c.add_ref(
-            via_generator(
-                x_range=(
-                    rect_bulk_in.xmin + con_size,
-                    rect_bulk_in.xmax - con_size,
-                ),
-                y_range=(rect_bulk_in.ymax, rect_bulk_out.ymax),
-                via_enclosure=(con_comp_enc, con_comp_enc),
-                via_layer=layer["contact"],
-                via_size=(con_size, con_size),
-                via_spacing=(con_sp, con_sp),
-            )
-        )  # upper contact
-
-        c.add_ref(
-            via_generator(
-                x_range=(rect_bulk_out.xmin, rect_bulk_in.xmin),
-                y_range=(
-                    rect_bulk_in.ymin + con_size,
-                    rect_bulk_in.ymax - con_size,
-                ),
-                via_enclosure=(con_comp_enc, con_comp_enc),
-                via_layer=layer["contact"],
-                via_size=(con_size, con_size),
-                via_spacing=(con_sp, con_sp),
-            )
-        )  # right contact
-
-        c.add_ref(
-            via_generator(
-                x_range=(rect_bulk_in.xmax, rect_bulk_out.xmax),
-                y_range=(
-                    rect_bulk_in.ymin + con_size,
-                    rect_bulk_in.ymax - con_size,
-                ),
-                via_enclosure=(con_comp_enc, con_comp_enc),
-                via_layer=layer["contact"],
-                via_size=(con_size, con_size),
-                via_spacing=(con_sp, con_sp),
-            )
-        )  # left contact
-
-        comp_m1_in = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (l_d) + 2 * comp_spacing,
-                    (c_inst.ymax - c_inst.ymin) + 2 * poly2_comp_spacing,
-                ),
-                layer=layer["metal1"],
-            )
-        )
-        comp_m1_in.move((-comp_spacing, c_inst.ymin - poly2_comp_spacing))
-        comp_m1_out = c_temp.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (rect_bulk_in.xmax - rect_bulk_in.xmin) + 2 * grw,
-                    (rect_bulk_in.ymax - rect_bulk_in.ymin) + 2 * grw,
-                ),
-                layer=layer["metal1"],
-            )
-        )
-        comp_m1_out.move((rect_bulk_in.xmin - grw, rect_bulk_in.ymin - grw))
-        b_gr = c.add_ref(
-            gf.boolean(
-                A=rect_bulk_out,
-                B=rect_bulk_in,
-                operation="A-B",
-                layer=layer["metal1"],
-            )
-        )  # guardring metal1
-
-        c.add_ref(
-            labels_gen(
-                label_str=sub_label,
-                position=(
-                    b_gr.xmin + (grw + 2 * (comp_pp_enc)) / 2,
-                    b_gr.ymin + (b_gr.ysize / 2),
-                ),
-                layer=layer["metal1_label"],
-                label=label,
-                labels=[sub_label],
-                label_valid_len=1,
-            )
-        )
-
-        dg = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    B.xsize + (2 * dg_enc_cmp),
-                    B.ysize + (2 * dg_enc_cmp),
-                ),
-                layer=layer["dualgate"],
-            )
-        )
-        dg.xmin = B.xmin - dg_enc_cmp
-        dg.ymin = B.ymin - dg_enc_cmp
-
-    if bulk != "Guard Ring":
-        c.add_ref(c_inst)
-
-        dg = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    c_inst.xsize + (2 * dg_enc_cmp),
-                    c_inst.ysize + (2 * dg_enc_poly),
-                ),
-                layer=layer["dualgate"],
-            )
-        )
-        dg.xmin = c_inst.xmin - dg_enc_cmp
-        dg.ymin = c_inst.ymin - dg_enc_poly
-
-    # generatingg native layer
-    nat = c.add_ref(
-        gf.components.rectangle(size=(dg.xsize, dg.ysize), layer=layer["nat"])
-    )
-
-    nat.xmin = dg.xmin
-    nat.ymin = dg.ymin
-
-    c.info["vlsir"] = {
-        "model": "nmos_6p0_nat",
-        "spice_type": "SUBCKT",
-        "spice_lib": "nmos_6p0_nat_t",
-        "port_order": ["d", "g", "s", "b"],
-        "port_map": {},  # TODO: Add GDSF Ports
-        "params": {"w": w_gate, "l": l_gate, "nf": nf},
-    }
-
+    """Return Native NFET 6V transistor matching Magic VLSI geometry."""
+    c = gf.Component()
+    rules = dict(_RULES)
+    rules["volt"] = "nvt"
+    rules["gate_extension"] = 0.35
+    rules["sub_surround"] = 0.16
+
+    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0)
     return c

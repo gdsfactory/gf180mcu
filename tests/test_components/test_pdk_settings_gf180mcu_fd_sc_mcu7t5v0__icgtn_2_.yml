@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__icgtn_2
+ports:
+  CLKN:
+    center:
+    - 13.16
+    - 1.4
+    layer: metal1
+    name: CLKN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  E:
+    center:
+    - 2.52
+    - 2.52
+    layer: metal1
+    name: E
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Q:
+    center:
+    - 17.64
+    - 1.96
+    layer: metal1
+    name: Q
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  TE:
+    center:
+    - 0.84
+    - 1.96
+    layer: metal1
+    name: TE
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 10.36
+    - 3.92
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 10.36
+    - 0
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

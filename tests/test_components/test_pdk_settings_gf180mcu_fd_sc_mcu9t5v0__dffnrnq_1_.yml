@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__dffnrnq_1
+ports:
+  CLKN:
+    center:
+    - 0.84
+    - 2.52
+    layer: metal1
+    name: CLKN
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  D:
+    center:
+    - 3.08
+    - 2.52
+    layer: metal1
+    name: D
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Q:
+    center:
+    - 15.96
+    - 3.64
+    layer: metal1
+    name: Q
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  RN:
+    center:
+    - 13.72
+    - 1.4
+    layer: metal1
+    name: RN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 1.42
+    - 4.59
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 17.395
+    - 0.45
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__icgtp_4
+ports:
+  CLK:
+    center:
+    - 10.36
+    - 1.96
+    layer: metal1
+    name: CLK
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  E:
+    center:
+    - 0.84
+    - 2.52
+    layer: metal1
+    name: E
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Q:
+    center:
+    - 15.96
+    - 1.4
+    layer: metal1
+    name: Q
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  TE:
+    center:
+    - 0.28
+    - 1.96
+    layer: metal1
+    name: TE
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 0.74
+    - 4.59
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 17.36
+    - 0.45
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

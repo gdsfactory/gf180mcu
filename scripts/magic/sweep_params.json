@@ -1,0 +1,1522 @@
+{
+  "param_maps": {
+    "_mosfet": {
+      "w_gate": "w",
+      "l_gate": "l",
+      "nf": "nf"
+    },
+    "_resistor": {
+      "w_res": "w",
+      "l_res": "l"
+    },
+    "_diode": {
+      "wa": "w",
+      "la": "l"
+    },
+    "_cap": {
+      "lc": "l",
+      "wc": "w"
+    },
+    "_moscap": {
+      "lc": "l",
+      "wc": "w"
+    }
+  },
+  "devices": {
+    "nfet_03v3": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "3.3V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.44,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.44,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.56,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.56,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.56,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.84,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.28,
+          "nf": 3
+        }
+      ]
+    },
+    "pfet_03v3": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "3.3V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.44,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.44,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.56,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.56,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.56,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.84,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.28,
+          "nf": 3
+        }
+      ]
+    },
+    "nfet_05v0": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "5.0V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.6,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.6,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.6,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.2,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.2,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.2,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 1.8,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.6,
+          "nf": 3
+        }
+      ]
+    },
+    "pfet_05v0": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "5.0V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.5,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.5,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.5,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.5,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.5,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.5,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.5,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.0,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.0,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.0,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 1.5,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.5,
+          "nf": 3
+        }
+      ]
+    },
+    "nfet_06v0": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "6.0V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.7,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.7,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.7,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.7,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.7,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.7,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.7,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.7,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.4,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.4,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.4,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 2.1,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.7,
+          "nf": 3
+        }
+      ]
+    },
+    "pfet_06v0": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "6.0V"
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.55,
+          "nf": 8
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.55,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.6,
+          "l_gate": 0.55,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.55,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 0.55,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 0.55,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 0.55,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 0.55,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.1,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 1.1,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.1,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 1.65,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 0.55,
+          "nf": 3
+        }
+      ]
+    },
+    "nfet_06v0_nvt": {
+      "cell_fn": "nfet_06v0_nvt",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "sweep": [
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 1.8,
+          "nf": 8
+        },
+        {
+          "w_gate": 1.6,
+          "l_gate": 1.8,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.6,
+          "l_gate": 1.8,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.8,
+          "nf": 1
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 1.8,
+          "nf": 4
+        },
+        {
+          "w_gate": 2.0,
+          "l_gate": 1.8,
+          "nf": 3
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 1.8,
+          "nf": 1
+        },
+        {
+          "w_gate": 10.0,
+          "l_gate": 1.8,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 3.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.8,
+          "l_gate": 3.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 1.0,
+          "l_gate": 3.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 5.0,
+          "l_gate": 5.4,
+          "nf": 2
+        },
+        {
+          "w_gate": 3.0,
+          "l_gate": 1.8,
+          "nf": 3
+        }
+      ]
+    },
+    "nfet_03v3_dss": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "3.3V",
+        "dss": true
+      },
+      "sweep": [
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 8
+        }
+      ]
+    },
+    "pfet_03v3_dss": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "3.3V",
+        "dss": true
+      },
+      "sweep": [
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.22,
+          "l_gate": 0.28,
+          "nf": 8
+        }
+      ]
+    },
+    "nfet_06v0_dss": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "6.0V",
+        "dss": true
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.6,
+          "nf": 8
+        }
+      ]
+    },
+    "pfet_06v0_dss": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "6.0V",
+        "dss": true
+      },
+      "sweep": [
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 1
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 2
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 3
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 4
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 5
+        },
+        {
+          "w_gate": 0.3,
+          "l_gate": 0.5,
+          "nf": 8
+        }
+      ]
+    },
+    "nfet_10v0_asym": {
+      "cell_fn": "nfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "10.0V",
+        "asym": true
+      },
+      "sweep": [
+        {
+          "w_gate": 4.0,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 4.0,
+          "l_gate": 0.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 8.0,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 4.0,
+          "l_gate": 1.0,
+          "nf": 1
+        }
+      ]
+    },
+    "pfet_10v0_asym": {
+      "cell_fn": "pfet",
+      "cell_module": "gf180mcu.cells.fet",
+      "param_map_ref": "_mosfet",
+      "extra_params": {
+        "volt": "10.0V",
+        "asym": true
+      },
+      "sweep": [
+        {
+          "w_gate": 4.0,
+          "l_gate": 0.6,
+          "nf": 1
+        },
+        {
+          "w_gate": 4.0,
+          "l_gate": 0.6,
+          "nf": 2
+        },
+        {
+          "w_gate": 8.0,
+          "l_gate": 0.6,
+          "nf": 1
+        }
+      ]
+    },
+    "nmoscap_3p3": {
+      "cell_fn": "cap_mos",
+      "cell_module": "gf180mcu.cells.cap_mos",
+      "extra_params": {
+        "type": "cap_nmos",
+        "volt": "3.3V"
+      },
+      "sweep": [
+        {
+          "lc": 1.0,
+          "wc": 1.0
+        },
+        {
+          "lc": 2.0,
+          "wc": 2.0
+        },
+        {
+          "lc": 5.0,
+          "wc": 5.0
+        },
+        {
+          "lc": 1.0,
+          "wc": 5.0
+        },
+        {
+          "lc": 10.0,
+          "wc": 10.0
+        }
+      ],
+      "param_map_ref": "_moscap"
+    },
+    "nmoscap_6p0": {
+      "cell_fn": "cap_mos",
+      "cell_module": "gf180mcu.cells.cap_mos",
+      "extra_params": {
+        "type": "cap_nmos",
+        "volt": "6.0V"
+      },
+      "sweep": [
+        {
+          "lc": 1.0,
+          "wc": 1.0
+        },
+        {
+          "lc": 2.0,
+          "wc": 2.0
+        },
+        {
+          "lc": 5.0,
+          "wc": 5.0
+        }
+      ],
+      "param_map_ref": "_moscap"
+    },
+    "diode_nd2ps_03v3": {
+      "cell_fn": "diode_nd2ps",
+      "cell_module": "gf180mcu.cells.diode",
+      "param_map_ref": "_diode",
+      "extra_params": {
+        "volt": "3.3V"
+      },
+      "sweep": [
+        {
+          "wa": 0.45,
+          "la": 0.45
+        },
+        {
+          "wa": 1.0,
+          "la": 1.0
+        },
+        {
+          "wa": 2.0,
+          "la": 2.0
+        },
+        {
+          "wa": 0.45,
+          "la": 1.0
+        },
+        {
+          "wa": 1.0,
+          "la": 0.45
+        },
+        {
+          "wa": 5.0,
+          "la": 5.0
+        }
+      ]
+    },
+    "diode_pd2nw_03v3": {
+      "cell_fn": "diode_pd2nw",
+      "cell_module": "gf180mcu.cells.diode",
+      "param_map_ref": "_diode",
+      "extra_params": {
+        "volt": "3.3V"
+      },
+      "sweep": [
+        {
+          "wa": 0.45,
+          "la": 0.45
+        },
+        {
+          "wa": 1.0,
+          "la": 1.0
+        },
+        {
+          "wa": 2.0,
+          "la": 2.0
+        },
+        {
+          "wa": 0.45,
+          "la": 1.0
+        },
+        {
+          "wa": 1.0,
+          "la": 0.45
+        },
+        {
+          "wa": 5.0,
+          "la": 5.0
+        }
+      ]
+    },
+    "diode_nd2ps_06v0": {
+      "cell_fn": "diode_nd2ps",
+      "cell_module": "gf180mcu.cells.diode",
+      "param_map_ref": "_diode",
+      "extra_params": {
+        "volt": "6.0V"
+      },
+      "sweep": [
+        {
+          "wa": 0.45,
+          "la": 0.45
+        },
+        {
+          "wa": 1.0,
+          "la": 1.0
+        },
+        {
+          "wa": 2.0,
+          "la": 2.0
+        },
+        {
+          "wa": 0.45,
+          "la": 1.0
+        },
+        {
+          "wa": 1.0,
+          "la": 0.45
+        },
+        {
+          "wa": 5.0,
+          "la": 5.0
+        }
+      ]
+    },
+    "diode_pd2nw_06v0": {
+      "cell_fn": "diode_pd2nw",
+      "cell_module": "gf180mcu.cells.diode",
+      "param_map_ref": "_diode",
+      "extra_params": {
+        "volt": "6.0V"
+      },
+      "sweep": [
+        {
+          "wa": 0.45,
+          "la": 0.45
+        },
+        {
+          "wa": 1.0,
+          "la": 1.0
+        },
+        {
+          "wa": 2.0,
+          "la": 2.0
+        },
+        {
+          "wa": 0.45,
+          "la": 1.0
+        },
+        {
+          "wa": 1.0,
+          "la": 0.45
+        },
+        {
+          "wa": 5.0,
+          "la": 5.0
+        }
+      ]
+    },
+    "cap_mim_2p0fF": {
+      "cell_fn": "cap_mim",
+      "cell_module": "gf180mcu.cells.cap_mim",
+      "sweep": [
+        {
+          "lc": 5.0,
+          "wc": 5.0
+        },
+        {
+          "lc": 2.0,
+          "wc": 2.0
+        },
+        {
+          "lc": 10.0,
+          "wc": 10.0
+        },
+        {
+          "lc": 2.0,
+          "wc": 10.0
+        },
+        {
+          "lc": 10.0,
+          "wc": 2.0
+        },
+        {
+          "lc": 3.0,
+          "wc": 7.0
+        }
+      ],
+      "param_map_ref": "_cap"
+    },
+    "ppolyf_u": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "ppolyf_u"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 1.6
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.6
+        }
+      ]
+    },
+    "npolyf_u": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "npolyf_u"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 1.6
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.6
+        }
+      ]
+    },
+    "ppolyf_s": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "ppolyf_s"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 1.6
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.6
+        }
+      ]
+    },
+    "npolyf_s": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "npolyf_s"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 0.8
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 1.6
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.6
+        }
+      ]
+    },
+    "nplus_u": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "nplus_u"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 2.0
+        }
+      ]
+    },
+    "pplus_u": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "pplus_u"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 2.0
+        }
+      ]
+    },
+    "nwell": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "nwell"
+      },
+      "sweep": [
+        {
+          "l_res": 10.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 20.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 5.0
+        }
+      ]
+    },
+    "rm1": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "rm1"
+      },
+      "sweep": [
+        {
+          "l_res": 0.16,
+          "w_res": 0.16
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 0.5
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        }
+      ]
+    },
+    "rm2": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "rm2"
+      },
+      "sweep": [
+        {
+          "l_res": 0.2,
+          "w_res": 0.2
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 0.5
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        }
+      ]
+    },
+    "rm3": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "rm3"
+      },
+      "sweep": [
+        {
+          "l_res": 0.2,
+          "w_res": 0.2
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        }
+      ]
+    },
+    "ppolyf_u_1k": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "ppolyf_u_1k"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 2.0
+        }
+      ]
+    },
+    "ppolyf_u_1k_6p0": {
+      "cell_fn": "res",
+      "cell_module": "gf180mcu.cells.res",
+      "param_map_ref": "_resistor",
+      "extra_params": {
+        "res_type": "ppolyf_u_1k_6p0"
+      },
+      "sweep": [
+        {
+          "l_res": 1.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 2.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 10.0,
+          "w_res": 1.0
+        },
+        {
+          "l_res": 1.0,
+          "w_res": 2.0
+        },
+        {
+          "l_res": 5.0,
+          "w_res": 2.0
+        }
+      ]
+    }
+  }
+}
