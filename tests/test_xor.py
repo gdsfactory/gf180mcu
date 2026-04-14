@@ -121,31 +121,35 @@ _ids = [_human_id(dev, params) for dev, params, _ in _sweep_cases]
 def test_xor(device_name: str, params: dict, cell_module: str) -> None:
     """XOR-compare generated layout against Magic reference."""
 
-    # Resolve cell function
+    # Resolve cell function — support cell_fn override and extra_params
+    data = json.loads(_SWEEP_JSON.read_text())
+    device_cfg = data["devices"].get(device_name, {})
+    cell_fn_name = device_cfg.get("cell_fn", device_name)
+    extra_params = device_cfg.get("extra_params", {})
+
     cell_fn = None
     try:
         mod = importlib.import_module(cell_module)
-        for candidate in (device_name, device_name.split("__")[-1]):
-            fn = getattr(mod, candidate, None)
-            if callable(fn):
-                cell_fn = fn
-                break
+        fn = getattr(mod, cell_fn_name, None)
+        if callable(fn):
+            cell_fn = fn
     except (ModuleNotFoundError, ImportError):
         pass
 
     if cell_fn is None:
         try:
             import gf180mcu
-            fn = gf180mcu._cells.get(device_name)
+            fn = gf180mcu._cells.get(cell_fn_name)
             if fn and callable(fn):
                 cell_fn = fn
         except Exception:
             pass
 
     if cell_fn is None:
-        pytest.skip(f"Cell {device_name} not yet implemented")
+        pytest.skip(f"Cell {cell_fn_name} not yet implemented")
 
-    # Filter params
+    # Merge sweep params with extra_params, filter to accepted
+    all_params = {**params, **extra_params}
     try:
         sig = inspect.signature(cell_fn)
         accepted = {
@@ -153,8 +157,8 @@ def test_xor(device_name: str, params: dict, cell_module: str) -> None:
             if p.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
         }
     except (ValueError, TypeError):
-        accepted = set(params.keys())
-    filtered_params = {k: v for k, v in params.items() if k in accepted}
+        accepted = set(all_params.keys())
+    filtered_params = {k: v for k, v in all_params.items() if k in accepted}
 
     # Check reference
     param_hash = _param_hash(params)
