@@ -1073,9 +1073,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
               gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
-    # prBoundary (FIXED_BBOX scaled by 10x)
-    _rect(c, -(gx / 2) * 10, -(gy / 2) * 10,
-          (gx / 2) * 10, (gy / 2) * 10, _L_PR_BNDRY)
+    # prBoundary removed — Magic's 10x FIXED_BBOX is unnecessarily large
 
 
 # ---------------------------------------------------------------------------
