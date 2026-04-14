@@ -403,7 +403,7 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
             region.insert(kdb.Box(um(t0 - bloat), um(t1 - bloat),
                                   um(t2 + bloat), um(t3 + bloat)))
 
-    # Gate region: compute the BOUNDING BOX of all gates, then bloat once
+    # Gate region: compute bounding box of all gates, then bloat once
     if use_gate and finger_results:
         gate_x0 = min(r["gate"][0] for r in finger_results)
         gate_y0 = min(r["gate"][1] for r in finger_results)
