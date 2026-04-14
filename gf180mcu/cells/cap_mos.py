@@ -221,7 +221,7 @@ def _guard_ring(c, gx, gy, nwell_x, nwell_y, sub_surround=0.12,
 # Main MOS capacitor generator
 # ---------------------------------------------------------------------------
 
-@gf.cell
+@gf.cell(tags={"type": "cap_mos"})
 def cap_mos(
     type: str = "cap_nmos",
     lc: float = 0.1,

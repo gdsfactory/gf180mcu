@@ -11,7 +11,7 @@ import gdsfactory as gf
 from gf180mcu.layers import layer
 
 
-@gf.cell
+@gf.cell(tags={"type": "cap_mim"})
 def cap_mim(
     mim_option: str = "A",
     metal_level: str = "M4",

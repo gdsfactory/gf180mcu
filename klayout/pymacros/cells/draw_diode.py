@@ -1572,7 +1572,7 @@ def draw_sc_diode(
 
     # cathode draw
 
-    @gf.cell
+    @gf.cell(tags={"type": "draw_diode"})
     def sc_cathode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Returns sc_diode cathode array element.
 
@@ -1606,7 +1606,7 @@ def draw_sc_diode(
 
         return c
 
-    @gf.cell
+    @gf.cell(tags={"type": "draw_diode"})
     def sc_anode_strap(size: Float2 = (0.1, 0.1)) -> gf.Component:
         """Returns sc_diode anode array element.
 
