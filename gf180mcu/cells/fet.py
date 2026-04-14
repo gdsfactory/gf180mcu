@@ -86,6 +86,7 @@ _L_SAB = layer["sab"]
 _L_RESMK = layer["res_mk"]
 _L_NAT = layer["nat"]
 _L_MVSD = layer["mvsd"]
+_L_MVPSD = layer["mvpsd"]
 _L_PR_BNDRY = layer["pr_bndry"]
 
 
@@ -615,7 +616,20 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
     comp_right = max(drain_right, source_right)
 
     # Main comp (device active)
-    _rect(c, comp_left, cy - hw, comp_right, cy + hw, _L_COMP)
+    if asym:
+        # Asymmetric: source side comp extends from -(hl - sub_surround)
+        # to source contact outer. Drain comp is only from draw_contact.
+        sub_surround_v = rules.get("sub_surround", 0.12)
+        if sside == -1:
+            # Source on left, drain on right
+            _rect(c, source_left, cy - hw,
+                  cx + hl - sub_surround_v, cy + hw, _L_COMP)
+        else:
+            # Source on right, drain on left
+            _rect(c, cx - hl + sub_surround_v, cy - hw,
+                  source_right, cy + hw, _L_COMP)
+    else:
+        _rect(c, comp_left, cy - hw, comp_right, cy + hw, _L_COMP)
 
     # Dogbone extensions for diffusion contacts
     if w < cdwmin - 0.0001:
@@ -649,11 +663,48 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
     source_cx = cx + sside * (hl + gate_to_diffcont)
 
     # DSS: skip all S/D contact cuts (keep metal and comp surround)
-    # Asymmetric: skip drain contact cuts only
+    # Asymmetric: skip drain contact cuts, use L-shaped drain comp
     drain_no_cuts = dss or asym
     source_no_cuts = dss
-    _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
-                  no_cuts=drain_no_cuts)
+
+    if asym:
+        # Asymmetric drain: L-shaped comp (ldndiffc CIF output)
+        # Outer part (metal surround area): full hw
+        # Inner part (contact cut area): hw - diff_surround
+        metal_surround = rules["metal_surround"]
+        cw_d = max(0, contact_size)
+        ch_d = max(cdw, contact_size)
+        ms_phys = _CIF_METAL_SURROUND  # 0.06
+        hc_half = contact_size / 2.0
+
+        # Draw the L-shaped drain comp
+        # Outer: from drain outer surround to drain center + metal_surround_phys
+        # at ±hw
+        d_outer_edge = _snap(drain_cx - hc_half - diff_surround)  # outer
+        d_mid_edge = _snap(drain_cx + ms_phys)  # metal surround boundary
+        d_inner_edge = _snap(drain_cx + hc_half)  # contact right edge
+        hw_reduced = _snap(hw - diff_surround)
+        if dside == -1:
+            # Drain on left
+            _rect(c, d_outer_edge, cy - hw, d_mid_edge, cy + hw, _L_COMP)
+            _rect(c, d_mid_edge, cy - hw_reduced, d_inner_edge,
+                  cy + hw_reduced, _L_COMP)
+        else:
+            # Drain on right
+            d_outer_edge = _snap(drain_cx + hc_half + diff_surround)
+            d_mid_edge = _snap(drain_cx - ms_phys)
+            d_inner_edge = _snap(drain_cx - hc_half)
+            _rect(c, d_inner_edge, cy - hw_reduced, d_mid_edge,
+                  cy + hw_reduced, _L_COMP)
+            _rect(c, d_mid_edge, cy - hw, d_outer_edge, cy + hw, _L_COMP)
+        # Still draw drain metal (no comp from draw_contact for asym drain)
+        cw_m = max(0, contact_size)
+        ch_m = max(cdw, contact_size)
+        _rect(c, drain_cx - cw_m / 2, cy - ch_m / 2 - metal_surround,
+              drain_cx + cw_m / 2, cy + ch_m / 2 + metal_surround, _L_METAL1)
+    else:
+        _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
+                      no_cuts=drain_no_cuts)
     _draw_contact(c, source_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
                   no_cuts=source_no_cuts)
 
@@ -814,6 +865,41 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         act_y1 = max(r["active"][3] for r in all_finger_results)
         _rect(c, act_x0 - 0.18, act_y0 - 0.18,
               act_x1 + 0.18, act_y1 + 0.18, dev_implant)
+    elif asym and all_finger_results:
+        # 10V asymmetric: gate region bloated by 0.23 (bounding box)
+        # + source side channel bloated by 0.16 (no drain channel contribution).
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+        impl_region = kdb.Region()
+        hw_v = geom["hw"]
+        # Gate region: bounding box of all gates, bloated by 0.23
+        gate_x0 = min(r["gate"][0] for r in all_finger_results)
+        gate_y0 = min(r["gate"][1] for r in all_finger_results)
+        gate_x1 = max(r["gate"][2] for r in all_finger_results)
+        gate_y1 = max(r["gate"][3] for r in all_finger_results)
+        impl_region.insert(kdb.Box(
+            um(gate_x0 - 0.23), um(gate_y0 - 0.23),
+            um(gate_x1 + 0.23), um(gate_y1 + 0.23)))
+        # Source side channel: bloated by 0.16
+        for r in all_finger_results:
+            scx = r["source_cx"]
+            dcx = r["drain_cx"]
+            cx0, cy0, cx1, cy1 = r["channel"]
+            # Source channel region: from gate edge to source outer
+            if scx > dcx:
+                # Source on right
+                s_x0 = (cx0 + cx1) / 2 - geom["hl"]  # gate left edge
+                s_x1 = cx1  # source outer
+            else:
+                # Source on left
+                s_x0 = cx0  # source outer
+                s_x1 = (cx0 + cx1) / 2 + geom["hl"]  # gate right edge
+            impl_region.insert(kdb.Box(
+                um(s_x0 - 0.16), um(-hw_v - 0.16),
+                um(s_x1 + 0.16), um(hw_v + 0.16)))
+        impl_region = impl_region.merged()
+        _draw_region(c, impl_region, dev_implant)
     elif all_finger_results:
         # Normal and 6V DSS (mvndiffres/mvpdiffres): standard implant computation.
         impl_region = _device_implant_region(all_finger_results, bloat=0.16)
@@ -855,7 +941,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         sab_region = sab_region.sized(50).sized(-50)
         _draw_region(c, sab_region, _L_SAB)
 
-    # --- 10V asymmetric: MVSD, dualgate, v5_xtor ---
+    # --- 10V asymmetric: MVSD ---
     volt = rules.get("volt", "3.3V")
 
     if asym and all_finger_results:
@@ -863,32 +949,65 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         def um(v):
             return round(v * 1000)
 
-        # MVSD layer covers drain-side diffusion area
-        # From analysis: MVSD extends from outer GR boundary to just past
-        # the gate on the source side, with height based on device extent
+        # MVSD/MVPSD layer: L-shaped region covering drain side.
+        # Derived from reference analysis across multiple parameter combinations.
+        hw_v = geom["hw"]
+        gate_to_diffcont_v = geom["gate_to_diffcont"]
+        hl_v = geom["hl"]
+        diff_poly_space_v = rules.get("diff_poly_space", 0.10)
+        gy_half = gy / 2.0
+        gx_half = gx / 2.0
+        sub_surround_v = rules["sub_surround"]
+        mvsd_layer = _L_MVSD if is_nfet else _L_MVPSD
+
+        # Y outer extent: gy/2 - 0.14 (constant for 10V process rules)
+        mvsd_y_outer = _snap(gy_half - 0.14)
+        # Y inner step: hw - 0.865 (empirically derived from references)
+        inner_y = _snap(hw_v - 0.865)
+
         mvsd_region = kdb.Region()
         for r in all_finger_results:
-            # Drain side extent
-            cx0, cy0, cx1, cy1 = r["channel"]
             dcx = r["drain_cx"]
             scx = r["source_cx"]
+            finger_cx = (r["channel"][0] + r["channel"][2]) / 2.0
 
-            # MVSD covers from drain contact surround outer edge past the gate
-            # to the source contact inner edge, with Y from channel ± some enclosure
+            # X outer: -(gx/2 + gate_to_diffcont) on drain side
+            # X right: gate_to_diffcont - hl + diff_poly_space from finger center
+            x1_rel = gate_to_diffcont_v - hl_v + diff_poly_space_v
+            x_step_rel = x1_rel - diff_surround - _CIF_DIFF_SURROUND
+
             if dcx < scx:
-                # Drain is on the left
-                mvsd_x0 = _snap(dcx - contact_size / 2 - diff_surround - diff_spacing)
-                mvsd_x1 = _snap(scx - contact_size / 2 + diff_surround)
+                # Drain left, source right
+                x0 = _snap(-gx_half - gate_to_diffcont_v)
+                x_step = _snap(finger_cx + x_step_rel)
+                x1 = _snap(finger_cx + x1_rel)
             else:
-                # Drain is on the right
-                mvsd_x0 = _snap(scx + contact_size / 2 - diff_surround)
-                mvsd_x1 = _snap(dcx + contact_size / 2 + diff_surround + diff_spacing)
-            mvsd_y0 = _snap(cy0 - 0.10)
-            mvsd_y1 = _snap(cy1 + 0.10)
-            mvsd_region.insert(kdb.Box(um(mvsd_x0), um(mvsd_y0),
-                                       um(mvsd_x1), um(mvsd_y1)))
+                # Drain right, source left
+                x1 = _snap(gx_half + gate_to_diffcont_v)
+                x_step = _snap(finger_cx - x_step_rel)
+                x0 = _snap(finger_cx - x1_rel)
+
+            if dcx < scx:
+                # Drain left: main body from x0 (outer left) to x_step
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(-mvsd_y_outer), um(x_step), um(mvsd_y_outer)))
+                # Wings from x_step to x1
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(-mvsd_y_outer), um(x1), um(-inner_y)))
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(inner_y), um(x1), um(mvsd_y_outer)))
+            else:
+                # Drain right: main body from x_step to x1 (outer right)
+                mvsd_region.insert(kdb.Box(
+                    um(x_step), um(-mvsd_y_outer), um(x1), um(mvsd_y_outer)))
+                # Wings from x0 to x_step
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(-mvsd_y_outer), um(x_step), um(-inner_y)))
+                mvsd_region.insert(kdb.Box(
+                    um(x0), um(inner_y), um(x_step), um(mvsd_y_outer)))
+
         mvsd_region = mvsd_region.merged()
-        _draw_region(c, mvsd_region, _L_MVSD)
+        _draw_region(c, mvsd_region, mvsd_layer)
 
     # Dualgate and V5_XTOR for 5V/6V/10V
     if volt in ("5.0V", "6.0V", "10.0V"):
@@ -900,20 +1019,39 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
               gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
     if volt in ("5.0V", "10.0V") and all_finger_results:
-        # V5_XTOR = device comp shape (excluding GR) bloated by 0.10
         import klayout.db as kdb
         def um(v):
             return round(v * 1000)
 
         v5_region = kdb.Region()
-        for r in all_finger_results:
-            # Channel comp (main body)
-            cx0, cy0, cx1, cy1 = r["channel"]
-            v5_region.insert(kdb.Box(um(cx0), um(cy0), um(cx1), um(cy1)))
-            # Dogbone tabs (if any)
-            for tab in r.get("dogbone_tabs", []):
-                t0, t1, t2, t3 = tab
-                v5_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
+        if asym:
+            # 10V asymmetric: v5_xtor covers source side only
+            # Source active: from -hl to source contact outer, at ±hw
+            hw_v = geom["hw"]
+            for r in all_finger_results:
+                scx = r["source_cx"]
+                dcx = r["drain_cx"]
+                finger_cx = (r["channel"][0] + r["channel"][2]) / 2.0
+                hl_v = geom["hl"]
+                if scx > dcx:
+                    # Source right: from gate left edge to source outer
+                    src_x0 = finger_cx - hl_v
+                    src_x1 = _snap(scx + contact_size / 2 + diff_surround)
+                else:
+                    # Source left
+                    src_x0 = _snap(scx - contact_size / 2 - diff_surround)
+                    src_x1 = finger_cx + hl_v
+                v5_region.insert(kdb.Box(um(src_x0), um(-hw_v),
+                                         um(src_x1), um(hw_v)))
+        else:
+            for r in all_finger_results:
+                # Channel comp (main body)
+                cx0, cy0, cx1, cy1 = r["channel"]
+                v5_region.insert(kdb.Box(um(cx0), um(cy0), um(cx1), um(cy1)))
+                # Dogbone tabs (if any)
+                for tab in r.get("dogbone_tabs", []):
+                    t0, t1, t2, t3 = tab
+                    v5_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
         v5_region = v5_region.merged().sized(100)  # bloat 0.10 um = 100 nm
         _draw_region(c, v5_region, _L_V5XTOR)
 
