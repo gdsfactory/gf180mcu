@@ -1,0 +1,22 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__fillcap_4
+ports:
+  VDD:
+    center:
+    - 1.12
+    - 3.91
+    layer: metal1
+    name: VDD
+    orientation: 90
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.12
+    - -0.03
+    layer: metal1
+    name: VSS
+    orientation: 270
+    port_type: electrical
+    width: 0.2
+settings: {}

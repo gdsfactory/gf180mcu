@@ -1,0 +1,31 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__tieh
+ports:
+  VDD:
+    center:
+    - 1.12
+    - 5.49
+    layer: metal1
+    name: VDD
+    orientation: 90
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.12
+    - -0.45
+    layer: metal1
+    name: VSS
+    orientation: 270
+    port_type: electrical
+    width: 0.2
+  Z:
+    center:
+    - 1.4
+    - 3.08
+    layer: metal1
+    name: Z
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

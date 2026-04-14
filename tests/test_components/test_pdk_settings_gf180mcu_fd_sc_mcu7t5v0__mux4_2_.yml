@@ -1,0 +1,85 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__mux4_2
+ports:
+  I0:
+    center:
+    - 17.08
+    - 1.96
+    layer: metal1
+    name: I0
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I1:
+    center:
+    - 12.6
+    - 1.96
+    layer: metal1
+    name: I1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I2:
+    center:
+    - 0.84
+    - 1.96
+    layer: metal1
+    name: I2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I3:
+    center:
+    - 4.76
+    - 1.4
+    layer: metal1
+    name: I3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  S0:
+    center:
+    - 3.08
+    - 1.96
+    layer: metal1
+    name: S0
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  S1:
+    center:
+    - 9.8
+    - 1.96
+    layer: metal1
+    name: S1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 9.95
+    - 3.92
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 9.95
+    - 0
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z:
+    center:
+    - 6.44
+    - 1.96
+    layer: metal1
+    name: Z
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+settings: {}
