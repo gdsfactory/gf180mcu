@@ -340,9 +340,14 @@ def _guard_ring_implant(c, gx, gy, implant_layer, rules):
               bar_outer_x + enc_tb, -side_impl_half_y, implant_layer)
 
     else:
-        # PFET guard ring: nplus with outer bloat 0.16, inner bloat 0.11
-        enc_out = 0.16  # bloat outward (away from ring center)
-        enc_in = 0.11   # bloat inward (toward ring center)
+        # PFET guard ring: nplus with outer bloat 0.16, inner bloat varies
+        enc_out = 0.16
+        # Inner bloat depends on voltage variant (from CIF rules)
+        volt = rules.get("volt", "3.3V")
+        if volt in ("5.0V", "6.0V", "10.0V"):
+            enc_in = 0.07
+        else:
+            enc_in = 0.11
 
         # Inner boundary of the nplus ring
         inner_x = _snap(side_inner_x - enc_in)  # inner X
@@ -392,12 +397,11 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
         region.insert(kdb.Box(um(cx0 - cb), um(cy0 - cb),
                               um(cx1 + cb), um(cy1 + cb)))
 
-        # Active extent (may be taller due to dogbone)
-        ax0, ay0, ax1, ay1 = r["active"]
-        if abs(ay0 - cy0) > 0.001 or abs(ay1 - cy1) > 0.001:
-            # Dogbone: active is taller than channel
-            region.insert(kdb.Box(um(ax0 - bloat), um(ay0 - bloat),
-                                  um(ax1 + bloat), um(ay1 + bloat)))
+        # Dogbone tabs (individual rectangles, not bounding box)
+        for tab in r.get("dogbone_tabs", []):
+            t0, t1, t2, t3 = tab
+            region.insert(kdb.Box(um(t0 - bloat), um(t1 - bloat),
+                                  um(t2 + bloat), um(t3 + bloat)))
 
     # Gate region: compute the BOUNDING BOX of all gates, then bloat once
     if use_gate and finger_results:
@@ -675,11 +679,27 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
     chan_bot = cy - hw
     chan_top = cy + hw
 
+    # Dogbone tab rectangles (for v5_xtor cross-shape construction)
+    dogbone_tabs = []
+    if w < cdwmin - 0.0001:
+        dog_hw = cdwmin / 2.0
+        drain_cx = cx + dside * (hl + gate_to_diffcont)
+        source_cx = cx + sside * (hl + gate_to_diffcont)
+        d_left = _snap(drain_cx - contact_size / 2 - diff_surround)
+        d_right = _snap(drain_cx + contact_size / 2 + diff_surround)
+        s_left = _snap(source_cx - contact_size / 2 - diff_surround)
+        s_right = _snap(source_cx + contact_size / 2 + diff_surround)
+        # Top and bottom tabs for each S/D contact
+        for left, right in [(d_left, d_right), (s_left, s_right)]:
+            dogbone_tabs.append((left, _snap(cy + hw), right, _snap(cy + dog_hw)))
+            dogbone_tabs.append((left, _snap(cy - dog_hw), right, _snap(cy - hw)))
+
     return dict(
         cext=(_snap(ext_left), _snap(ext_bot), _snap(ext_right), _snap(ext_top)),
         active=(_snap(act_left), _snap(act_bot), _snap(act_right), _snap(act_top)),
         channel=(_snap(chan_left), _snap(chan_bot), _snap(chan_right), _snap(chan_top)),
         gate=(_snap(gate_left), _snap(gate_bot), _snap(gate_right), _snap(gate_top)),
+        dogbone_tabs=dogbone_tabs,
     )
 
 
@@ -764,10 +784,21 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
               gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
     if volt == "5.0V" and all_finger_results:
-        # V5_XTOR: typed diffusion shape bloated by 0.10 (no gate bloat)
-        v5_region = _device_implant_region(all_finger_results, bloat=0.10,
-                                           channel_bloat=0.10,
-                                           use_gate=False)
+        # V5_XTOR = device comp shape (excluding GR) bloated by 0.10
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+
+        v5_region = kdb.Region()
+        for r in all_finger_results:
+            # Channel comp (main body)
+            cx0, cy0, cx1, cy1 = r["channel"]
+            v5_region.insert(kdb.Box(um(cx0), um(cy0), um(cx1), um(cy1)))
+            # Dogbone tabs (if any)
+            for tab in r.get("dogbone_tabs", []):
+                t0, t1, t2, t3 = tab
+                v5_region.insert(kdb.Box(um(t0), um(t1), um(t2), um(t3)))
+        v5_region = v5_region.merged().sized(100)  # bloat 0.10 um = 100 nm
         _draw_region(c, v5_region, _L_V5XTOR)
 
     # prBoundary (FIXED_BBOX scaled by 10x)
