@@ -99,6 +99,8 @@ def _guard_ring(
     implant_layer: LayerSpec,
     implant_bloat: float,
     is_psd: bool = False,
+    draw_well: bool = True,
+    well_ext_extra: float = 0.0,
 ) -> None:
     """Draw a guard ring centered at origin.
 
@@ -112,6 +114,8 @@ def _guard_ring(
         implant_layer: implant layer (nplus or pplus) for the guard ring diffusion
         implant_bloat: how much implant extends beyond comp
         is_psd: True if guard ring uses psd type (pplus, more complex bloat)
+        draw_well: if False, skip drawing the sub_type_layer rectangle
+        well_ext_extra: additional extension for the sub_type_layer beyond standard well_ext
     """
     hw = gw / 2
     hh = gh / 2
@@ -178,16 +182,17 @@ def _guard_ring(
     _draw_contacts_2d(c, hw, 0, 0, ch)
 
     # 5. Draw sub_type (well) covering entire guard ring + surround
-    well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
-    c.add_polygon(
-        [
-            (-(hw + well_ext), -(hh + well_ext)),
-            (hw + well_ext, -(hh + well_ext)),
-            (hw + well_ext, hh + well_ext),
-            (-(hw + well_ext), hh + well_ext),
-        ],
-        layer=sub_type_layer,
-    )
+    if draw_well:
+        well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND + well_ext_extra
+        c.add_polygon(
+            [
+                (-(hw + well_ext), -(hh + well_ext)),
+                (hw + well_ext, -(hh + well_ext)),
+                (hw + well_ext, hh + well_ext),
+                (-(hw + well_ext), hh + well_ext),
+            ],
+            layer=sub_type_layer,
+        )
 
 
 def _draw_guard_ring_metal(c: gf.Component, gw: float, gh: float) -> None:
@@ -810,18 +815,15 @@ def _well_res(
     )
 
     # End contacts: nsd type (comp + nplus)
-    # Contact center at hl + res_to_endcont + well_res_overlap
-    # Actually from reference: nplus at (−0.92,5.04)-(0.92,5.72) for l=10, w=2
-    # nplus center_y = 5.38, half_height = 0.34
-    # end_cy = 5.38 => from hl=5: end_cy - hl = 0.38 = res_to_endcont ✓ (for the center of the contact area)
-    # But nplus extends from 5.04 to 5.72
-    # contact in this region: need to check
+    # Contact center at hl + res_to_endcont (well_res_overlap shifts nwell body, not contacts)
+    # From reference: nplus at (−0.92,5.04)-(0.92,5.72) for l=10, w=2
+    # nplus center_y = 5.38 = hl + res_to_endcont = 5 + 0.38
 
     # epl for well resistor: w - 2*end_surround - 2*well_res_overlap
     epl = w - 2 * end_surround - 2 * well_res_overlap
     cpl = epl
 
-    end_cy = hl + res_to_endcont + well_res_overlap  # contact center shifted by well_res_overlap
+    end_cy = hl + res_to_endcont  # contact center at hl + res_to_endcont
 
     # End comp (nsd): comp + nplus at top and bottom
     # comp extends: epl + 2*end_surround in X, contact_size + 2*end_surround in Y
@@ -890,16 +892,65 @@ def _well_res(
     )
 
     # Guard ring
-    # Device footprint: from reference analysis
-    # fh = 2 * (nwell_hy + ?) - need to compute from end cap extent
-    fh_half = end_cy + hesz  # = nwell_hy
-    fh = 2 * fh_half
+    # Device footprint: nwell body extent determines the guard ring height
+    # fh is based on nwell_hy (which includes well_res_overlap), not just end contact position
+    fh = 2 * nwell_hy
     fw = w
 
     gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
     gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
 
     # lvpwell guard ring (psd guard ring for nwell resistor)
+    # Draw lvpwell as a ring (4 bars) around the nwell body, not as a solid rectangle.
+    # The inner boundary of the lvpwell ring = nwell body edge (hw, nwell_hy).
+    # The outer boundary = guard ring outer extent.
+    well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
+    lvpwell_ox = gx / 2 + well_ext  # outer X
+    lvpwell_oy = gy / 2 + well_ext  # outer Y
+    lvpwell_ix = hw                  # inner X = nwell body edge
+    lvpwell_iy = nwell_hy            # inner Y = nwell body edge
+
+    # Top bar
+    c.add_polygon(
+        [
+            (-lvpwell_ox, lvpwell_iy),
+            (lvpwell_ox, lvpwell_iy),
+            (lvpwell_ox, lvpwell_oy),
+            (-lvpwell_ox, lvpwell_oy),
+        ],
+        layer=layer["lvpwell"],
+    )
+    # Bottom bar
+    c.add_polygon(
+        [
+            (-lvpwell_ox, -lvpwell_oy),
+            (lvpwell_ox, -lvpwell_oy),
+            (lvpwell_ox, -lvpwell_iy),
+            (-lvpwell_ox, -lvpwell_iy),
+        ],
+        layer=layer["lvpwell"],
+    )
+    # Left bar
+    c.add_polygon(
+        [
+            (-lvpwell_ox, -lvpwell_iy),
+            (-lvpwell_ix, -lvpwell_iy),
+            (-lvpwell_ix, lvpwell_iy),
+            (-lvpwell_ox, lvpwell_iy),
+        ],
+        layer=layer["lvpwell"],
+    )
+    # Right bar
+    c.add_polygon(
+        [
+            (lvpwell_ix, -lvpwell_iy),
+            (lvpwell_ox, -lvpwell_iy),
+            (lvpwell_ox, lvpwell_iy),
+            (lvpwell_ix, lvpwell_iy),
+        ],
+        layer=layer["lvpwell"],
+    )
+
     _guard_ring(
         c, gx, gy,
         plus_diff_layer=layer["comp"],
@@ -908,6 +959,7 @@ def _well_res(
         implant_layer=layer["pplus"],
         implant_bloat=0.02,
         is_psd=True,
+        draw_well=False,  # lvpwell ring drawn manually above
     )
 
     return c
@@ -1023,11 +1075,42 @@ def _highR_poly_res(
     _draw_end_contact(c, 0, end_cy, cpl, layer["poly2"], orient="horz")
     _draw_end_contact(c, 0, -end_cy, cpl, layer["poly2"], orient="horz")
 
+    # 6b. Body end-contact pplus patches
+    # pplus covers the poly end contact regions: from hl to poly_ext_y + 0.20 in Y,
+    # and extends 0.20 beyond poly2 in X.
+    # From reference analysis: pplus hw = w/2 + 0.20, y spans [hl, poly_ext_y + 0.20]
+    body_pplus_impl_ext = 0.20
+    body_pplus_hw = hw + body_pplus_impl_ext
+    body_pplus_top = poly_ext_y + body_pplus_impl_ext
+    # Top pplus patch
+    c.add_polygon(
+        [
+            (-body_pplus_hw, hl),
+            (body_pplus_hw, hl),
+            (body_pplus_hw, body_pplus_top),
+            (-body_pplus_hw, body_pplus_top),
+        ],
+        layer=layer["pplus"],
+    )
+    # Bottom pplus patch
+    c.add_polygon(
+        [
+            (-body_pplus_hw, -body_pplus_top),
+            (body_pplus_hw, -body_pplus_top),
+            (body_pplus_hw, -hl),
+            (-body_pplus_hw, -hl),
+        ],
+        layer=layer["pplus"],
+    )
+
     # 7. Guard ring
     fh = 2 * poly_ext_y
     fw = w
     gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
     gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+
+    # For the 6p0 variant, the lvpwell extends 0.04 beyond the standard well_ext
+    well_ext_extra_6p0 = 0.04 if is_6p0 else 0.0
 
     _guard_ring(
         c, gx, gy,
@@ -1037,12 +1120,13 @@ def _highR_poly_res(
         implant_layer=gr_impl_layer,
         implant_bloat=0.02,
         is_psd=True,
+        well_ext_extra=well_ext_extra_6p0,
     )
 
     # 8. Dualgate for 6p0 variant
     if is_6p0:
         # From reference: dualgate = (-1.8, -2.41)-(1.8, 2.41) for w=1, l=1
-        # That extends 0.12 beyond lvpwell
+        # dualgate extends 0.12 beyond standard lvpwell (without 6p0 extension)
         well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
         gx_half = gx / 2
         gy_half = gy / 2
