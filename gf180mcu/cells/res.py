@@ -1,9 +1,1070 @@
-import gdsfactory as gf
-from gdsfactory.typings import Float2, LayerSpec
+"""GF180MCU resistor pcells matching Magic VLSI geometry exactly.
 
-from gf180mcu.cells.guardring import pcmpgr_gen
-from gf180mcu.cells.via_generator import via_stack
+All layouts are centered at the origin with length (l) along Y and width (w) along X,
+matching Magic's coordinate convention.
+"""
+
+from __future__ import annotations
+
+from math import floor
+
+import gdsfactory as gf
+from gdsfactory.typings import LayerSpec
+
 from gf180mcu.layers import layer
+
+# ---------------------------------------------------------------------------
+# Magic technology constants (from gf180mcu_generators.tcl ruleset)
+# ---------------------------------------------------------------------------
+
+_CONTACT_SIZE = 0.23  # internal contact box size
+_CONTACT_GDS = 0.22  # contact size in GDS (shrunk 0.005 each side by CIF)
+_POLY_SURROUND = 0.065  # poly surrounds contact
+_DIFF_SURROUND = 0.065  # diffusion surrounds contact
+_METAL_SURROUND = 0.055  # metal1 overlaps contact
+_SUB_SURROUND = 0.12  # sub/well overlap of diffusion
+_METAL_SPACING = 0.23  # metal1 spacing
+_CONTACT_PITCH = 0.47  # contact center-to-center spacing (size + min space)
+
+# Derived constants
+_DIFFT = _CONTACT_SIZE + 2 * _DIFF_SURROUND  # 0.36, guard ring bar width
+_HX = _CONTACT_SIZE / 2  # 0.115
+
+
+# ---------------------------------------------------------------------------
+# Contact array helper
+# ---------------------------------------------------------------------------
+
+
+def _contact_array_centers(fill_size: float) -> list[float]:
+    """Return list of 1D contact center offsets for a fill region.
+
+    Contacts of internal size _CONTACT_SIZE are tiled at _CONTACT_PITCH
+    within a fill region of the given size, centered.
+    """
+    if fill_size < _CONTACT_SIZE:
+        fill_size = _CONTACT_SIZE
+    n = floor((fill_size - _CONTACT_SIZE) / _CONTACT_PITCH) + 1
+    n = max(n, 1)
+    span = (n - 1) * _CONTACT_PITCH
+    start = -span / 2
+    return [start + i * _CONTACT_PITCH for i in range(n)]
+
+
+def _draw_contacts_2d(
+    c: gf.Component,
+    cx: float,
+    cy: float,
+    fill_w: float,
+    fill_h: float,
+) -> None:
+    """Draw a 2D array of contacts centered at (cx, cy)."""
+    xs = _contact_array_centers(fill_w)
+    ys = _contact_array_centers(fill_h)
+    hs = _CONTACT_GDS / 2
+    for dx in xs:
+        for dy in ys:
+            c.add_polygon(
+                [
+                    (cx + dx - hs, cy + dy - hs),
+                    (cx + dx + hs, cy + dy - hs),
+                    (cx + dx + hs, cy + dy + hs),
+                    (cx + dx - hs, cy + dy + hs),
+                ],
+                layer=layer["contact"],
+            )
+
+
+# ---------------------------------------------------------------------------
+# Guard ring (matching Magic gf180mcu::guard_ring)
+# ---------------------------------------------------------------------------
+
+# Implant bloat rules (from Magic CIF extraction for GF180MCU):
+# nsd -> comp + nplus with nplus_bloat = 0.16
+# psd -> comp + pplus with pplus_bloat complicated (varies by context)
+# We precompute the shapes from reference analysis.
+
+_NSD_IMPLANT_OUTER_BLOAT = 0.16  # nplus extends outside comp by this amount
+_NSD_IMPLANT_INNER_BLOAT = 0.11  # nplus extends inside comp (toward center) by this amount
+# psd bloat is more complex - approximately 0.02-0.03 with corner patches
+
+
+def _guard_ring(
+    c: gf.Component,
+    gw: float,
+    gh: float,
+    plus_diff_layer: LayerSpec,
+    plus_contact_layer: LayerSpec,
+    sub_type_layer: LayerSpec,
+    implant_layer: LayerSpec,
+    implant_bloat: float,
+    is_psd: bool = False,
+) -> None:
+    """Draw a guard ring centered at origin.
+
+    Args:
+        c: component to draw into
+        gw: guard ring width (measured center-to-center of contacts)
+        gh: guard ring height
+        plus_diff_layer: comp layer (always comp for GF180MCU)
+        plus_contact_layer: contact layer
+        sub_type_layer: well layer (nwell or lvpwell)
+        implant_layer: implant layer (nplus or pplus) for the guard ring diffusion
+        implant_bloat: how much implant extends beyond comp
+        is_psd: True if guard ring uses psd type (pplus, more complex bloat)
+    """
+    hw = gw / 2
+    hh = gh / 2
+    hdifft = _DIFFT / 2  # 0.18
+
+    # 1. Draw 4 comp bars forming a ring
+    # Top bar
+    c.add_polygon(
+        [
+            (-(hw + hdifft), hh - hdifft),
+            (hw + hdifft, hh - hdifft),
+            (hw + hdifft, hh + hdifft),
+            (-(hw + hdifft), hh + hdifft),
+        ],
+        layer=layer["comp"],
+    )
+    # Bottom bar
+    c.add_polygon(
+        [
+            (-(hw + hdifft), -(hh + hdifft)),
+            (hw + hdifft, -(hh + hdifft)),
+            (hw + hdifft, -(hh - hdifft)),
+            (-(hw + hdifft), -(hh - hdifft)),
+        ],
+        layer=layer["comp"],
+    )
+    # Left bar
+    c.add_polygon(
+        [
+            (-(hw + hdifft), -(hh + hdifft)),
+            (-(hw - hdifft), -(hh + hdifft)),
+            (-(hw - hdifft), hh + hdifft),
+            (-(hw + hdifft), hh + hdifft),
+        ],
+        layer=layer["comp"],
+    )
+    # Right bar
+    c.add_polygon(
+        [
+            (hw - hdifft, -(hh + hdifft)),
+            (hw + hdifft, -(hh + hdifft)),
+            (hw + hdifft, hh + hdifft),
+            (hw - hdifft, hh + hdifft),
+        ],
+        layer=layer["comp"],
+    )
+
+    # 2. Draw implant layer around guard ring comp
+    _draw_guard_ring_implant(
+        c, gw, gh, implant_layer, implant_bloat, is_psd
+    )
+
+    # 3. Draw metal ring (full metal ring as seen in references)
+    _draw_guard_ring_metal(c, gw, gh)
+
+    # 4. Draw contacts on left and right sides
+    ch = gh - _CONTACT_SIZE - 2 * (_METAL_SURROUND + _METAL_SPACING)
+    if ch < _CONTACT_SIZE:
+        ch = _CONTACT_SIZE
+
+    # Left contacts
+    _draw_contacts_2d(c, -hw, 0, 0, ch)
+    # Right contacts
+    _draw_contacts_2d(c, hw, 0, 0, ch)
+
+    # 5. Draw sub_type (well) covering entire guard ring + surround
+    well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
+    c.add_polygon(
+        [
+            (-(hw + well_ext), -(hh + well_ext)),
+            (hw + well_ext, -(hh + well_ext)),
+            (hw + well_ext, hh + well_ext),
+            (-(hw + well_ext), hh + well_ext),
+        ],
+        layer=sub_type_layer,
+    )
+
+
+def _draw_guard_ring_metal(c: gf.Component, gw: float, gh: float) -> None:
+    """Draw the 4 metal bars forming a guard ring metal ring."""
+    hw = gw / 2
+    hh = gh / 2
+    hcs = _CONTACT_SIZE / 2  # 0.115
+
+    # Left bar: contact_size wide, extends full height minus contact_size/2 at ends
+    c.add_polygon(
+        [
+            (-(hw + hcs), -(hh - hcs)),
+            (-(hw - hcs), -(hh - hcs)),
+            (-(hw - hcs), hh - hcs),
+            (-(hw + hcs), hh - hcs),
+        ],
+        layer=layer["metal1"],
+    )
+    # Right bar
+    c.add_polygon(
+        [
+            (hw - hcs, -(hh - hcs)),
+            (hw + hcs, -(hh - hcs)),
+            (hw + hcs, hh - hcs),
+            (hw - hcs, hh - hcs),
+        ],
+        layer=layer["metal1"],
+    )
+    # Top bar
+    c.add_polygon(
+        [
+            (-(hw + hcs), hh - hcs),
+            (hw + hcs, hh - hcs),
+            (hw + hcs, hh + hcs),
+            (-(hw + hcs), hh + hcs),
+        ],
+        layer=layer["metal1"],
+    )
+    # Bottom bar
+    c.add_polygon(
+        [
+            (-(hw + hcs), -(hh + hcs)),
+            (hw + hcs, -(hh + hcs)),
+            (hw + hcs, -(hh - hcs)),
+            (-(hw + hcs), -(hh - hcs)),
+        ],
+        layer=layer["metal1"],
+    )
+
+
+def _draw_guard_ring_implant(
+    c: gf.Component,
+    gw: float,
+    gh: float,
+    implant_layer: LayerSpec,
+    bloat: float,
+    is_psd: bool,
+) -> None:
+    """Draw the implant layer around guard ring comp bars.
+
+    For nsd-type (nplus + comp), the implant is a simple rectangular ring
+    with uniform bloat beyond comp.
+
+    For psd-type (pplus + comp), the implant has a more complex shape
+    matching Magic's CIF extraction rules.
+    """
+    hw = gw / 2
+    hh = gh / 2
+    hdifft = _DIFFT / 2
+
+    if not is_psd:
+        # nsd type: rectangular ring with asymmetric bloat
+        # nplus extends _NSD_IMPLANT_OUTER_BLOAT beyond comp outer edges
+        # and _NSD_IMPLANT_INNER_BLOAT beyond comp inner edges (toward center)
+        outer_x = hw + hdifft + _NSD_IMPLANT_OUTER_BLOAT
+        outer_y = hh + hdifft + _NSD_IMPLANT_OUTER_BLOAT
+        inner_x = hw - hdifft - _NSD_IMPLANT_INNER_BLOAT
+        inner_y = hh - hdifft - _NSD_IMPLANT_INNER_BLOAT
+
+        # Top bar
+        c.add_polygon(
+            [(-outer_x, inner_y), (outer_x, inner_y),
+             (outer_x, outer_y), (-outer_x, outer_y)],
+            layer=implant_layer,
+        )
+        # Bottom bar
+        c.add_polygon(
+            [(-outer_x, -outer_y), (outer_x, -outer_y),
+             (outer_x, -inner_y), (-outer_x, -inner_y)],
+            layer=implant_layer,
+        )
+        # Left bar
+        c.add_polygon(
+            [(-outer_x, -inner_y), (-inner_x, -inner_y),
+             (-inner_x, inner_y), (-outer_x, inner_y)],
+            layer=implant_layer,
+        )
+        # Right bar
+        c.add_polygon(
+            [(inner_x, -inner_y), (outer_x, -inner_y),
+             (outer_x, inner_y), (inner_x, inner_y)],
+            layer=implant_layer,
+        )
+    else:
+        # psd type: more complex shape from Magic CIF extraction
+        # The pplus has different bloat amounts and corner patches
+        # From reference analysis across multiple param sets:
+        # - Top/bottom bars: extend 0.02 beyond comp outer, start 0.02 below comp inner
+        # - Side bars: extend 0.03 beyond comp outer and inner
+        #   but truncated in Y leaving room for corner patches
+        # - Corner patches bridge the gap
+
+        co_x = hw + hdifft  # comp outer X
+        co_y = hh + hdifft  # comp outer Y
+        ci_x = hw - hdifft  # comp inner X
+        ci_y = hh - hdifft  # comp inner Y
+
+        # psd bloat values (from reference analysis, consistent across sizes)
+        b_out = 0.02   # bloat on comp outer edge for top/bottom bars
+        b_side = 0.03  # bloat on comp inner/outer edge for side bars
+        side_y_gap = 0.125  # how far below ci_y the side bars end
+        corner_h = 0.105   # corner patch height = side_y_gap - b_out
+
+        # Inner X edge of side bars / corner patches
+        side_inner_x = ci_x - b_side
+
+        # Top bar: full width, from (ci_y - b_out) to (co_y + b_out)
+        c.add_polygon(
+            [
+                (-(co_x + b_out), ci_y - b_out),
+                (co_x + b_out, ci_y - b_out),
+                (co_x + b_out, co_y + b_out),
+                (-(co_x + b_out), co_y + b_out),
+            ],
+            layer=implant_layer,
+        )
+        # Bottom bar
+        c.add_polygon(
+            [
+                (-(co_x + b_out), -(co_y + b_out)),
+                (co_x + b_out, -(co_y + b_out)),
+                (co_x + b_out, -(ci_y - b_out)),
+                (-(co_x + b_out), -(ci_y - b_out)),
+            ],
+            layer=implant_layer,
+        )
+        # Left side bar (from -(ci_y - side_y_gap) to +(ci_y - side_y_gap))
+        c.add_polygon(
+            [
+                (-(co_x + b_side), -(ci_y - side_y_gap)),
+                (-side_inner_x, -(ci_y - side_y_gap)),
+                (-side_inner_x, ci_y - side_y_gap),
+                (-(co_x + b_side), ci_y - side_y_gap),
+            ],
+            layer=implant_layer,
+        )
+        # Right side bar
+        c.add_polygon(
+            [
+                (side_inner_x, -(ci_y - side_y_gap)),
+                (co_x + b_side, -(ci_y - side_y_gap)),
+                (co_x + b_side, ci_y - side_y_gap),
+                (side_inner_x, ci_y - side_y_gap),
+            ],
+            layer=implant_layer,
+        )
+        # Corner patches (4 corners)
+        # Top-left
+        c.add_polygon(
+            [
+                (-(co_x + b_out), ci_y - side_y_gap),
+                (-side_inner_x, ci_y - side_y_gap),
+                (-side_inner_x, ci_y - b_out),
+                (-(co_x + b_out), ci_y - b_out),
+            ],
+            layer=implant_layer,
+        )
+        # Top-right
+        c.add_polygon(
+            [
+                (side_inner_x, ci_y - side_y_gap),
+                (co_x + b_out, ci_y - side_y_gap),
+                (co_x + b_out, ci_y - b_out),
+                (side_inner_x, ci_y - b_out),
+            ],
+            layer=implant_layer,
+        )
+        # Bottom-left
+        c.add_polygon(
+            [
+                (-(co_x + b_out), -(ci_y - b_out)),
+                (-side_inner_x, -(ci_y - b_out)),
+                (-side_inner_x, -(ci_y - side_y_gap)),
+                (-(co_x + b_out), -(ci_y - side_y_gap)),
+            ],
+            layer=implant_layer,
+        )
+        # Bottom-right
+        c.add_polygon(
+            [
+                (side_inner_x, -(ci_y - b_out)),
+                (co_x + b_out, -(ci_y - b_out)),
+                (co_x + b_out, -(ci_y - side_y_gap)),
+                (side_inner_x, -(ci_y - side_y_gap)),
+            ],
+            layer=implant_layer,
+        )
+
+
+# ---------------------------------------------------------------------------
+# End contact helper (matching Magic draw_contact for resistor end caps)
+# ---------------------------------------------------------------------------
+
+
+def _draw_end_contact(
+    c: gf.Component,
+    cx: float,
+    cy: float,
+    fill_w: float,
+    end_layer: LayerSpec,
+    orient: str = "horz",
+) -> None:
+    """Draw an end contact with metal and base layer at (cx, cy).
+
+    Args:
+        c: component
+        cx, cy: center position
+        fill_w: contact fill width (cpl)
+        end_layer: base layer (poly2 or comp)
+        orient: "horz" or "vert" for metal growth direction
+    """
+    w = max(fill_w, _CONTACT_SIZE)
+    h = _CONTACT_SIZE  # h=0 input -> clipped to contact_size
+
+    hw = w / 2
+    hh = h / 2
+
+    # Draw contacts
+    _draw_contacts_2d(c, cx, cy, w, h)
+
+    # Draw end_type (poly/comp) surrounding contacts
+    es = _DIFF_SURROUND if end_layer == layer["comp"] else _POLY_SURROUND
+    c.add_polygon(
+        [
+            (cx - hw - es, cy - hh - es),
+            (cx + hw + es, cy - hh - es),
+            (cx + hw + es, cy + hh + es),
+            (cx - hw - es, cy + hh + es),
+        ],
+        layer=end_layer,
+    )
+
+    # Draw metal
+    ms = _METAL_SURROUND
+    if orient == "horz":
+        c.add_polygon(
+            [
+                (cx - hw - ms, cy - hh),
+                (cx + hw + ms, cy - hh),
+                (cx + hw + ms, cy + hh),
+                (cx - hw - ms, cy + hh),
+            ],
+            layer=layer["metal1"],
+        )
+    else:
+        c.add_polygon(
+            [
+                (cx - hw, cy - hh - ms),
+                (cx + hw, cy - hh - ms),
+                (cx + hw, cy + hh + ms),
+                (cx - hw, cy + hh + ms),
+            ],
+            layer=layer["metal1"],
+        )
+
+
+# ---------------------------------------------------------------------------
+# Metal resistor (rm1, rm2, rm3)
+# ---------------------------------------------------------------------------
+
+
+def _metal_res(
+    w: float,
+    l: float,
+    m_layer: LayerSpec,
+    res_layer: LayerSpec,
+) -> gf.Component:
+    """Draw a metal resistor centered at origin (l along Y, w along X).
+
+    From Magic: guard=0, no contacts, just res_type mark + end_type metal.
+    Metal extends res_to_endcont + contact_size/2 + end_surround beyond res_mk.
+    For metal resistors: end_surround=0.0, res_to_endcont=0.2.
+    Extension = 0.2 + 0.115 + 0.0 = 0.315.
+    """
+    c = gf.Component()
+
+    hw = w / 2
+    hl = l / 2
+    ext = 0.315  # verified across all rm1/rm2/rm3 test cases
+
+    # Res mark (centered, w x l)
+    c.add_polygon(
+        [(-hw, -hl), (hw, -hl), (hw, hl), (-hw, hl)],
+        layer=res_layer,
+    )
+
+    # Metal (centered, w x (l + 2*ext))
+    c.add_polygon(
+        [(-hw, -(hl + ext)), (hw, -(hl + ext)),
+         (hw, hl + ext), (-hw, hl + ext)],
+        layer=m_layer,
+    )
+
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Poly resistor (ppolyf_u, npolyf_u, ppolyf_s, npolyf_s)
+# ---------------------------------------------------------------------------
+
+
+def _poly_res(
+    w: float,
+    l: float,
+    res_type: str,
+) -> gf.Component:
+    """Draw a poly resistor with guard ring, centered at origin."""
+    c = gf.Component()
+
+    hw = w / 2
+    hl = l / 2
+
+    # Device parameters per type
+    if res_type in ("ppolyf_u", "npolyf_u"):
+        # Unsilicided poly
+        res_to_endcont = 0.33  # sblk_to_cont
+        end_surround = _POLY_SURROUND  # 0.065
+        end_spacing = 0.60
+        res_diff_spacing = 0.60
+        mask_clearance = 0.52
+        sab_ext_x = 0.28  # sab extends beyond res_mk in X direction
+        has_sab = True
+    else:
+        # Silicided poly
+        res_to_endcont = _POLY_SURROUND + _CONTACT_SIZE / 2  # 0.065 + 0.115 = 0.18
+        end_surround = _POLY_SURROUND
+        end_spacing = 0.28 if res_type == "npolyf_s" else 0.28
+        res_diff_spacing = 0.28 if res_type == "npolyf_s" else 0.41
+        has_sab = False
+
+    # Implant and well types (from Tcl *_draw procedures)
+    # ppolyf_u: body=pplus(rpp), guard=nsd, well=nwell
+    # ppolyf_s: body=pplus(rpps), guard=nsd, well=nwell
+    # npolyf_u: body=nplus(rnp), guard=psd, well=pwell
+    # npolyf_s: body=nplus(rnps), guard=nsd, well=nwell
+    if res_type == "ppolyf_u":
+        body_impl_layer = layer["pplus"]
+        gr_impl_layer = layer["nplus"]
+        well_layer = layer["nwell"]
+        is_psd_gr = False
+    elif res_type == "ppolyf_s":
+        body_impl_layer = layer["pplus"]
+        gr_impl_layer = layer["nplus"]
+        well_layer = layer["nwell"]
+        is_psd_gr = False
+    elif res_type == "npolyf_u":
+        body_impl_layer = layer["nplus"]
+        gr_impl_layer = layer["pplus"]
+        well_layer = layer["lvpwell"]
+        is_psd_gr = True
+    elif res_type == "npolyf_s":
+        body_impl_layer = layer["nplus"]
+        gr_impl_layer = layer["nplus"]
+        well_layer = layer["nwell"]
+        is_psd_gr = False
+
+    # --- Compute geometry ---
+
+    hesz = _CONTACT_SIZE / 2 + end_surround  # 0.18 for poly
+    # epl: end contact width (reduced by end_surround on each side)
+    epl = w - 2 * end_surround
+    # cpl: contact fill width
+    cpl = epl
+
+    # Poly extent: from body center, extends to end contact center + hesz
+    poly_ext_y = hl + res_to_endcont + hesz  # poly half-height
+
+    # --- Draw layers ---
+
+    # 1. Res mark (110,5): w x l centered
+    c.add_polygon(
+        [(-hw, -hl), (hw, -hl), (hw, hl), (-hw, hl)],
+        layer=layer["res_mk"],
+    )
+
+    # 2. Poly2 (30,0): w x 2*poly_ext_y centered
+    c.add_polygon(
+        [(-hw, -poly_ext_y), (hw, -poly_ext_y),
+         (hw, poly_ext_y), (-hw, poly_ext_y)],
+        layer=layer["poly2"],
+    )
+
+    # 3. SAB (49,0): for unsilicided types, extends sab_ext_x beyond res_mk in X
+    if has_sab:
+        sab_hw = hw + sab_ext_x
+        c.add_polygon(
+            [(-sab_hw, -hl), (sab_hw, -hl),
+             (sab_hw, hl), (-sab_hw, hl)],
+            layer=layer["sab"],
+        )
+
+    # 4. Body implant (pplus or nplus): extends 0.30 beyond poly2 in both directions
+    impl_ext = 0.30
+    if res_type in ("ppolyf_s", "npolyf_s"):
+        # For silicided: implant extends 0.18 beyond poly in all directions
+        impl_ext_x = end_surround + _CONTACT_SIZE / 2  # 0.18
+        impl_ext_y = end_surround + _CONTACT_SIZE / 2  # 0.18
+        c.add_polygon(
+            [
+                (-(hw + impl_ext_x), -(poly_ext_y + impl_ext_y)),
+                (hw + impl_ext_x, -(poly_ext_y + impl_ext_y)),
+                (hw + impl_ext_x, poly_ext_y + impl_ext_y),
+                (-(hw + impl_ext_x), poly_ext_y + impl_ext_y),
+            ],
+            layer=body_impl_layer,
+        )
+    else:
+        # For unsilicided: implant extends 0.30 beyond poly in all directions
+        c.add_polygon(
+            [
+                (-(hw + impl_ext), -(poly_ext_y + impl_ext)),
+                (hw + impl_ext, -(poly_ext_y + impl_ext)),
+                (hw + impl_ext, poly_ext_y + impl_ext),
+                (-(hw + impl_ext), poly_ext_y + impl_ext),
+            ],
+            layer=body_impl_layer,
+        )
+
+    # 5. End contacts (top and bottom of poly body)
+    end_cy = hl + res_to_endcont  # contact center Y
+    _draw_end_contact(c, 0, end_cy, cpl, layer["poly2"], orient="horz")
+    _draw_end_contact(c, 0, -end_cy, cpl, layer["poly2"], orient="horz")
+
+    # 6. Guard ring
+    # Device footprint height (fh) = 2 * poly_ext_y
+    fh = 2 * poly_ext_y
+    fw = w  # device footprint width = w
+
+    # Guard ring dimensions (measured to contact centers)
+    gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+    gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+
+    _guard_ring(
+        c, gx, gy,
+        plus_diff_layer=layer["comp"],
+        plus_contact_layer=layer["contact"],
+        sub_type_layer=well_layer,
+        implant_layer=gr_impl_layer,
+        implant_bloat=_NSD_IMPLANT_OUTER_BLOAT,
+        is_psd=is_psd_gr,
+    )
+
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Diffusion resistor (nplus_u, pplus_u)
+# ---------------------------------------------------------------------------
+
+
+def _diff_res(
+    w: float,
+    l: float,
+    res_type: str,
+) -> gf.Component:
+    """Draw a diffusion resistor with guard ring, centered at origin."""
+    c = gf.Component()
+
+    hw = w / 2
+    hl = l / 2
+
+    # Parameters from Tcl
+    res_to_endcont = 0.45
+    end_surround = _DIFF_SURROUND  # 0.065
+    end_spacing = 0.45
+    res_diff_spacing = 0.45
+    mask_clearance = 0.22
+    sab_ext_x = 0.22  # sab extends beyond res_mk in X
+
+    hesz = _CONTACT_SIZE / 2 + end_surround  # 0.18
+    epl = w - 2 * end_surround  # end contact width
+    cpl = epl
+
+    # Comp body extends from body center to end contact + hesz
+    comp_ext_y = hl + res_to_endcont + hesz  # comp half-height
+
+    if res_type == "nplus_u":
+        body_impl_layer = layer["nplus"]
+        gr_impl_layer = layer["pplus"]
+        well_layer = layer["lvpwell"]
+        is_psd_gr = True
+    else:
+        body_impl_layer = layer["pplus"]
+        gr_impl_layer = layer["nplus"]
+        well_layer = layer["nwell"]
+        is_psd_gr = False
+
+    # --- Draw layers ---
+
+    # 1. Res mark (110,5): w x l centered
+    c.add_polygon(
+        [(-hw, -hl), (hw, -hl), (hw, hl), (-hw, hl)],
+        layer=layer["res_mk"],
+    )
+
+    # 2. SAB (49,0): extends sab_ext_x beyond res_mk in X, same Y as res_mk
+    sab_hw = hw + sab_ext_x
+    c.add_polygon(
+        [(-sab_hw, -hl), (sab_hw, -hl),
+         (sab_hw, hl), (-sab_hw, hl)],
+        layer=layer["sab"],
+    )
+
+    # 3. Comp body (22,0): w x 2*comp_ext_y centered
+    c.add_polygon(
+        [(-hw, -comp_ext_y), (hw, -comp_ext_y),
+         (hw, comp_ext_y), (-hw, comp_ext_y)],
+        layer=layer["comp"],
+    )
+
+    # 4. Body implant: two overlapping rectangles matching Magic's CIF extraction
+    # nplus/pplus for the body has two rectangles:
+    # One with 0.18 bloat (nplus_bloat = diff_surround + contact_size/2)
+    # One with 0.16 bloat
+    bloat_outer = end_surround + _CONTACT_SIZE / 2  # 0.18
+    bloat_inner = _NSD_IMPLANT_OUTER_BLOAT  # 0.16
+    c.add_polygon(
+        [
+            (-(hw + bloat_outer), -(comp_ext_y + bloat_outer)),
+            (hw + bloat_outer, -(comp_ext_y + bloat_outer)),
+            (hw + bloat_outer, comp_ext_y + bloat_outer),
+            (-(hw + bloat_outer), comp_ext_y + bloat_outer),
+        ],
+        layer=body_impl_layer,
+    )
+    c.add_polygon(
+        [
+            (-(hw + bloat_inner), -(comp_ext_y + bloat_inner)),
+            (hw + bloat_inner, -(comp_ext_y + bloat_inner)),
+            (hw + bloat_inner, comp_ext_y + bloat_inner),
+            (-(hw + bloat_inner), comp_ext_y + bloat_inner),
+        ],
+        layer=body_impl_layer,
+    )
+
+    # 5. End contacts (top and bottom)
+    end_cy = hl + res_to_endcont
+    _draw_end_contact(c, 0, end_cy, cpl, layer["comp"], orient="horz")
+    _draw_end_contact(c, 0, -end_cy, cpl, layer["comp"], orient="horz")
+
+    # 6. Guard ring
+    fh = 2 * comp_ext_y
+    fw = w
+    gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+    gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+
+    _guard_ring(
+        c, gx, gy,
+        plus_diff_layer=layer["comp"],
+        plus_contact_layer=layer["contact"],
+        sub_type_layer=well_layer,
+        implant_layer=gr_impl_layer,
+        implant_bloat=_NSD_IMPLANT_OUTER_BLOAT,
+        is_psd=is_psd_gr,
+    )
+
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Well resistor (nwell)
+# ---------------------------------------------------------------------------
+
+
+def _well_res(
+    w: float,
+    l: float,
+) -> gf.Component:
+    """Draw an nwell resistor with guard ring, centered at origin."""
+    c = gf.Component()
+
+    hw = w / 2
+    hl = l / 2
+
+    # Parameters from Tcl nwell_draw
+    res_to_endcont = 0.38
+    end_surround = _DIFF_SURROUND  # 0.065
+    end_spacing = 1.4
+    res_diff_spacing = 0.28
+    well_res_overlap = 0.24
+
+    hesz = _CONTACT_SIZE / 2 + end_surround  # 0.18
+
+    # nwell body: extends hl + well_res_overlap + end cap
+    # The nwell body = w (in X) x l + 2*well_res_overlap (extra) + end contacts
+    # From reference: nwell = w x (l + 2*0.8) approximately
+    # Let me compute from reference: nwell w=2, l=10 -> nwell (-1, -5.8)-(1, 5.8)
+    # nwell half_x = 1.0 = w/2 = 1.0 ✓
+    # nwell half_y = 5.8 = l/2 + 0.8
+    # 0.8 = well_res_overlap + contact_size/2 + end_surround + res_to_endcont
+    # = 0.24 + 0.115 + 0.065 + 0.38 = 0.80 ✓
+    well_ext_y = res_to_endcont + hesz + well_res_overlap  # 0.38 + 0.18 + 0.24 = 0.80
+    nwell_hy = hl + well_ext_y
+
+    # Draw nwell
+    c.add_polygon(
+        [(-hw, -nwell_hy), (hw, -nwell_hy),
+         (hw, nwell_hy), (-hw, nwell_hy)],
+        layer=layer["nwell"],
+    )
+
+    # End contacts: nsd type (comp + nplus)
+    # Contact center at hl + res_to_endcont + well_res_overlap
+    # Actually from reference: nplus at (−0.92,5.04)-(0.92,5.72) for l=10, w=2
+    # nplus center_y = 5.38, half_height = 0.34
+    # end_cy = 5.38 => from hl=5: end_cy - hl = 0.38 = res_to_endcont ✓ (for the center of the contact area)
+    # But nplus extends from 5.04 to 5.72
+    # contact in this region: need to check
+
+    # epl for well resistor: w - 2*end_surround - 2*well_res_overlap
+    epl = w - 2 * end_surround - 2 * well_res_overlap
+    cpl = epl
+
+    end_cy = hl + res_to_endcont + well_res_overlap  # contact center shifted by well_res_overlap
+
+    # End comp (nsd): comp + nplus at top and bottom
+    # comp extends: epl + 2*end_surround in X, contact_size + 2*end_surround in Y
+    comp_hw = (epl + 2 * end_surround) / 2  # = (w - 2*well_res_overlap) / 2
+    comp_hh = hesz  # contact_size/2 + end_surround
+
+    # Top end comp
+    c.add_polygon(
+        [
+            (-comp_hw, end_cy - comp_hh),
+            (comp_hw, end_cy - comp_hh),
+            (comp_hw, end_cy + comp_hh),
+            (-comp_hw, end_cy + comp_hh),
+        ],
+        layer=layer["comp"],
+    )
+    # Bottom end comp
+    c.add_polygon(
+        [
+            (-comp_hw, -(end_cy + comp_hh)),
+            (comp_hw, -(end_cy + comp_hh)),
+            (comp_hw, -(end_cy - comp_hh)),
+            (-comp_hw, -(end_cy - comp_hh)),
+        ],
+        layer=layer["comp"],
+    )
+
+    # nplus for end contacts
+    nplus_hw = comp_hw + _NSD_IMPLANT_OUTER_BLOAT
+    nplus_hh = comp_hh + _NSD_IMPLANT_OUTER_BLOAT
+    c.add_polygon(
+        [
+            (-nplus_hw, end_cy - nplus_hh),
+            (nplus_hw, end_cy - nplus_hh),
+            (nplus_hw, end_cy + nplus_hh),
+            (-nplus_hw, end_cy + nplus_hh),
+        ],
+        layer=layer["nplus"],
+    )
+    c.add_polygon(
+        [
+            (-nplus_hw, -(end_cy + nplus_hh)),
+            (nplus_hw, -(end_cy + nplus_hh)),
+            (nplus_hw, -(end_cy - nplus_hh)),
+            (-nplus_hw, -(end_cy - nplus_hh)),
+        ],
+        layer=layer["nplus"],
+    )
+
+    # End contacts
+    _draw_contacts_2d(c, 0, end_cy, cpl, _CONTACT_SIZE)
+    _draw_contacts_2d(c, 0, -end_cy, cpl, _CONTACT_SIZE)
+
+    # End contact metal (horz orientation)
+    m_hw = max(cpl, _CONTACT_SIZE) / 2 + _METAL_SURROUND
+    m_hh = _CONTACT_SIZE / 2
+    c.add_polygon(
+        [(-m_hw, end_cy - m_hh), (m_hw, end_cy - m_hh),
+         (m_hw, end_cy + m_hh), (-m_hw, end_cy + m_hh)],
+        layer=layer["metal1"],
+    )
+    c.add_polygon(
+        [(-m_hw, -(end_cy + m_hh)), (m_hw, -(end_cy + m_hh)),
+         (m_hw, -(end_cy - m_hh)), (-m_hw, -(end_cy - m_hh))],
+        layer=layer["metal1"],
+    )
+
+    # Guard ring
+    # Device footprint: from reference analysis
+    # fh = 2 * (nwell_hy + ?) - need to compute from end cap extent
+    fh_half = end_cy + hesz  # = nwell_hy
+    fh = 2 * fh_half
+    fw = w
+
+    gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+    gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+
+    # lvpwell guard ring (psd guard ring for nwell resistor)
+    _guard_ring(
+        c, gx, gy,
+        plus_diff_layer=layer["comp"],
+        plus_contact_layer=layer["contact"],
+        sub_type_layer=layer["lvpwell"],
+        implant_layer=layer["pplus"],
+        implant_bloat=0.02,
+        is_psd=True,
+    )
+
+    return c
+
+
+# ---------------------------------------------------------------------------
+# High-R poly resistor (ppolyf_u_1k, ppolyf_u_1k_6p0)
+# ---------------------------------------------------------------------------
+
+
+def _highR_poly_res(
+    w: float,
+    l: float,
+    is_6p0: bool = False,
+) -> gf.Component:
+    """Draw a high-R poly resistor with guard ring."""
+    c = gf.Component()
+
+    hw = w / 2
+    hl = l / 2
+
+    # Parameters from Tcl ppolyf_u_1k_draw
+    res_to_endcont = 0.43
+    end_surround = _POLY_SURROUND  # 0.065
+    end_spacing = 0.7
+    res_diff_spacing = 0.7
+    mask_clearance = 0.22
+
+    hesz = _CONTACT_SIZE / 2 + end_surround  # 0.18
+    epl = w - 2 * end_surround
+    cpl = epl
+
+    poly_ext_y = hl + res_to_endcont + hesz  # poly half-height
+
+    # From reference: poly2 w=1.0, l=1.0 -> (-0.5, -1.11)-(0.5, 1.11)
+    # poly_ext_y = 0.5 + 0.43 + 0.18 = 1.11 ✓
+
+    # Guard ring uses psd type
+    gr_impl_layer = layer["pplus"]
+    well_layer = layer["lvpwell"]
+
+    # --- Draw layers ---
+
+    # 1. Inner res_mk: w x l centered
+    c.add_polygon(
+        [(-hw, -hl), (hw, -hl), (hw, hl), (-hw, hl)],
+        layer=layer["res_mk"],
+    )
+
+    # 2. Outer res_mk (fhres mark): extends sab_ext beyond inner in X, same Y
+    # From reference: res_mk has TWO shapes:
+    # (-0.78, -0.5)-(0.78, 0.5) and (-0.5, -0.5)-(0.5, 0.5)
+    # The outer one has sab_ext = 0.28 in X
+    sab_ext_x = 0.28
+    c.add_polygon(
+        [
+            (-(hw + sab_ext_x), -hl),
+            (hw + sab_ext_x, -hl),
+            (hw + sab_ext_x, hl),
+            (-(hw + sab_ext_x), hl),
+        ],
+        layer=layer["res_mk"],
+    )
+
+    # 3. SAB: two shapes
+    # Inner sab: same as outer res_mk
+    c.add_polygon(
+        [
+            (-(hw + sab_ext_x), -hl),
+            (hw + sab_ext_x, -hl),
+            (hw + sab_ext_x, hl),
+            (-(hw + sab_ext_x), hl),
+        ],
+        layer=layer["sab"],
+    )
+    # Outer sab: extends 0.10 more in Y
+    sab_ext_y = 0.10
+    c.add_polygon(
+        [
+            (-(hw + sab_ext_x), -(hl + sab_ext_y)),
+            (hw + sab_ext_x, -(hl + sab_ext_y)),
+            (hw + sab_ext_x, hl + sab_ext_y),
+            (-(hw + sab_ext_x), hl + sab_ext_y),
+        ],
+        layer=layer["sab"],
+    )
+
+    # 4. Resistor mark (62,0): large box around the device
+    # From reference: resistor = (-0.9, -1.51)-(0.9, 1.51) for w=1,l=1
+    # That's (hw+0.4, poly_ext_y+0.4) approximately
+    # Actually: 0.9 = 0.5 + 0.4, 1.51 = 1.11 + 0.4
+    res_mark_ext_x = 0.40
+    res_mark_ext_y = 0.40
+    c.add_polygon(
+        [
+            (-(hw + res_mark_ext_x), -(poly_ext_y + res_mark_ext_y)),
+            (hw + res_mark_ext_x, -(poly_ext_y + res_mark_ext_y)),
+            (hw + res_mark_ext_x, poly_ext_y + res_mark_ext_y),
+            (-(hw + res_mark_ext_x), poly_ext_y + res_mark_ext_y),
+        ],
+        layer=layer["resistor"],
+    )
+
+    # 5. Poly2
+    c.add_polygon(
+        [(-hw, -poly_ext_y), (hw, -poly_ext_y),
+         (hw, poly_ext_y), (-hw, poly_ext_y)],
+        layer=layer["poly2"],
+    )
+
+    # 6. End contacts
+    end_cy = hl + res_to_endcont
+    _draw_end_contact(c, 0, end_cy, cpl, layer["poly2"], orient="horz")
+    _draw_end_contact(c, 0, -end_cy, cpl, layer["poly2"], orient="horz")
+
+    # 7. Guard ring
+    fh = 2 * poly_ext_y
+    fw = w
+    gx = fw + 2 * (res_diff_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+    gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
+
+    _guard_ring(
+        c, gx, gy,
+        plus_diff_layer=layer["comp"],
+        plus_contact_layer=layer["contact"],
+        sub_type_layer=well_layer,
+        implant_layer=gr_impl_layer,
+        implant_bloat=0.02,
+        is_psd=True,
+    )
+
+    # 8. Dualgate for 6p0 variant
+    if is_6p0:
+        # From reference: dualgate = (-1.8, -2.41)-(1.8, 2.41) for w=1, l=1
+        # That extends 0.12 beyond lvpwell
+        well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
+        gx_half = gx / 2
+        gy_half = gy / 2
+        dg_ext = 0.12  # dualgate extends beyond well
+        well_x = gx_half + well_ext
+        well_y = gy_half + well_ext
+        c.add_polygon(
+            [
+                (-(well_x + dg_ext), -(well_y + dg_ext)),
+                (well_x + dg_ext, -(well_y + dg_ext)),
+                (well_x + dg_ext, well_y + dg_ext),
+                (-(well_x + dg_ext), well_y + dg_ext),
+            ],
+            layer=layer["dualgate"],
+        )
+
+    return c
+
+
+# ---------------------------------------------------------------------------
+# Main entry point: res()
+# ---------------------------------------------------------------------------
 
 
 @gf.cell
@@ -15,86 +1076,95 @@ def res(
     r0_label: str = "",
     r1_label: str = "",
 ) -> gf.Component:
-    """Returns 2-terminal Metal resistor by specifying parameters.
+    """Returns a resistor component matching Magic VLSI geometry.
+
+    All layouts are centered at the origin with length along Y and width along X.
 
     Args:
-        l_res: length of resistor.
-        w_res: width of resistor.
-        res_type: type of resistor.
-        label: label generation.
-        r0_label: label for resistor.
-        r1_label: label for resistor.
-
+        l_res: resistor length.
+        w_res: resistor width.
+        res_type: resistor variant.
+        label: whether to generate labels.
+        r0_label: label for terminal 0.
+        r1_label: label for terminal 1.
     """
-    c = gf.Component("res_dev")
-
-    m_ext = 0.28
-
+    # --- Metal resistors ---
     if res_type == "rm1":
-        m_layer = layer["metal1"]
-        res_layer = layer["metal1_res"]
-        m_label_layer = layer["metal1_label"]
+        c = _metal_res(w_res, l_res, layer["metal1"], layer["metal1_res"])
     elif res_type == "rm2":
-        m_layer = layer["metal2"]
-        res_layer = layer["metal2_res"]
-        m_label_layer = layer["metal2_label"]
+        c = _metal_res(w_res, l_res, layer["metal2"], layer["metal2_res"])
     elif res_type == "rm3":
-        m_layer = layer["metal3"]
-        res_layer = layer["metal3_res"]
-        m_label_layer = layer["metal3_label"]
+        c = _metal_res(w_res, l_res, layer["metal3"], layer["metal3_res"])
+
+    # --- Poly resistors ---
+    elif res_type in ("ppolyf_u", "npolyf_u", "ppolyf_s", "npolyf_s"):
+        c = _poly_res(w_res, l_res, res_type)
+
+    # --- Diffusion resistors ---
+    elif res_type in ("nplus_u", "pplus_u"):
+        c = _diff_res(w_res, l_res, res_type)
+
+    # --- Well resistor ---
+    elif res_type == "nwell":
+        c = _well_res(w_res, l_res)
+
+    # --- High-R poly ---
+    elif res_type == "ppolyf_u_1k":
+        c = _highR_poly_res(w_res, l_res, is_6p0=False)
+    elif res_type == "ppolyf_u_1k_6p0":
+        c = _highR_poly_res(w_res, l_res, is_6p0=True)
+
     else:
-        m_layer = layer["metaltop"]
-        res_layer = layer["metal6_res"]
-        m_label_layer = layer["metaltop_label"]
+        raise ValueError(f"Unknown res_type: {res_type}")
 
-    res_mk = c.add_ref(gf.components.rectangle(size=(l_res, w_res), layer=res_layer))
+    # Copy to output component with ports
+    out = gf.Component("res_dev")
+    ref = out.add_ref(c)
 
-    m_rect = c.add_ref(
-        gf.components.rectangle(size=(l_res + (2 * m_ext), w_res), layer=m_layer)
-    )
-    m_rect.xmin = res_mk.xmin - m_ext
-    m_rect.ymin = res_mk.ymin
+    # Add electrical ports
+    hw = w_res / 2
+    hl = l_res / 2
 
-    # labels generation
-    if label == 1:
-        c.add_label(
-            r0_label,
-            position=(
-                res_mk.xmin + (res_mk.xsize / 2),
-                res_mk.ymin + (res_mk.ysize / 2),
-            ),
-            layer=m_label_layer,
+    if res_type in ("rm1", "rm2", "rm3"):
+        ext = 0.315
+        m_layer = {"rm1": layer["metal1"], "rm2": layer["metal2"],
+                    "rm3": layer["metal3"]}[res_type]
+        out.add_port(
+            name="r0",
+            center=(0, hl + ext),
+            width=w_res,
+            orientation=90,
+            layer=m_layer,
+            port_type="electrical",
         )
-        c.add_label(
-            r1_label,
-            position=(
-                m_rect.xmin + (res_mk.xmin - m_rect.xmin) / 2,
-                m_rect.ymin + (m_rect.ysize / 2),
-            ),
-            layer=m_label_layer,
+        out.add_port(
+            name="r1",
+            center=(0, -(hl + ext)),
+            width=w_res,
+            orientation=270,
+            layer=m_layer,
+            port_type="electrical",
         )
-
-    # Add ports for resistor terminals
-    c.add_port(
-        name="r0",
-        center=(m_rect.xmin, m_rect.ymin + m_rect.ysize / 2),
-        width=w_res,
-        orientation=180,
-        layer=m_layer,
-        port_type="electrical",
-    )
-
-    c.add_port(
-        name="r1",
-        center=(m_rect.xmax, m_rect.ymin + m_rect.ysize / 2),
-        width=w_res,
-        orientation=0,
-        layer=m_layer,
-        port_type="electrical",
-    )
+    else:
+        out.add_port(
+            name="r0",
+            center=(0, hl),
+            width=w_res,
+            orientation=90,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
+        out.add_port(
+            name="r1",
+            center=(0, -hl),
+            width=w_res,
+            orientation=270,
+            layer=layer["metal1"],
+            port_type="electrical",
+        )
 
     # VLSIR Simulation Metadata
-    c.info["vlsir"] = {
+    out.info["vlsir"] = {
         "model": res_type,
         "spice_type": "SUBCKT",
         "spice_lib": "res",
@@ -103,1345 +1173,4 @@ def res(
         "params": {"r_length": l_res, "r_width": w_res},
     }
 
-    return c
-
-
-@gf.cell
-def plus_res_inst(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "nplus_s",
-    sub: bool = False,
-    cmp_res_ext: float = 0.1,
-    con_enc: float = 0.1,
-    cmp_imp_layer: LayerSpec = layer["nplus"],
-    sub_imp_layer: LayerSpec = layer["pplus"],
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """Returns 2-terminal Metal resistor by specifying parameters.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "nplus_s".
-        sub: False.
-        cmp_res_ext: 0.1.
-        con_enc: 0.1.
-        cmp_imp_layer: layer["nplus"].
-        sub_imp_layer: layer["pplus"].
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component()
-
-    sub_w: float = 0.36
-    np_enc_cmp: float = 0.16
-    pp_enc_cmp: float = 0.16
-    comp_spacing: float = 0.72
-    sab_res_ext = 0.22
-
-    res_mk = c.add_ref(
-        gf.components.rectangle(size=(l_res, w_res), layer=layer["res_mk"])
-    )
-
-    if "plus_u" in res_type:
-        sab_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(res_mk.xsize, res_mk.ysize + (2 * sab_res_ext)),
-                layer=layer["sab"],
-            )
-        )
-        sab_rect.xmin = res_mk.xmin
-        sab_rect.ymin = res_mk.ymin - sab_res_ext
-
-    cmp = c.add_ref(
-        gf.components.rectangle(
-            size=(res_mk.xsize + (2 * cmp_res_ext), res_mk.ysize),
-            layer=layer["comp"],
-        )
-    )
-    cmp.xmin = res_mk.xmin - cmp_res_ext
-    cmp.ymin = res_mk.ymin
-
-    cmp_con = via_stack(
-        x_range=(cmp.xmin, res_mk.xmin + con_enc),
-        y_range=(cmp.ymin, cmp.ymax),
-        base_layer=layer["comp"],
-        metal_level=1,
-    )
-
-    cmp_con_arr = c.add_ref(
-        component=cmp_con,
-        rows=1,
-        columns=2,
-        column_pitch=cmp_res_ext - con_enc + res_mk.xsize,
-    )  # comp contact array
-
-    # labels generation
-    if label == 1:
-        c.add_label(
-            r0_label,
-            position=(
-                cmp_con_arr.xmin + (cmp_con.xsize / 2),
-                cmp_con_arr.ymin + (cmp_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-        c.add_label(
-            r1_label,
-            position=(
-                cmp_con_arr.xmax - (cmp_con.xsize / 2),
-                cmp_con_arr.ymin + (cmp_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-    cmp_imp = c.add_ref(
-        gf.components.rectangle(
-            size=(cmp.xsize + (2 * np_enc_cmp), cmp.ysize + (2 * np_enc_cmp)),
-            layer=cmp_imp_layer,
-        )
-    )
-    cmp_imp.xmin = cmp.xmin - np_enc_cmp
-    cmp_imp.ymin = cmp.ymin - np_enc_cmp
-
-    if sub == 1:
-        sub_rect = c.add_ref(
-            gf.components.rectangle(size=(sub_w, w_res), layer=layer["comp"])
-        )
-        sub_rect.xmax = cmp.xmin - comp_spacing
-        sub_rect.ymin = cmp.ymin
-
-        # sub_rect contact
-        sub_con = c.add_ref(
-            via_stack(
-                x_range=(sub_rect.xmin, sub_rect.xmax),
-                y_range=(sub_rect.ymin, sub_rect.ymax),
-                base_layer=layer["comp"],
-                metal_level=1,
-            )
-        )
-
-        sub_imp = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    sub_rect.xsize + (2 * pp_enc_cmp),
-                    cmp.ysize + (2 * pp_enc_cmp),
-                ),
-                layer=sub_imp_layer,
-            )
-        )
-        sub_imp.xmin = sub_rect.xmin - pp_enc_cmp
-        sub_imp.ymin = sub_rect.ymin - pp_enc_cmp
-
-        # label generation
-        if label == 1:
-            c.add_label(
-                sub_label,
-                position=(
-                    sub_con.xmin + (sub_con.xsize / 2),
-                    sub_con.ymin + (sub_con.ysize / 2),
-                ),
-                layer=layer["metal1_label"],
-            )
-
-        # Add substrate port
-        c.add_port(
-            name="sub",
-            center=(sub_con.dcenter[0], sub_con.dcenter[1]),
-            width=sub_w,
-            orientation=180,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    # Add ports for resistor terminals
-    c.add_port(
-        name="r0",
-        center=(cmp_con_arr.xmin + (cmp_con.xsize / 2), cmp_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    c.add_port(
-        name="r1",
-        center=(cmp_con_arr.xmax - (cmp_con.xsize / 2), cmp_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=0,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    return c
-
-
-@gf.cell
-def nplus_res(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "nplus_s",
-    sub: bool = False,
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """nplus_res.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "nplus_s".
-        sub: False.
-        deepnwell: False.
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component()
-
-    lvpwell_enc_cmp = 0.43
-    dn_enc_lvpwell = 2.5
-    sub_w = 0.36
-
-    if res_type == "nplus_s":
-        cmp_res_ext = 0.29
-        con_enc = 0.07
-    else:
-        cmp_res_ext = 0.44
-        con_enc = 0.0
-
-    # adding res inst
-    r_inst = c.add_ref(
-        plus_res_inst(
-            l_res=l_res,
-            w_res=w_res,
-            res_type=res_type,
-            sub=sub,
-            cmp_res_ext=cmp_res_ext,
-            con_enc=con_enc,
-            cmp_imp_layer=layer["nplus"],
-            sub_imp_layer=layer["pplus"],
-            label=label,
-            r0_label=r0_label,
-            r1_label=r1_label,
-            sub_label=sub_label,
-        )
-    )
-
-    if deepnwell == 1:
-        lvpwell = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    r_inst.xsize + (2 * lvpwell_enc_cmp),
-                    r_inst.ysize + (2 * lvpwell_enc_cmp),
-                ),
-                layer=layer["lvpwell"],
-            )
-        )
-        lvpwell.xmin = r_inst.xmin - lvpwell_enc_cmp
-        lvpwell.ymin = r_inst.ymin - lvpwell_enc_cmp
-
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    lvpwell.xsize + (2 * dn_enc_lvpwell),
-                    lvpwell.ysize + (2 * dn_enc_lvpwell),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmin = lvpwell.xmin - dn_enc_lvpwell
-        dn_rect.ymin = lvpwell.ymin - dn_enc_lvpwell
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    # Add ports from the underlying r_inst component
-    if "r0" in r_inst.ports:
-        c.add_port(
-            name="r0",
-            center=r_inst.ports["r0"].dcenter,
-            width=r_inst.ports["r0"].width,
-            orientation=r_inst.ports["r0"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "r1" in r_inst.ports:
-        c.add_port(
-            name="r1",
-            center=r_inst.ports["r1"].dcenter,
-            width=r_inst.ports["r1"].width,
-            orientation=r_inst.ports["r1"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "sub" in r_inst.ports and sub == 1:
-        c.add_port(
-            name="sub",
-            center=r_inst.ports["sub"].dcenter,
-            width=r_inst.ports["sub"].width,
-            orientation=r_inst.ports["sub"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-        # VLSIR Simulation Metadata with substrate port
-        c.info["vlsir"] = {
-            "model": "nplus_u" if "_u" in res_type else "nplus_s",
-            "spice_type": "SUBCKT",
-            "spice_lib": "res",
-            "port_order": ["1", "2", "3"],
-            "port_map": {"r0": "1", "r1": "2", "sub": "3"},
-            "params": {"r_length": l_res, "r_width": w_res},
-        }
-    else:
-        # VLSIR Simulation Metadata without substrate port
-        c.info["vlsir"] = {
-            "model": "nplus_u" if "_u" in res_type else "nplus_s",
-            "spice_type": "SUBCKT",
-            "spice_lib": "res",
-            "port_order": ["1", "2"],
-            "port_map": {"r0": "1", "r1": "2"},
-            "params": {"r_length": l_res, "r_width": w_res},
-        }
-
-    return c
-
-
-@gf.cell
-def pplus_res(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "pplus_s",
-    sub: bool = False,
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """pplus_res.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "pplus_s".
-        sub: False.
-        deepnwell: False.
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component("res_dev")
-
-    nw_enc_pcmp = 0.6
-    dn_enc_ncmp = 0.66
-    dn_enc_pcmp = 1.02
-    sub_w = 0.36
-
-    if res_type == "pplus_s":
-        cmp_res_ext = 0.29
-        con_enc = 0.07
-    else:
-        cmp_res_ext = 0.44
-        con_enc = 0.0
-
-    # adding res inst
-    r_inst = c.add_ref(
-        plus_res_inst(
-            l_res=l_res,
-            w_res=w_res,
-            res_type=res_type,
-            sub=1,
-            cmp_res_ext=cmp_res_ext,
-            con_enc=con_enc,
-            cmp_imp_layer=layer["pplus"],
-            sub_imp_layer=layer["nplus"],
-            label=label,
-            r0_label=r0_label,
-            r1_label=r1_label,
-            sub_label=sub_label,
-        )
-    )
-
-    if deepnwell == 1:
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    r_inst.xsize + (dn_enc_pcmp + dn_enc_ncmp),
-                    r_inst.ysize + (2 * dn_enc_pcmp),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmax = r_inst.xmax + dn_enc_pcmp
-        dn_rect.ymin = r_inst.ymin - dn_enc_pcmp
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    else:
-        nw_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    r_inst.xsize + (2 * nw_enc_pcmp),
-                    r_inst.ysize + (2 * nw_enc_pcmp),
-                ),
-                layer=layer["nwell"],
-            )
-        )
-        nw_rect.xmin = r_inst.xmin - nw_enc_pcmp
-        nw_rect.ymin = r_inst.ymin - nw_enc_pcmp
-
-    # Add ports from the underlying r_inst component
-    if "r0" in r_inst.ports:
-        c.add_port(
-            name="r0",
-            center=r_inst.ports["r0"].dcenter,
-            width=r_inst.ports["r0"].width,
-            orientation=r_inst.ports["r0"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "r1" in r_inst.ports:
-        c.add_port(
-            name="r1",
-            center=r_inst.ports["r1"].dcenter,
-            width=r_inst.ports["r1"].width,
-            orientation=r_inst.ports["r1"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "sub" in r_inst.ports:
-        c.add_port(
-            name="sub",
-            center=r_inst.ports["sub"].dcenter,
-            width=r_inst.ports["sub"].width,
-            orientation=r_inst.ports["sub"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    # VLSIR Simulation Metadata
-
-    c.info["vlsir"] = {
-        "model": "pplus_u" if "_u" in res_type else "pplus_s",
-        "spice_type": "SUBCKT",
-        "spice_lib": "res",
-        "port_order": ["1", "2", "3"],
-        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
-        "params": {"r_length": l_res, "r_width": w_res},
-    }
-
-    return c
-
-
-@gf.cell
-def polyf_res_inst(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "npolyf_s",
-    pl_res_ext: float = 0.1,
-    con_enc: float = 0.1,
-    pl_imp_layer: LayerSpec = layer["nplus"],
-    sub_imp_layer: LayerSpec = layer["pplus"],
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """polyf_res_inst.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "npolyf_s".
-        pl_res_ext: 0.1.
-        con_enc: 0.1.
-        pl_imp_layer: layer["nplus"].
-        sub_imp_layer: layer["pplus"].
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component()
-
-    sub_w: float = 0.36
-    np_enc_poly2 = 0.3
-    pp_enc_cmp: float = 0.16
-    comp_spacing: float = 0.72
-    sab_res_ext = 0.28
-
-    res_mk = c.add_ref(
-        gf.components.rectangle(size=(l_res, w_res), layer=layer["res_mk"])
-    )
-
-    if "polyf_u" in res_type:
-        sab_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(res_mk.xsize, res_mk.ysize + (2 * sab_res_ext)),
-                layer=layer["sab"],
-            )
-        )
-        sab_rect.xmin = res_mk.xmin
-        sab_rect.ymin = res_mk.ymin - sab_res_ext
-
-    pl = c.add_ref(
-        gf.components.rectangle(
-            size=(res_mk.xsize + (2 * pl_res_ext), res_mk.ysize),
-            layer=layer["poly2"],
-        )
-    )
-    pl.xmin = res_mk.xmin - pl_res_ext
-    pl.ymin = res_mk.ymin
-
-    pl_con = via_stack(
-        x_range=(pl.xmin, res_mk.xmin + con_enc),
-        y_range=(pl.ymin, pl.ymax),
-        base_layer=layer["poly2"],
-        metal_level=1,
-    )
-
-    pl_con_arr = c.add_ref(
-        component=pl_con,
-        rows=1,
-        columns=2,
-        column_pitch=pl_res_ext - con_enc + res_mk.xsize,
-    )  # comp contact array
-
-    pl_imp = c.add_ref(
-        gf.components.rectangle(
-            size=(pl.xsize + (2 * np_enc_poly2), pl.ysize + (2 * np_enc_poly2)),
-            layer=pl_imp_layer,
-        )
-    )
-    pl_imp.xmin = pl.xmin - np_enc_poly2
-    pl_imp.ymin = pl.ymin - np_enc_poly2
-
-    sub_rect = c.add_ref(
-        gf.components.rectangle(size=(sub_w, w_res), layer=layer["comp"])
-    )
-    sub_rect.xmax = pl.xmin - comp_spacing
-    sub_rect.ymin = pl.ymin
-
-    # sub_rect contact
-    sub_con = c.add_ref(
-        via_stack(
-            x_range=(sub_rect.xmin, sub_rect.xmax),
-            y_range=(sub_rect.ymin, sub_rect.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-    )
-
-    sub_imp = c.add_ref(
-        gf.components.rectangle(
-            size=(
-                sub_rect.xsize + (2 * pp_enc_cmp),
-                pl.ysize + (2 * pp_enc_cmp),
-            ),
-            layer=sub_imp_layer,
-        )
-    )
-    sub_imp.xmin = sub_rect.xmin - pp_enc_cmp
-    sub_imp.ymin = sub_rect.ymin - pp_enc_cmp
-
-    # labels generation
-    if label == 1:
-        c.add_label(
-            r0_label,
-            position=(
-                pl_con_arr.xmin + (pl_con.xsize / 2),
-                pl_con_arr.ymin + (pl_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-        c.add_label(
-            r1_label,
-            position=(
-                pl_con_arr.xmax - (pl_con.xsize / 2),
-                pl_con_arr.ymin + (pl_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-        c.add_label(
-            sub_label,
-            position=(
-                sub_con.xmin + (sub_con.xsize / 2),
-                sub_con.ymin + (sub_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-    # Add substrate port
-    c.add_port(
-        name="sub",
-        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
-        width=sub_w,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    # Add ports for resistor terminals
-    c.add_port(
-        name="r0",
-        center=(pl_con_arr.xmin + (pl_con.xsize / 2), pl_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    c.add_port(
-        name="r1",
-        center=(pl_con_arr.xmax - (pl_con.xsize / 2), pl_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=0,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    return c
-
-
-@gf.cell
-def npolyf_res(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "npolyf_s",
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """npolyf_res.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "npolyf_s".
-        deepnwell: False.
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component("res_dev")
-
-    lvpwell_enc_cmp = 0.43
-    dn_enc_lvpwell = 2.5
-    sub_w = 0.36
-
-    if res_type == "npolyf_s":
-        pl_res_ext = 0.29
-        con_enc = 0.07
-    else:
-        pl_res_ext = 0.44
-        con_enc = 0.0
-
-    # adding res inst
-    r_inst = c.add_ref(
-        polyf_res_inst(
-            l_res=l_res,
-            w_res=w_res,
-            res_type=res_type,
-            pl_res_ext=pl_res_ext,
-            con_enc=con_enc,
-            pl_imp_layer=layer["nplus"],
-            sub_imp_layer=layer["pplus"],
-            label=label,
-            r0_label=r0_label,
-            r1_label=r1_label,
-            sub_label=sub_label,
-        )
-    )
-
-    if deepnwell == 1:
-        lvpwell = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    r_inst.xsize + (2 * lvpwell_enc_cmp),
-                    r_inst.ysize + (2 * lvpwell_enc_cmp),
-                ),
-                layer=layer["lvpwell"],
-            )
-        )
-        lvpwell.xmin = r_inst.xmin - lvpwell_enc_cmp
-        lvpwell.ymin = r_inst.ymin - lvpwell_enc_cmp
-
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    lvpwell.xsize + (2 * dn_enc_lvpwell),
-                    lvpwell.ysize + (2 * dn_enc_lvpwell),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmin = lvpwell.xmin - dn_enc_lvpwell
-        dn_rect.ymin = lvpwell.ymin - dn_enc_lvpwell
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    # Add ports from the underlying r_inst component
-    if "r0" in r_inst.ports:
-        c.add_port(
-            name="r0",
-            center=r_inst.ports["r0"].dcenter,
-            width=r_inst.ports["r0"].width,
-            orientation=r_inst.ports["r0"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "r1" in r_inst.ports:
-        c.add_port(
-            name="r1",
-            center=r_inst.ports["r1"].dcenter,
-            width=r_inst.ports["r1"].width,
-            orientation=r_inst.ports["r1"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "sub" in r_inst.ports:
-        c.add_port(
-            name="sub",
-            center=r_inst.ports["sub"].dcenter,
-            width=r_inst.ports["sub"].width,
-            orientation=r_inst.ports["sub"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    # VLSIR Simulation Metadata
-
-    c.info["vlsir"] = {
-        "model": "npolyf_u" if "_u" in res_type else "npolyf_s",
-        "spice_type": "SUBCKT",
-        "spice_lib": "res",
-        "port_order": ["1", "2", "3"],
-        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
-        "params": {"r_length": l_res, "r_width": w_res},
-    }
-
-    return c
-
-
-@gf.cell
-def ppolyf_res(
-    l_res: float = 0.1,
-    w_res: float = 0.1,
-    res_type: str = "ppolyf_s",
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """ppolyf_res.
-
-    Args:
-        l_res: 0.1.
-        w_res: 0.1.
-        res_type: "ppolyf_s".
-        deepnwell: False.
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component("res_dev")
-
-    sub_w = 0.36
-    dn_enc_ncmp = 0.66
-    dn_enc_poly2 = 1.34
-
-    if res_type == "ppolyf_s":
-        pl_res_ext = 0.29
-        con_enc = 0.07
-    else:
-        pl_res_ext = 0.44
-        con_enc = 0.0
-
-    if deepnwell == 1:
-        sub_layer = layer["nplus"]
-    else:
-        sub_layer = layer["pplus"]
-
-    # adding res inst
-    r_inst = c.add_ref(
-        polyf_res_inst(
-            l_res=l_res,
-            w_res=w_res,
-            res_type=res_type,
-            pl_res_ext=pl_res_ext,
-            con_enc=con_enc,
-            pl_imp_layer=layer["pplus"],
-            sub_imp_layer=sub_layer,
-            label=label,
-            r0_label=r0_label,
-            r1_label=r1_label,
-            sub_label=sub_label,
-        )
-    )
-
-    if deepnwell == 1:
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    r_inst.xsize + (dn_enc_poly2 + dn_enc_ncmp),
-                    r_inst.ysize + (2 * dn_enc_poly2),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmax = r_inst.xmax + dn_enc_poly2
-        dn_rect.ymin = r_inst.ymin - dn_enc_poly2
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    # Add ports from the underlying r_inst component
-    if "r0" in r_inst.ports:
-        c.add_port(
-            name="r0",
-            center=r_inst.ports["r0"].dcenter,
-            width=r_inst.ports["r0"].width,
-            orientation=r_inst.ports["r0"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "r1" in r_inst.ports:
-        c.add_port(
-            name="r1",
-            center=r_inst.ports["r1"].dcenter,
-            width=r_inst.ports["r1"].width,
-            orientation=r_inst.ports["r1"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    if "sub" in r_inst.ports:
-        c.add_port(
-            name="sub",
-            center=r_inst.ports["sub"].dcenter,
-            width=r_inst.ports["sub"].width,
-            orientation=r_inst.ports["sub"].orientation,
-            layer=layer["metal1"],
-            port_type="electrical",
-        )
-
-    # VLSIR Simulation Metadata
-
-    c.info["vlsir"] = {
-        "model": "ppolyf_u" if "_u" in res_type else "ppolyf_s",
-        "spice_type": "SUBCKT",
-        "spice_lib": "res",
-        "port_order": ["1", "2", "3"],
-        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
-        "params": {"r_length": l_res, "r_width": w_res},
-    }
-
-    return c
-
-
-@gf.cell
-def ppolyf_u_high_Rs_res(
-    l_res: float = 0.42,
-    w_res: float = 0.42,
-    volt: str = "3.3V",
-    deepnwell: bool = False,
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """ppolyf_u_high_Rs_res.
-
-    Args:
-        l_res: 0.42.
-        w_res: 0.42.
-        volt: "3.3V".
-        deepnwell: False.
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component("res_dev")
-
-    dn_enc_ncmp = 0.62
-    dn_enc_poly2 = 1.34
-
-    pl_res_ext = 0.64
-
-    sub_w: float = 0.42
-    pp_enc_poly2 = 0.18
-    pp_enc_cmp: float = 0.02
-    comp_spacing: float = 0.7
-    sab_res_ext = (0.1, 0.28)
-    con_size = 0.36
-    resis_enc = (1.04, 0.4)
-    dg_enc_dn = 0.5
-
-    res_mk = c.add_ref(
-        gf.components.rectangle(size=(l_res, w_res), layer=layer["res_mk"])
-    )
-
-    resis_mk = c.add_ref(
-        gf.components.rectangle(
-            size=(
-                res_mk.xsize + (2 * resis_enc[0]),
-                res_mk.ysize + (2 * resis_enc[1]),
-            ),
-            layer=layer["resistor"],
-        )
-    )
-
-    resis_mk.xmin = res_mk.xmin - resis_enc[0]
-    resis_mk.ymin = res_mk.ymin - resis_enc[1]
-
-    sab_rect = c.add_ref(
-        gf.components.rectangle(
-            size=(
-                res_mk.xsize + (2 * sab_res_ext[0]),
-                res_mk.ysize + (2 * sab_res_ext[1]),
-            ),
-            layer=layer["sab"],
-        )
-    )
-    sab_rect.xmin = res_mk.xmin - sab_res_ext[0]
-    sab_rect.ymin = res_mk.ymin - sab_res_ext[1]
-
-    pl = c.add_ref(
-        gf.components.rectangle(
-            size=(res_mk.xsize + (2 * pl_res_ext), res_mk.ysize),
-            layer=layer["poly2"],
-        )
-    )
-    pl.xmin = res_mk.xmin - pl_res_ext
-    pl.ymin = res_mk.ymin
-
-    pl_con = via_stack(
-        x_range=(pl.xmin, pl.xmin + con_size),
-        y_range=(pl.ymin, pl.ymax),
-        base_layer=layer["poly2"],
-        metal_level=1,
-    )
-
-    pl_con_arr = c.add_ref(
-        component=pl_con,
-        rows=1,
-        columns=2,
-        column_pitch=(pl.xsize - con_size),
-    )  # comp contact array
-
-    pplus = gf.components.rectangle(
-        size=(pl_res_ext + pp_enc_poly2, pl.ysize + (2 * pp_enc_poly2)),
-        layer=layer["pplus"],
-    )
-
-    pplus_arr = c.add_ref(
-        component=pplus, rows=1, columns=2, column_pitch=(pplus.xsize + res_mk.xsize)
-    )
-
-    pplus_arr.xmin = pl.xmin - pp_enc_poly2
-    pplus_arr.ymin = pl.ymin - pp_enc_poly2
-
-    sub_rect = c.add_ref(
-        gf.components.rectangle(size=(sub_w, w_res), layer=layer["comp"])
-    )
-    sub_rect.xmax = pl.xmin - comp_spacing
-    sub_rect.ymin = pl.ymin
-
-    # sub_rect contact
-    sub_con = c.add_ref(
-        via_stack(
-            x_range=(sub_rect.xmin, sub_rect.xmax),
-            y_range=(sub_rect.ymin, sub_rect.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-    )
-
-    # labels generation
-    if label == 1:
-        c.add_label(
-            r0_label,
-            position=(
-                pl_con_arr.xmin + (pl_con.xsize / 2),
-                pl_con_arr.ymin + (pl_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-        c.add_label(
-            r1_label,
-            position=(
-                pl_con_arr.xmax - (pl_con.xsize / 2),
-                pl_con_arr.ymin + (pl_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-        c.add_label(
-            sub_label,
-            position=(
-                sub_con.xmin + (sub_con.xsize / 2),
-                sub_con.ymin + (sub_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-    if deepnwell == 1:
-        sub_layer = layer["nplus"]
-    else:
-        sub_layer = layer["pplus"]
-
-    sub_imp = c.add_ref(
-        gf.components.rectangle(
-            size=(
-                sub_rect.xsize + (2 * pp_enc_cmp),
-                pl.ysize + (2 * pp_enc_cmp),
-            ),
-            layer=sub_layer,
-        )
-    )
-    sub_imp.xmin = sub_rect.xmin - pp_enc_cmp
-    sub_imp.ymin = sub_rect.ymin - pp_enc_cmp
-
-    if deepnwell == 1:
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    (pl.xmax - sub_rect.xmin) + (dn_enc_poly2 + dn_enc_ncmp),
-                    pl.ysize + (2 * dn_enc_poly2),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmax = pl.xmax + dn_enc_poly2
-        dn_rect.ymin = pl.ymin - dn_enc_poly2
-
-        if volt == "5/6V":
-            dg = c.add_ref(
-                gf.components.rectangle(
-                    size=(
-                        dn_rect.xsize + (2 * dg_enc_dn),
-                        dn_rect.ysize + (2 * dg_enc_dn),
-                    ),
-                    layer=layer["dualgate"],
-                )
-            )
-
-            dg.xmin = dn_rect.xmin - dg_enc_dn
-            dg.ymin = dn_rect.ymin - dg_enc_dn
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    else:
-        if volt == "5/6V":
-            dg = c.add_ref(
-                gf.components.rectangle(
-                    size=(resis_mk.xsize, resis_mk.ysize), layer=layer["dualgate"]
-                )
-            )
-
-            dg.xmin = resis_mk.xmin
-            dg.ymin = resis_mk.ymin
-
-    # Add substrate port
-    c.add_port(
-        name="sub",
-        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
-        width=sub_w,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    # Add ports for resistor terminals
-    c.add_port(
-        name="r0",
-        center=(pl_con_arr.xmin + (pl_con.xsize / 2), pl_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    c.add_port(
-        name="r1",
-        center=(pl_con_arr.xmax - (pl_con.xsize / 2), pl_con_arr.dcenter[1]),
-        width=w_res,
-        orientation=0,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    # TODO: VLSIR Simulation Metadata
-    # Which model is being used in spice?
-
-    return c
-
-
-@gf.cell
-def well_res(
-    l_res: float = 0.42,
-    w_res: float = 0.42,
-    res_type: str = "nwell",
-    pcmpgr: bool = False,
-    label: bool = False,
-    r0_label: str = "",
-    r1_label: str = "",
-    sub_label: str = "",
-) -> gf.Component:
-    """well_res.
-
-    Args:
-        l_res: 0.42.
-        w_res: 0.42.
-        res_type: "nwell".
-        pcmpgr: False.
-        label: False.
-        r0_label: "".
-        r1_label: "".
-        sub_label: "".
-    """
-    c = gf.Component("res_dev")
-
-    nw_res_ext = 0.48
-    nw_res_enc = 0.5
-    nw_enc_cmp = 0.12
-
-    sub_w: float = 0.36
-    pp_enc_cmp: float = 0.16
-    nw_comp_spacing: float = 0.72
-    dn_enc_lvpwell = 2.5
-
-    if res_type == "pwell":
-        cmp_imp_layer = layer["pplus"]
-        sub_imp_layer = layer["nplus"]
-        well_layer = layer["lvpwell"]
-    else:
-        cmp_imp_layer = layer["nplus"]
-        sub_imp_layer = layer["pplus"]
-        well_layer = layer["nwell"]
-
-    res_mk = c.add_ref(
-        gf.components.rectangle(
-            size=(l_res, w_res + (2 * nw_res_enc)), layer=layer["res_mk"]
-        )
-    )
-
-    well_rect = c.add_ref(
-        gf.components.rectangle(
-            size=(res_mk.xsize + (2 * nw_res_ext), w_res), layer=well_layer
-        )
-    )
-    well_rect.xmin = res_mk.xmin - nw_res_ext
-    well_rect.ymin = res_mk.ymin + nw_res_enc
-
-    @gf.cell
-    def comp_related_gen(size: Float2 = (0.42, 0.42)) -> gf.Component:
-        """comp_related_gen.
-
-        Args:
-            size: (0.42, 0.42).
-        """
-        c = gf.Component()
-
-        cmp = c.add_ref(gf.components.rectangle(size=size, layer=layer["comp"]))
-        cmp.xmin = well_rect.xmin + nw_enc_cmp
-        cmp.ymin = well_rect.ymin + nw_enc_cmp
-
-        c.add_ref(
-            via_stack(
-                x_range=(cmp.xmin, cmp.xmax),
-                y_range=(cmp.ymin, cmp.ymax),
-                base_layer=layer["comp"],
-                metal_level=1,
-            )
-        )  # contact
-
-        return c
-
-    con_polys = comp_related_gen(
-        size=(
-            res_mk.xmin - well_rect.xmin - nw_enc_cmp,
-            well_rect.ysize - (2 * nw_enc_cmp),
-        )
-    )
-
-    con_polys_arr = c.add_ref(
-        component=con_polys,
-        rows=1,
-        columns=2,
-        column_pitch=(well_rect.xsize - (2 * nw_enc_cmp) - con_polys.xsize),
-    )  # comp and its related contact array
-
-    nplus_rect = gf.components.rectangle(
-        size=(
-            con_polys.xsize + (2 * pp_enc_cmp),
-            con_polys.ysize + (2 * pp_enc_cmp),
-        ),
-        layer=cmp_imp_layer,
-    )
-    nplus_arr = c.add_ref(
-        component=nplus_rect,
-        rows=1,
-        columns=2,
-        column_pitch=(well_rect.xsize - (2 * nw_enc_cmp) - con_polys.xsize),
-    )
-    nplus_arr.xmin = con_polys.xmin - pp_enc_cmp
-    nplus_arr.ymin = con_polys.ymin - pp_enc_cmp
-
-    sub_rect = c.add_ref(
-        gf.components.rectangle(size=(sub_w, well_rect.ysize), layer=layer["comp"])
-    )
-    sub_rect.xmax = well_rect.xmin - nw_comp_spacing
-    sub_rect.ymin = well_rect.ymin
-
-    # sub_rect contact
-    sub_con = c.add_ref(
-        via_stack(
-            x_range=(sub_rect.xmin, sub_rect.xmax),
-            y_range=(sub_rect.ymin, sub_rect.ymax),
-            base_layer=layer["comp"],
-            metal_level=1,
-        )
-    )
-
-    sub_imp = c.add_ref(
-        gf.components.rectangle(
-            size=(
-                sub_rect.xsize + (2 * pp_enc_cmp),
-                well_rect.ysize + (2 * pp_enc_cmp),
-            ),
-            layer=sub_imp_layer,
-        )
-    )
-    sub_imp.xmin = sub_rect.xmin - pp_enc_cmp
-    sub_imp.ymin = sub_rect.ymin - pp_enc_cmp
-
-    if res_type == "pwell":
-        dn_rect = c.add_ref(
-            gf.components.rectangle(
-                size=(
-                    well_rect.xsize + (2 * dn_enc_lvpwell),
-                    well_rect.ysize + (2 * dn_enc_lvpwell),
-                ),
-                layer=layer["dnwell"],
-            )
-        )
-        dn_rect.xmin = well_rect.xmin - dn_enc_lvpwell
-        dn_rect.ymin = well_rect.ymin - dn_enc_lvpwell
-
-        if pcmpgr == 1:
-            c.add_ref(pcmpgr_gen(dn_rect=dn_rect, grw=sub_w))
-
-    # labels generation
-    if label == 1:
-        c.add_label(
-            r0_label,
-            position=(
-                con_polys_arr.xmin + (con_polys.xsize / 2),
-                con_polys_arr.ymin + (con_polys.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-        c.add_label(
-            r1_label,
-            position=(
-                con_polys_arr.xmax - (con_polys.xsize / 2),
-                con_polys_arr.ymin + (con_polys.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-        c.add_label(
-            sub_label,
-            position=(
-                sub_con.xmin + (sub_con.xsize / 2),
-                sub_con.ymin + (sub_con.ysize / 2),
-            ),
-            layer=layer["metal1_label"],
-        )
-
-    # Add substrate port
-    c.add_port(
-        name="sub",
-        center=(sub_con.dcenter[0], sub_con.dcenter[1]),
-        width=sub_w,
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    # Add ports for resistor terminals
-    c.add_port(
-        name="r0",
-        center=(con_polys_arr.xmin + (con_polys.xsize / 2), con_polys_arr.dcenter[1]),
-        width=well_rect.ysize - (2 * nw_enc_cmp),
-        orientation=180,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    c.add_port(
-        name="r1",
-        center=(con_polys_arr.xmax - (con_polys.xsize / 2), con_polys_arr.dcenter[1]),
-        width=well_rect.ysize - (2 * nw_enc_cmp),
-        orientation=0,
-        layer=layer["metal1"],
-        port_type="electrical",
-    )
-
-    # VLSIR Simulation Metadata
-    if res_type == "nwell":
-        pass
-    else:
-        raise NotImplementedError("pwell is not specified in sm141064 library")
-
-    c.info["vlsir"] = {
-        "model": "nwell",
-        "spice_type": "SUBCKT",
-        "spice_lib": "res",
-        "port_order": ["1", "2", "3"],
-        "port_map": {"r0": "1", "r1": "2", "sub": "3"},
-        "params": {"r_length": l_res, "r_width": w_res},
-    }
-
-    return c
+    return out

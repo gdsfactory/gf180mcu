@@ -151,12 +151,14 @@ def _contact_cuts(c, cx, cy, w_envelope, h_envelope):
 # draw_contact — replicates gf180mcu::draw_contact
 # ---------------------------------------------------------------------------
 
-def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert"):
+def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert",
+                   no_cuts=False):
     """Draw contact with surrounding active/poly and metal1.
 
     w, h: requested contact area size (painted dimensions).
     cx, cy: center position.
     orient: "vert" (metal grows N/S), "horz" (metal grows E/W).
+    no_cuts: if True, skip contact cut placement (for DSS/asymmetric).
 
     Returns (ax0, ay0, ax1, ay1): active/poly surround bounding box.
     """
@@ -172,7 +174,8 @@ def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert"):
     hh = ch / 2.0
 
     # Contact cuts (physical 0.22 within the painted region)
-    _contact_cuts(c, cx, cy, cw, ch)
+    if not no_cuts:
+        _contact_cuts(c, cx, cy, cw, ch)
 
     # Active/poly surround (CIF bloats painted diff_surround to physical)
     # The total extent = hw + diff_surround (painted) stays the same.
@@ -403,15 +406,28 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
             region.insert(kdb.Box(um(t0 - bloat), um(t1 - bloat),
                                   um(t2 + bloat), um(t3 + bloat)))
 
-    # Gate region: compute bounding box of all gates, then bloat once
+    # Gate region: for dogbone devices (w < cdwmin), add each finger's gate
+    # individually so the gap between fingers is preserved (nplus notch at
+    # shared contacts). For non-dogbone, use bounding box of all gates.
     if use_gate and finger_results:
-        gate_x0 = min(r["gate"][0] for r in finger_results)
-        gate_y0 = min(r["gate"][1] for r in finger_results)
-        gate_x1 = max(r["gate"][2] for r in finger_results)
-        gate_y1 = max(r["gate"][3] for r in finger_results)
-        region.insert(kdb.Box(
-            um(gate_x0 - gate_bloat), um(gate_y0 - gate_bloat),
-            um(gate_x1 + gate_bloat), um(gate_y1 + gate_bloat)))
+        # Detect dogbone: channel Y extent < active Y extent
+        r0 = finger_results[0]
+        is_dogbone = abs(r0["channel"][3] - r0["channel"][1]) < \
+                     abs(r0["active"][3] - r0["active"][1]) - 0.001
+        if is_dogbone and len(finger_results) > 1:
+            for r in finger_results:
+                gx0, gy0, gx1, gy1 = r["gate"]
+                region.insert(kdb.Box(
+                    um(gx0 - gate_bloat), um(gy0 - gate_bloat),
+                    um(gx1 + gate_bloat), um(gy1 + gate_bloat)))
+        else:
+            gate_x0 = min(r["gate"][0] for r in finger_results)
+            gate_y0 = min(r["gate"][1] for r in finger_results)
+            gate_x1 = max(r["gate"][2] for r in finger_results)
+            gate_y1 = max(r["gate"][3] for r in finger_results)
+            region.insert(kdb.Box(
+                um(gate_x0 - gate_bloat), um(gate_y0 - gate_bloat),
+                um(gate_x1 + gate_bloat), um(gate_y1 + gate_bloat)))
 
     return region.merged()
 
@@ -550,7 +566,8 @@ def _mos_geometry(w, l, rules, topc=True, botc=True):
 # Draw single MOS device finger
 # ---------------------------------------------------------------------------
 
-def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
+def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
+                     dss=False, asym=False):
     """Draw one MOS finger at (cx, cy). Returns device extents."""
     w = geom["w"]
     l = geom["l"]
@@ -631,8 +648,14 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
     drain_cx = cx + dside * (hl + gate_to_diffcont)
     source_cx = cx + sside * (hl + gate_to_diffcont)
 
-    _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient)
-    _draw_contact(c, source_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient)
+    # DSS: skip all S/D contact cuts (keep metal and comp surround)
+    # Asymmetric: skip drain contact cuts only
+    drain_no_cuts = dss or asym
+    source_no_cuts = dss
+    _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
+                  no_cuts=drain_no_cuts)
+    _draw_contact(c, source_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
+                  no_cuts=source_no_cuts)
 
     # --- Poly contacts ---
     if topc:
@@ -709,6 +732,8 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
         channel=(_snap(chan_left), _snap(chan_bot), _snap(chan_right), _snap(chan_top)),
         gate=(_snap(gate_left), _snap(gate_bot), _snap(gate_right), _snap(gate_top)),
         dogbone_tabs=dogbone_tabs,
+        drain_cx=_snap(drain_cx),
+        source_cx=_snap(source_cx),
     )
 
 
@@ -717,7 +742,8 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True):
 # ---------------------------------------------------------------------------
 
 def _mos_draw(c, w, l, nf, rules, is_nfet=True,
-              topc=True, botc=True, guard=True, full_metal=True):
+              topc=True, botc=True, guard=True, full_metal=True,
+              dss=False, asym=False):
     """Draw complete MOSFET with guard ring."""
     contact_size = rules["contact_size"]
     diff_surround = rules["diff_surround"]
@@ -773,18 +799,75 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
     for i in range(nf):
         fx = start_x + i * dx
         result = _draw_mos_finger(c, fx, 0, geom, rules,
-                                  evens=evens, topc=topc, botc=botc)
+                                  evens=evens, topc=topc, botc=botc,
+                                  dss=dss, asym=asym)
         all_finger_results.append(result)
         evens = 1 - evens
 
     # Device implant
-    if all_finger_results:
+    volt = rules.get("volt", "3.3V")
+    if dss and volt in ("3.3V",) and all_finger_results:
+        # 3.3V DSS (ndiffres/pdiffres): implant is active bbox bloated by 0.18.
+        act_x0 = min(r["active"][0] for r in all_finger_results)
+        act_y0 = min(r["active"][1] for r in all_finger_results)
+        act_x1 = max(r["active"][2] for r in all_finger_results)
+        act_y1 = max(r["active"][3] for r in all_finger_results)
+        _rect(c, act_x0 - 0.18, act_y0 - 0.18,
+              act_x1 + 0.18, act_y1 + 0.18, dev_implant)
+    elif all_finger_results:
+        # Normal and 6V DSS (mvndiffres/mvpdiffres): standard implant computation.
         impl_region = _device_implant_region(all_finger_results, bloat=0.16)
         _draw_region(c, impl_region, dev_implant)
 
-    # Dualgate and V5_XTOR for 5V/6V
+    # --- DSS: add SAB layer ---
+    # SAB covers the device active area bloated by gate_extension (0.22)
+    if dss and all_finger_results:
+        sab_enc = rules["gate_extension"]
+        # Compute bounding box of all device active regions
+        act_x0 = min(r["active"][0] for r in all_finger_results)
+        act_y0 = min(r["active"][1] for r in all_finger_results)
+        act_x1 = max(r["active"][2] for r in all_finger_results)
+        act_y1 = max(r["active"][3] for r in all_finger_results)
+        _rect(c, act_x0 - sab_enc, act_y0 - sab_enc,
+              act_x1 + sab_enc, act_y1 + sab_enc, _L_SAB)
+
+    # --- 10V asymmetric: MVSD, dualgate, v5_xtor ---
     volt = rules.get("volt", "3.3V")
-    if volt in ("5.0V", "6.0V"):
+
+    if asym and all_finger_results:
+        import klayout.db as kdb
+        def um(v):
+            return round(v * 1000)
+
+        # MVSD layer covers drain-side diffusion area
+        # From analysis: MVSD extends from outer GR boundary to just past
+        # the gate on the source side, with height based on device extent
+        mvsd_region = kdb.Region()
+        for r in all_finger_results:
+            # Drain side extent
+            cx0, cy0, cx1, cy1 = r["channel"]
+            dcx = r["drain_cx"]
+            scx = r["source_cx"]
+
+            # MVSD covers from drain contact surround outer edge past the gate
+            # to the source contact inner edge, with Y from channel ± some enclosure
+            if dcx < scx:
+                # Drain is on the left
+                mvsd_x0 = _snap(dcx - contact_size / 2 - diff_surround - diff_spacing)
+                mvsd_x1 = _snap(scx - contact_size / 2 + diff_surround)
+            else:
+                # Drain is on the right
+                mvsd_x0 = _snap(scx + contact_size / 2 - diff_surround)
+                mvsd_x1 = _snap(dcx + contact_size / 2 + diff_surround + diff_spacing)
+            mvsd_y0 = _snap(cy0 - 0.10)
+            mvsd_y1 = _snap(cy1 + 0.10)
+            mvsd_region.insert(kdb.Box(um(mvsd_x0), um(mvsd_y0),
+                                       um(mvsd_x1), um(mvsd_y1)))
+        mvsd_region = mvsd_region.merged()
+        _draw_region(c, mvsd_region, _L_MVSD)
+
+    # Dualgate and V5_XTOR for 5V/6V/10V
+    if volt in ("5.0V", "6.0V", "10.0V"):
         sub_surround = rules["sub_surround"]
         hx_c = contact_size / 2.0
         sub_ext = hx_c + diff_surround + sub_surround
@@ -792,7 +875,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
               gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
 
-    if volt == "5.0V" and all_finger_results:
+    if volt in ("5.0V", "10.0V") and all_finger_results:
         # V5_XTOR = device comp shape (excluding GR) bloated by 0.10
         import klayout.db as kdb
         def um(v):
@@ -858,6 +941,8 @@ def nfet(
     g_label: Strs = (),
     sub_label: str = "",
     patt_label: bool = False,
+    dss: bool = False,
+    asym: bool = False,
 ) -> gf.Component:
     """Return NFET transistor matching Magic VLSI geometry."""
     c = gf.Component()
@@ -870,7 +955,8 @@ def nfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
-    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0)
+    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0,
+              dss=dss, asym=asym)
     return c
 
 
@@ -895,6 +981,8 @@ def pfet(
     g_label: Strs = (),
     sub_label: str = "",
     patt_label: bool = False,
+    dss: bool = False,
+    asym: bool = False,
 ) -> gf.Component:
     """Return PFET transistor matching Magic VLSI geometry."""
     c = gf.Component()
@@ -907,7 +995,8 @@ def pfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
-    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0)
+    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0,
+              dss=dss, asym=asym)
     return c
 
 
