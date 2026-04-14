@@ -962,6 +962,65 @@ def _well_res(
         draw_well=False,  # lvpwell ring drawn manually above
     )
 
+    # Add pplus shoulder strips for the nwell resistor guard ring.
+    # The psd _guard_ring_implant draws a uniform-width side bar, but the nwell
+    # resistor requires a wider inner strip in the shoulder region adjacent to
+    # the nwell end-contact area.  These 4 thin rectangles fill the gap between
+    # the central bar inner edge (ci_x - 0.03) and the shoulder inner edge
+    # (ci_x - 0.16), where ci_x = gx/2 - _DIFFT/2.
+    #
+    # Boundaries derived from reference GDS analysis:
+    #   shoulder_inner_x = ci_x - _NSD_IMPLANT_OUTER_BLOAT (0.16)
+    #   side_inner_x     = ci_x - 0.03  (psd b_side in _guard_ring_implant)
+    #   shoulder_bottom  = nwell_hy - end_spacing + 0.01  (10 nm grid snap)
+    #   shoulder_height  = 1.98 um  (constant across l and w)
+    _ci_x = gx / 2 - _DIFFT / 2
+    _shoulder_inner_x = _ci_x - _NSD_IMPLANT_OUTER_BLOAT
+    _side_inner_x = _ci_x - 0.03
+    _shoulder_bottom = nwell_hy - end_spacing + 0.01
+    _shoulder_top = _shoulder_bottom + 1.98
+
+    # Top-left shoulder strip
+    c.add_polygon(
+        [
+            (-_side_inner_x, _shoulder_bottom),
+            (-_shoulder_inner_x, _shoulder_bottom),
+            (-_shoulder_inner_x, _shoulder_top),
+            (-_side_inner_x, _shoulder_top),
+        ],
+        layer=layer["pplus"],
+    )
+    # Top-right shoulder strip
+    c.add_polygon(
+        [
+            (_shoulder_inner_x, _shoulder_bottom),
+            (_side_inner_x, _shoulder_bottom),
+            (_side_inner_x, _shoulder_top),
+            (_shoulder_inner_x, _shoulder_top),
+        ],
+        layer=layer["pplus"],
+    )
+    # Bottom-left shoulder strip
+    c.add_polygon(
+        [
+            (-_side_inner_x, -_shoulder_top),
+            (-_shoulder_inner_x, -_shoulder_top),
+            (-_shoulder_inner_x, -_shoulder_bottom),
+            (-_side_inner_x, -_shoulder_bottom),
+        ],
+        layer=layer["pplus"],
+    )
+    # Bottom-right shoulder strip
+    c.add_polygon(
+        [
+            (_shoulder_inner_x, -_shoulder_top),
+            (_side_inner_x, -_shoulder_top),
+            (_side_inner_x, -_shoulder_bottom),
+            (_shoulder_inner_x, -_shoulder_bottom),
+        ],
+        layer=layer["pplus"],
+    )
+
     return c
 
 
