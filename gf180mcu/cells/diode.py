@@ -1,112 +1,298 @@
 """Diode pcells matching Magic VLSI geometry exactly.
 
 Implements gf180mcu::diode_nd2ps and diode_pd2nw from Magic generators.
-The geometry follows Magic's diode_device + guard_ring + draw_contact pattern.
+
+All geometry derived from XOR regression against Magic VLSI reference GDS files.
+
+Key geometry rules (from reference analysis):
+  nd2ps 03v3: guard_inner = wa/2+0.300, guard_outer = wa/2+0.680 (strip=0.380)
+  nd2ps 06v0: guard_inner = wa/2+0.400, guard_outer = wa/2+0.760 (strip=0.360)
+  pd2nw 03v3 inner: same as nd2ps 03v3
+  pd2nw 06v0 inner: guard_inner = wa/2+0.360, guard_outer = wa/2+0.720 (strip=0.360)
+  pd2nw 03v3 outer: inner_outer+0.450 to inner_outer+0.810
+  pd2nw 06v0 outer: inner_outer+0.520 to inner_outer+0.880
+
+Contact rules:
+  nc_x = floor((wa+0.15)/0.50), pitch_x = 0.47 if nc_x==2 else 0.50
+  Guard ring side: nc_guard(nc, volt), pitch = 0.47 always
+  Contact inset from guard comp outer: 0.190 (03v3), 0.180 (06v0 or outer guard)
 """
 
 from math import floor
 
 import gdsfactory as gf
-from gdsfactory.typings import Float2
 
-from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
 
 
-def _magic_contact_array(
-    c: gf.Component,
-    x_range: tuple[float, float],
-    y_range: tuple[float, float],
-    contact_size: float = 0.22,
-    contact_spacing: float = 0.28,
-    contact_enclosure: float = 0.07,
-) -> None:
-    """Place a centered contact array in the given region, matching Magic's layout."""
-    width = x_range[1] - x_range[0]
-    height = y_range[1] - y_range[0]
+# ---------------------------------------------------------------------------
+# Helper: exact rectangle placement (bypasses gdsfactory snap_to_grid2x)
+# ---------------------------------------------------------------------------
 
-    # Number of contacts that fit
-    pitch = contact_size + contact_spacing
-    nc = max(1, floor((width - 2 * contact_enclosure + contact_spacing) / pitch))
-    nr = max(1, floor((height - 2 * contact_enclosure + contact_spacing) / pitch))
-
-    # Array dimensions
-    array_w = nc * contact_size + (nc - 1) * contact_spacing
-    array_h = nr * contact_size + (nr - 1) * contact_spacing
-
-    # Center the array
-    x0 = x_range[0] + (width - array_w) / 2
-    y0 = y_range[0] + (height - array_h) / 2
-
-    con_rect = gf.components.rectangle(
-        size=(contact_size, contact_size), layer=layer["contact"]
-    )
-    c.add_ref(
-        con_rect, columns=nc, rows=nr, column_pitch=pitch, row_pitch=pitch
-    ).move((x0, y0))
-
-    return nc, nr, x0, y0, array_w, array_h
+def _add_rect(c: gf.Component, x0: float, y0: float, x1: float, y1: float, lyr: str) -> None:
+    """Add an exact rectangle polygon directly, avoiding snap-to-grid rounding."""
+    c.add_polygon([(x0, y0), (x0, y1), (x1, y1), (x1, y0)], layer=layer[lyr])
 
 
-def _magic_draw_contact(
-    c: gf.Component,
-    cx: float,
-    cy: float,
-    w: float,
-    h: float,
-    diff_surround: float,
-    metal_surround: float,
-    contact_size: float,
-    comp_layer: tuple[int, int],
-    m1_layer: tuple[int, int],
-    orient: str = "vert",
-) -> None:
-    """Reproduce Magic's draw_contact function.
+# ---------------------------------------------------------------------------
+# Helper: contact position generation
+# ---------------------------------------------------------------------------
 
-    Draws contact array with comp/metal1 surrounds centered at (cx, cy).
+def _positions(nc: int, pitch: float) -> list:
+    """nc contact centre positions centred on zero."""
+    if nc == 1:
+        return [0.0]
+    start = -(nc - 1) / 2.0 * pitch
+    return [round(start + i * pitch, 4) for i in range(nc)]
+
+
+def _nc_inner(w: float) -> int:
+    """Number of inner device contacts in dimension w."""
+    return int((w + 0.15) / 0.50)
+
+
+def _nc_guard(nc: int, volt: str) -> int:
+    """Number of guard ring side contacts given inner contact count."""
+    if volt == "3.3V":
+        return nc + (1 if nc >= 4 and nc % 2 == 0 else 0)
+    else:  # 6.0V
+        return nc + 1
+
+
+def _inner_pitch(nc: int) -> float:
+    """Pitch for nc inner contacts."""
+    return 0.47 if nc == 2 else 0.50
+
+
+def _nc_outer_guard_side(og_inner_y: float) -> int:
+    """nc for outer guard ring side contacts (left/right columns).
+
+    Contact centres must satisfy: center_y ≤ og_inner_y - 0.340.
+    (Empirically derived from reference GDS: 0.340 = contact_half + 0.230 rule.)
     """
-    if w < contact_size:
-        w = contact_size
-    if h < contact_size:
-        h = contact_size
+    max_y = og_inner_y - 0.340
+    odd_nc = 0
+    for n in range(500):
+        if n * 0.47 <= max_y + 1e-9:
+            odd_nc = 2 * n + 1
+        else:
+            break
+    even_nc = 0
+    for n in range(1, 500):
+        if (n - 0.5) * 0.47 <= max_y + 1e-9:
+            even_nc = 2 * n
+        else:
+            break
+    return max(odd_nc, even_nc)
 
-    hw = w / 2
-    hh = h / 2
 
-    # Contact spacing (Magic uses 0.17um for contact layer, minimum)
-    con_spacing = 0.24  # typical GF180 contact spacing
-    con_pitch = contact_size + con_spacing
+def _place_contacts(c: gf.Component, xs: list, ys: list) -> None:
+    """Place 0.22x0.22 contacts at all (x,y) combinations."""
+    size = 0.22
+    con_rect = gf.components.rectangle(size=(size, size), layer=layer["contact"])
+    for x in xs:
+        for y in ys:
+            c.add_ref(con_rect).move((x - size / 2, y - size / 2))
 
-    # Number of contacts
-    nc = max(1, floor((w + con_spacing) / con_pitch))
-    nr = max(1, floor((h + con_spacing) / con_pitch))
 
-    array_w = nc * contact_size + (nc - 1) * con_spacing
-    array_h = nr * contact_size + (nr - 1) * con_spacing
-
-    con_x0 = cx - array_w / 2
-    con_y0 = cy - array_h / 2
-
-    # Contacts
-    con_rect = gf.components.rectangle(
-        size=(contact_size, contact_size), layer=layer["contact"]
-    )
+def _guard_ring_comp(
+    c: gf.Component,
+    guard_inner_x: float,
+    guard_inner_y: float,
+    guard_outer_x: float,
+    guard_outer_y: float,
+    lyr: str = "comp",
+) -> None:
+    """Draw guard ring comp as 4 strips (ring shape, no overlap with inner device comp)."""
+    # Top strip: from y=guard_inner_y to y=guard_outer_y, x=-guard_outer to +guard_outer
     c.add_ref(
-        con_rect, columns=nc, rows=nr, column_pitch=con_pitch, row_pitch=con_pitch
-    ).move((con_x0, con_y0))
-
-    # Metal1
-    m1_hw = hw
-    m1_hh = hh
-    if orient in ("vert", "full"):
-        m1_hh += metal_surround
-    if orient in ("horz", "full"):
-        m1_hw += metal_surround
-
+        gf.components.rectangle(
+            size=(2 * guard_outer_x, guard_outer_y - guard_inner_y), layer=layer[lyr]
+        )
+    ).move((-guard_outer_x, guard_inner_y))
+    # Bottom strip
     c.add_ref(
-        gf.components.rectangle(size=(2 * m1_hw, 2 * m1_hh), layer=m1_layer)
-    ).move((cx - m1_hw, cy - m1_hh))
+        gf.components.rectangle(
+            size=(2 * guard_outer_x, guard_outer_y - guard_inner_y), layer=layer[lyr]
+        )
+    ).move((-guard_outer_x, -guard_outer_y))
+    # Left strip: x=-guard_outer to x=-guard_inner, y=-guard_inner to y=+guard_inner
+    c.add_ref(
+        gf.components.rectangle(
+            size=(guard_outer_x - guard_inner_x, 2 * guard_inner_y), layer=layer[lyr]
+        )
+    ).move((-guard_outer_x, -guard_inner_y))
+    # Right strip
+    c.add_ref(
+        gf.components.rectangle(
+            size=(guard_outer_x - guard_inner_x, 2 * guard_inner_y), layer=layer[lyr]
+        )
+    ).move((guard_inner_x, -guard_inner_y))
 
+
+def _pplus_ring(
+    c: gf.Component,
+    guard_inner_x: float,
+    guard_inner_y: float,
+    guard_outer_x: float,
+    guard_outer_y: float,
+    outer_enc: float = 0.030,
+    inner_enc: float = 0.030,
+    cap_thickness: float = 0.010,
+    lyr: str = "pplus",
+) -> None:
+    """Draw a pplus/nplus ring matching Magic VLSI decomposition (nd2ps style).
+
+    Outer boundary: guard_outer + outer_enc, with thin caps protruding at
+    centre of each edge (half-width = guard_inner - 0.125).
+    Inner hole: guard_inner - inner_enc.
+    Uses direct polygon placement to avoid snap_to_grid2x rounding.
+    """
+    pp_outer_x = round(guard_outer_x + outer_enc, 4)
+    pp_outer_y = round(guard_outer_y + outer_enc, 4)
+    main_outer_x = round(pp_outer_x - cap_thickness, 4)
+    main_outer_y = round(pp_outer_y - cap_thickness, 4)
+    pp_inner_x = round(guard_inner_x - inner_enc, 4)
+    pp_inner_y = round(guard_inner_y - inner_enc, 4)
+    cap_half_x = round(guard_inner_x - 0.125, 4)
+    cap_half_y = round(guard_inner_y - 0.125, 4)
+
+    # Main top band: x=[-main_outer_x, main_outer_x], y=[pp_inner_y, main_outer_y]
+    _add_rect(c, -main_outer_x, pp_inner_y, main_outer_x, main_outer_y, lyr)
+    # Main bottom band
+    _add_rect(c, -main_outer_x, -main_outer_y, main_outer_x, -pp_inner_y, lyr)
+    # Main left strip: x=[-main_outer_x, -pp_inner_x], y=[-pp_inner_y, pp_inner_y]
+    _add_rect(c, -main_outer_x, -pp_inner_y, -pp_inner_x, pp_inner_y, lyr)
+    # Main right strip
+    _add_rect(c, pp_inner_x, -pp_inner_y, main_outer_x, pp_inner_y, lyr)
+    # Thin top cap: x=[-cap_half_x, cap_half_x], y=[main_outer_y, pp_outer_y]
+    _add_rect(c, -cap_half_x, main_outer_y, cap_half_x, pp_outer_y, lyr)
+    # Thin bottom cap
+    _add_rect(c, -cap_half_x, -pp_outer_y, cap_half_x, -main_outer_y, lyr)
+    # Thin left cap: x=[-pp_outer_x, -main_outer_x], y=[-cap_half_y, cap_half_y]
+    _add_rect(c, -pp_outer_x, -cap_half_y, -main_outer_x, cap_half_y, lyr)
+    # Thin right cap
+    _add_rect(c, main_outer_x, -cap_half_y, pp_outer_x, cap_half_y, lyr)
+
+
+def _pplus_ring_outer(
+    c: gf.Component,
+    og_inner_x: float,
+    og_inner_y: float,
+    og_outer_x: float,
+    og_outer_y: float,
+    lyr: str = "pplus",
+) -> None:
+    """Draw pd2nw outer guard ring pplus matching Magic VLSI decomposition.
+
+    Outer extent: og_outer_x+0.030 (x), og_outer_y+0.020 (y, asymmetric).
+    Inner hole: og_inner - 0.160.
+    Thin inner-transition strips at og_inner - 0.125 (connect sides to top/bottom).
+    """
+    opp_outer_x = round(og_outer_x + 0.030, 4)
+    opp_outer_y = round(og_outer_y + 0.020, 4)
+    main_outer_x = round(opp_outer_x - 0.010, 4)  # = og_outer + 0.020
+    opp_inner_x = round(og_inner_x - 0.160, 4)
+    opp_inner_y = round(og_inner_y - 0.160, 4)
+    transition_y = round(og_inner_y - 0.125, 4)  # = opp_inner_y + 0.035
+
+    # Main top: x=[-main_outer_x, main_outer_x], y=[transition_y, opp_outer_y]
+    _add_rect(c, -main_outer_x, transition_y, main_outer_x, opp_outer_y, lyr)
+    # Thin top transition: x=[-opp_outer_x, opp_outer_x], y=[opp_inner_y, transition_y]
+    _add_rect(c, -opp_outer_x, opp_inner_y, opp_outer_x, transition_y, lyr)
+    # Left side: x=[-opp_outer_x, -opp_inner_x], y=[-opp_inner_y, opp_inner_y]
+    _add_rect(c, -opp_outer_x, -opp_inner_y, -opp_inner_x, opp_inner_y, lyr)
+    # Right side
+    _add_rect(c, opp_inner_x, -opp_inner_y, opp_outer_x, opp_inner_y, lyr)
+    # Thin bottom transition
+    _add_rect(c, -opp_outer_x, -transition_y, opp_outer_x, -opp_inner_y, lyr)
+    # Main bottom
+    _add_rect(c, -main_outer_x, -opp_outer_y, main_outer_x, -transition_y, lyr)
+
+
+def _guard_contacts(
+    c: gf.Component,
+    guard_contact_x: float,
+    guard_contact_y: float,
+    nc_gx: int,
+    nc_gy: int,
+) -> None:
+    """Place guard ring contacts on all four sides.
+
+    Left/right cols at x=±guard_contact_x, y positions from nc_gy.
+    Top/bottom rows at y=±guard_contact_y, x positions from nc_gx.
+    """
+    gy_pos = _positions(nc_gy, 0.47)
+    gx_pos = _positions(nc_gx, 0.47)
+    _place_contacts(c, [-guard_contact_x], gy_pos)
+    _place_contacts(c, [guard_contact_x], gy_pos)
+    _place_contacts(c, gx_pos, [guard_contact_y])
+    _place_contacts(c, gx_pos, [-guard_contact_y])
+
+
+def _guard_metal1(
+    c: gf.Component,
+    guard_inner_x: float,
+    guard_inner_y: float,
+    guard_comp_outer_x: float,
+    guard_comp_outer_y: float,
+    diff_surround: float = 0.065,
+) -> None:
+    """Draw guard ring metal1 as a ring (4 strips).
+
+    Outer edge: guard_comp_outer - diff_surround.
+    Inner edge: guard_inner + diff_surround.
+    """
+    m1_outer_x = round(guard_comp_outer_x - diff_surround, 4)
+    m1_outer_y = round(guard_comp_outer_y - diff_surround, 4)
+    m1_inner_x = round(guard_inner_x + diff_surround, 4)
+    m1_inner_y = round(guard_inner_y + diff_surround, 4)
+    # Top strip
+    c.add_ref(
+        gf.components.rectangle(
+            size=(2 * m1_outer_x, m1_outer_y - m1_inner_y), layer=layer["metal1"]
+        )
+    ).move((-m1_outer_x, m1_inner_y))
+    # Bottom strip
+    c.add_ref(
+        gf.components.rectangle(
+            size=(2 * m1_outer_x, m1_outer_y - m1_inner_y), layer=layer["metal1"]
+        )
+    ).move((-m1_outer_x, -m1_outer_y))
+    # Left strip
+    c.add_ref(
+        gf.components.rectangle(
+            size=(m1_outer_x - m1_inner_x, 2 * m1_inner_y), layer=layer["metal1"]
+        )
+    ).move((-m1_outer_x, -m1_inner_y))
+    # Right strip
+    c.add_ref(
+        gf.components.rectangle(
+            size=(m1_outer_x - m1_inner_x, 2 * m1_inner_y), layer=layer["metal1"]
+        )
+    ).move((m1_inner_x, -m1_inner_y))
+
+
+def _inner_metal1(c: gf.Component, wa: float, la: float) -> None:
+    """Draw inner device metal1 rectangle.
+
+    Long dimension gets half-0.010 extent; short dimension gets half-0.065.
+    Square devices: wa (x) is treated as "long" → x gets -0.010.
+    """
+    if la > wa:
+        m1_hx = round(wa / 2 - 0.065, 4)
+        m1_hy = round(la / 2 - 0.010, 4)
+    else:
+        m1_hx = round(wa / 2 - 0.010, 4)
+        m1_hy = round(la / 2 - 0.065, 4)
+    c.add_ref(
+        gf.components.rectangle(size=(2 * m1_hx, 2 * m1_hy), layer=layer["metal1"])
+    ).move((-m1_hx, -m1_hy))
+
+
+# ---------------------------------------------------------------------------
+# diode_nd2ps
+# ---------------------------------------------------------------------------
 
 @gf.cell
 def diode_nd2ps(
@@ -121,64 +307,60 @@ def diode_nd2ps(
 ) -> gf.Component:
     """Draw N+/LVPWELL diode matching Magic VLSI geometry.
 
-    The diode has an N+ comp center surrounded by a P+ comp guard ring
-    (cathode), all within an LVPWELL.
-
     Args:
         la: diffusion length (anode).
         wa: diffusion width (anode).
         volt: operating voltage ("3.3V" or "6.0V").
-        deepnwell: use Deep NWELL device.
-        pcmpgr: use P+ Guard Ring for DNWELL.
-        label: add labels.
+        deepnwell: use Deep NWELL device (not implemented).
+        pcmpgr: use P+ Guard Ring for DNWELL (not implemented).
+        label: add labels (not implemented).
         p_label: p terminal label.
         n_label: n terminal label.
     """
     c = gf.Component()
 
-    # Magic ruleset parameters
-    contact_size = 0.22  # GDS contact size (Magic's 0.23 maps to 0.22 in GDS)
-    contact_spacing = 0.28
     diff_surround = 0.065
-    metal_surround = 0.055
-    sub_surround = 0.12
+    lvpwell_enc = 0.12
 
-    # Device-specific parameters
+    # Voltage-dependent geometry constants (all from reference GDS analysis)
     if volt == "3.3V":
-        end_contact_size = 0.25  # Guard ring contact size
-        dev_spacing = 0.30
-        end_spacing = 0.33  # diff_spacing
-        dg_enc_cmp = 0.24
+        dev_spacing = 0.300   # gap between inner comp and guard ring comp inner edge
+        guard_inner_offset = 0.300   # guard_inner = wa/2 + this
+        guard_outer_offset = 0.680   # guard_outer = wa/2 + this (strip = 0.380)
+        contact_inset = 0.190        # guard contact center to guard comp outer edge
+        nplus_enc = 0.16
+        dg_enc = 0.24
     else:  # 6.0V
-        end_contact_size = 0.25
-        dev_spacing = 0.40
-        end_spacing = 0.17
-        dg_enc_cmp = 0.24
-        sub_surround = 0.12
+        dev_spacing = 0.400
+        guard_inner_offset = 0.400
+        guard_outer_offset = 0.760
+        contact_inset = 0.180
+        nplus_enc = 0.16
+        dg_enc = 0.24
 
-    # Derived dimensions
     hw = wa / 2
     hl = la / 2
 
-    # Guard ring geometry (from Magic's guard_ring procedure)
-    # Guard ring contact center distance from device center
-    gx = wa + 2 * (dev_spacing + diff_surround) + end_contact_size
-    gy = la + 2 * (dev_spacing + diff_surround) + end_contact_size
+    # Guard ring comp geometry
+    guard_inner_x = round(hw + guard_inner_offset, 4)
+    guard_inner_y = round(hl + guard_inner_offset, 4)
+    guard_outer_x = round(hw + guard_outer_offset, 4)
+    guard_outer_y = round(hl + guard_outer_offset, 4)
 
-    hgx = gx / 2  # half guard ring width (to contact center)
-    hgy = gy / 2  # half guard ring height (to contact center)
+    # Guard ring contact centre positions
+    guard_contact_x = round(guard_outer_x - contact_inset, 4)
+    guard_contact_y = round(guard_outer_y - contact_inset, 4)
 
-    # Guard ring comp strip width
-    guard_strip = end_contact_size + 2 * diff_surround
+    # Contact counts
+    nc_x = _nc_inner(wa)
+    nc_y = _nc_inner(la)
+    nc_gx = _nc_guard(nc_x, volt)
+    nc_gy = _nc_guard(nc_y, volt)
+    pitch_x = _inner_pitch(nc_x)
+    pitch_y = _inner_pitch(nc_y)
 
-    # Guard ring comp outer extent
-    guard_outer_x = hgx + guard_strip / 2
-    guard_outer_y = hgy + guard_strip / 2
-    guard_inner_x = hgx - guard_strip / 2
-    guard_inner_y = hgy - guard_strip / 2
-
-    # --- Draw inner diode ---
-    # Comp (N+ diffusion)
+    # --- Inner device ---
+    # Comp
     c.add_ref(
         gf.components.rectangle(size=(wa, la), layer=layer["comp"])
     ).move((-hw, -hl))
@@ -188,257 +370,54 @@ def diode_nd2ps(
         gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])
     ).move((-hw, -hl))
 
-    # N+ implant over inner diode
-    # In Magic, the ndiode type includes nplus implant
-    # nplus extends diff_surround beyond the contact array within the diode
-    # From reference: nplus = (wa+0.32) x (la+0.32) for 3.3V
-    # 0.32 = 2 * (contact_size/2 + diff_surround + ?)
-    # Actually from reference: 0.77 for wa=0.45 → (0.77-0.45)/2 = 0.16
-    # 0.16 = nplus enclosure of comp
-    nplus_enc = 0.16
+    # N+ implant (solid rect enclosing inner comp)
+    nplus_hw = round(hw + nplus_enc, 4)
+    nplus_hl = round(hl + nplus_enc, 4)
     c.add_ref(
         gf.components.rectangle(
-            size=(wa + 2 * nplus_enc, la + 2 * nplus_enc), layer=layer["nplus"]
+            size=(2 * nplus_hw, 2 * nplus_hl), layer=layer["nplus"]
         )
-    ).move((-hw - nplus_enc, -hl - nplus_enc))
-
-    # Contacts on inner diode
-    # Magic's draw_contact with dev_surround reduction
-    dev_surround = diff_surround
-    inner_w = wa - 2 * dev_surround
-    inner_h = la - 2 * dev_surround
+    ).move((-nplus_hw, -nplus_hl))
 
     # Inner contacts
-    con_pitch = contact_size + contact_spacing
-    inner_nc = max(1, floor((inner_w + contact_spacing) / con_pitch))
-    inner_nr = max(1, floor((inner_h + contact_spacing) / con_pitch))
-    inner_array_w = inner_nc * contact_size + (inner_nc - 1) * contact_spacing
-    inner_array_h = inner_nr * contact_size + (inner_nr - 1) * contact_spacing
-    inner_x0 = -inner_array_w / 2
-    inner_y0 = -inner_array_h / 2
+    inner_xs = _positions(nc_x, pitch_x)
+    inner_ys = _positions(nc_y, pitch_y)
+    _place_contacts(c, inner_xs, inner_ys)
 
-    con_rect = gf.components.rectangle(
-        size=(contact_size, contact_size), layer=layer["contact"]
-    )
-    c.add_ref(
-        con_rect,
-        columns=inner_nc,
-        rows=inner_nr,
-        column_pitch=con_pitch,
-        row_pitch=con_pitch,
-    ).move((inner_x0, inner_y0))
+    # Inner metal1
+    _inner_metal1(c, wa, la)
 
-    # Inner metal1 (around contacts, extends by metal_surround in appropriate direction)
-    if wa < la:
-        orient = "vert"
-    else:
-        orient = "horz"
+    # --- Guard ring (P+ comp ring) ---
+    # Guard ring comp: 4 strips (ring shape)
+    _guard_ring_comp(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y)
 
-    inner_m1_hw = inner_array_w / 2
-    inner_m1_hh = inner_array_h / 2
-    if orient in ("vert", "full"):
-        inner_m1_hh += metal_surround
-    if orient in ("horz", "full"):
-        inner_m1_hw += metal_surround
+    # P+ implant: ring with notched corners matching Magic VLSI decomposition
+    _pplus_ring(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, lyr="pplus")
 
+    # Guard ring metal1 (ring: 4 strips)
+    _guard_metal1(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, diff_surround)
+
+    # Guard ring contacts
+    _guard_contacts(c, guard_contact_x, guard_contact_y, nc_gx, nc_gy)
+
+    # LVPWELL
+    lvp_hx = round(guard_outer_x + lvpwell_enc, 4)
+    lvp_hy = round(guard_outer_y + lvpwell_enc, 4)
     c.add_ref(
         gf.components.rectangle(
-            size=(2 * inner_m1_hw, 2 * inner_m1_hh), layer=layer["metal1"]
+            size=(2 * lvp_hx, 2 * lvp_hy), layer=layer["lvpwell"]
         )
-    ).move((-inner_m1_hw, -inner_m1_hh))
-
-    # --- Draw guard ring (psd type) ---
-    # Guard ring comp strips (4 strips forming a ring)
-    hgs = guard_strip / 2
-
-    # Top strip
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * guard_outer_x, guard_strip), layer=layer["comp"]
-        )
-    ).move((-guard_outer_x, hgy - hgs))
-    # Bottom strip
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * guard_outer_x, guard_strip), layer=layer["comp"]
-        )
-    ).move((-guard_outer_x, -hgy - hgs))
-    # Left strip
-    c.add_ref(
-        gf.components.rectangle(
-            size=(guard_strip, 2 * guard_outer_y), layer=layer["comp"]
-        )
-    ).move((-hgx - hgs, -guard_outer_y))
-    # Right strip
-    c.add_ref(
-        gf.components.rectangle(
-            size=(guard_strip, 2 * guard_outer_y), layer=layer["comp"]
-        )
-    ).move((hgx - hgs, -guard_outer_y))
-
-    # P+ implant on guard ring
-    # From reference: pplus extends 0.03 beyond guard ring comp on each side
-    pp_enc = 0.03
-    # pplus as frame around guard ring
-    pp_outer_x = guard_outer_x + pp_enc
-    pp_outer_y = guard_outer_y + pp_enc
-    pp_inner_x = guard_inner_x - pp_enc
-    pp_inner_y = guard_inner_y - pp_enc
-
-    # pplus ring (4 strips)
-    # Top
-    pp_strip_h_tb = pp_outer_y - pp_inner_y
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * pp_outer_x, pp_strip_h_tb), layer=layer["pplus"]
-        )
-    ).move((-pp_outer_x, pp_inner_y))
-    # Bottom
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * pp_outer_x, pp_strip_h_tb), layer=layer["pplus"]
-        )
-    ).move((-pp_outer_x, -pp_outer_y))
-    # Left
-    pp_strip_w_lr = pp_outer_x - pp_inner_x
-    pp_mid_h = 2 * pp_inner_y
-    c.add_ref(
-        gf.components.rectangle(
-            size=(pp_strip_w_lr, pp_mid_h), layer=layer["pplus"]
-        )
-    ).move((-pp_outer_x, -pp_inner_y))
-    # Right
-    c.add_ref(
-        gf.components.rectangle(
-            size=(pp_strip_w_lr, pp_mid_h), layer=layer["pplus"]
-        )
-    ).move((pp_inner_x, -pp_inner_y))
-
-    # Guard ring contacts (on left and right strips)
-    # Metal1 ring on guard ring
-    m1_ring_hx = hgx + contact_size / 2
-    m1_ring_hy = hgy + contact_size / 2
-
-    # Guard ring metal1 (4 strips)
-    m1_strip = contact_size + 2 * metal_surround
-    # but from reference: m1 ring width = 0.25 for guard ring contacts
-    # Let me use the actual ring dimension from reference
-    m1_ring_outer_x = hgx + end_contact_size / 2 + metal_surround
-    m1_ring_outer_y = hgy + end_contact_size / 2 + metal_surround
-    m1_ring_inner_x = hgx - end_contact_size / 2 - metal_surround
-    m1_ring_inner_y = hgy - end_contact_size / 2 - metal_surround
-
-    m1_strip_tb = m1_ring_outer_y - m1_ring_inner_y
-    m1_strip_lr = m1_ring_outer_x - m1_ring_inner_x
-
-    # Top m1
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * m1_ring_outer_x, m1_strip_tb), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, m1_ring_inner_y))
-    # Bottom m1
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * m1_ring_outer_x, m1_strip_tb), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, -m1_ring_outer_y))
-    # Left m1
-    c.add_ref(
-        gf.components.rectangle(
-            size=(m1_strip_lr, 2 * m1_ring_inner_y), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, -m1_ring_inner_y))
-    # Right m1
-    c.add_ref(
-        gf.components.rectangle(
-            size=(m1_strip_lr, 2 * m1_ring_inner_y), layer=layer["metal1"]
-        )
-    ).move((m1_ring_inner_x, -m1_ring_inner_y))
-
-    # Guard ring contacts on left and right sides
-    # Contact height for left/right = guard ring height minus spacing
-    gr_con_h = gy - contact_size - 2 * (metal_surround + 0.23)
-    # Actually from Magic: ch = (gh - contact_size - 2*(metal_surround+metal_spacing)) * rlcov/100
-    metal_spacing = 0.23
-    ch = gy - end_contact_size - 2 * (metal_surround + metal_spacing)
-    if ch < end_contact_size:
-        ch = end_contact_size
-
-    # Contact pitch for guard ring
-    gr_con_pitch = end_contact_size + contact_spacing
-    gr_nr = max(1, floor((ch + contact_spacing) / gr_con_pitch))
-    gr_array_h = gr_nr * end_contact_size + (gr_nr - 1) * contact_spacing
-    gr_y0 = -gr_array_h / 2
-
-    gr_con_rect = gf.components.rectangle(
-        size=(end_contact_size, end_contact_size), layer=layer["contact"]
-    )
-
-    # Left side contacts
-    c.add_ref(
-        gr_con_rect,
-        columns=1,
-        rows=gr_nr,
-        row_pitch=gr_con_pitch,
-    ).move((-hgx - end_contact_size / 2, gr_y0))
-
-    # Right side contacts
-    c.add_ref(
-        gr_con_rect,
-        columns=1,
-        rows=gr_nr,
-        row_pitch=gr_con_pitch,
-    ).move((hgx - end_contact_size / 2, gr_y0))
-
-    # Top contacts
-    cw = gx - end_contact_size - 2 * (metal_surround + metal_spacing)
-    if cw < end_contact_size:
-        cw = end_contact_size
-    gr_nc_tb = max(1, floor((cw + contact_spacing) / gr_con_pitch))
-    gr_array_w = gr_nc_tb * end_contact_size + (gr_nc_tb - 1) * contact_spacing
-    gr_x0 = -gr_array_w / 2
-
-    # Top contacts
-    c.add_ref(
-        gr_con_rect,
-        columns=gr_nc_tb,
-        rows=1,
-        column_pitch=gr_con_pitch,
-    ).move((gr_x0, hgy - end_contact_size / 2))
-
-    # Bottom contacts
-    c.add_ref(
-        gr_con_rect,
-        columns=gr_nc_tb,
-        rows=1,
-        column_pitch=gr_con_pitch,
-    ).move((gr_x0, -hgy - end_contact_size / 2))
-
-    # LVPWELL (substrate)
-    lvp_enc = sub_surround
-    c.add_ref(
-        gf.components.rectangle(
-            size=(
-                2 * (guard_outer_x + lvp_enc),
-                2 * (guard_outer_y + lvp_enc),
-            ),
-            layer=layer["lvpwell"],
-        )
-    ).move((-(guard_outer_x + lvp_enc), -(guard_outer_y + lvp_enc)))
+    ).move((-lvp_hx, -lvp_hy))
 
     # Dualgate for 6.0V
     if volt == "6.0V":
-        dg_enc = dg_enc_cmp
+        dg_hx = round(guard_outer_x + dg_enc, 4)
+        dg_hy = round(guard_outer_y + dg_enc, 4)
         c.add_ref(
             gf.components.rectangle(
-                size=(
-                    2 * (guard_outer_x + dg_enc),
-                    2 * (guard_outer_y + dg_enc),
-                ),
-                layer=layer["dualgate"],
+                size=(2 * dg_hx, 2 * dg_hy), layer=layer["dualgate"]
             )
-        ).move((-(guard_outer_x + dg_enc), -(guard_outer_y + dg_enc)))
+        ).move((-dg_hx, -dg_hy))
 
     # Ports
     c.add_port(
@@ -451,8 +430,8 @@ def diode_nd2ps(
     )
     c.add_port(
         name="cathode",
-        center=(0, hgy),
-        width=gx,
+        center=(0, guard_contact_y),
+        width=2 * guard_outer_x,
         orientation=90,
         layer=layer["metal1"],
         port_type="electrical",
@@ -460,6 +439,10 @@ def diode_nd2ps(
 
     return c
 
+
+# ---------------------------------------------------------------------------
+# diode_pd2nw
+# ---------------------------------------------------------------------------
 
 @gf.cell
 def diode_pd2nw(
@@ -474,55 +457,80 @@ def diode_pd2nw(
 ) -> gf.Component:
     """Draw P+/Nwell diode matching Magic VLSI geometry.
 
-    The diode has a P+ comp center (anode) surrounded by an N+ comp guard ring
-    (cathode), with an Nwell underneath and LVPWELL outside.
-
     Args:
         la: diffusion length.
         wa: diffusion width.
         volt: operating voltage ("3.3V" or "6.0V").
-        deepnwell: use Deep NWELL device.
-        pcmpgr: use P+ Guard Ring for DNWELL.
-        label: add labels.
+        deepnwell: use Deep NWELL device (not implemented).
+        pcmpgr: use P+ Guard Ring for DNWELL (not implemented).
+        label: add labels (not implemented).
         p_label: p terminal label.
         n_label: n terminal label.
     """
     c = gf.Component()
 
-    # Magic ruleset parameters
-    contact_size = 0.22
-    contact_spacing = 0.28
     diff_surround = 0.065
-    metal_surround = 0.055
-    sub_surround = 0.12
+    lvpwell_enc = 0.12
 
-    # Device-specific
     if volt == "3.3V":
-        end_contact_size = 0.25
-        dev_spacing = 0.30
-        end_spacing = 0.33
+        # Inner guard ring
+        ig_inner_offset = 0.300   # guard_inner = wa/2 + this
+        ig_outer_offset = 0.680   # guard_outer = wa/2 + this
+        ig_contact_inset = 0.190
+        nw_enc = 0.12
+        nplus_enc_out = 0.16     # nplus outer enc on ig_outer
+        nplus_enc_in = 0.090     # nplus inner enc on ig_inner (inward)
+        lvpwell_enc = 0.12
+        # Outer guard ring (relative to inner guard outer)
+        og_inner_gap = 0.450     # outer_guard_inner = inner_guard_outer + this
+        og_strip = 0.360         # outer_guard_outer = outer_guard_inner + this
+        # outer_guard_outer = inner_guard_outer + 0.450 + 0.360 = inner_guard_outer + 0.810
+        og_contact_inset = 0.180
+        dg_enc = 0.24
     else:  # 6.0V
-        end_contact_size = 0.25
-        dev_spacing = 0.36
-        end_spacing = 0.36
-        sub_surround = 0.16
+        ig_inner_offset = 0.360
+        ig_outer_offset = 0.720
+        ig_contact_inset = 0.180
+        nw_enc = 0.16
+        nplus_enc_out = 0.16
+        nplus_enc_in = 0.070     # nplus inner enc (inward) for 6.0V
+        lvpwell_enc = 0.16
+        og_inner_gap = 0.520
+        og_strip = 0.360
+        og_contact_inset = 0.180
+        dg_enc = 0.24
 
     hw = wa / 2
     hl = la / 2
 
-    # Guard ring geometry
-    gx = wa + 2 * (dev_spacing + diff_surround) + end_contact_size
-    gy = la + 2 * (dev_spacing + diff_surround) + end_contact_size
-    hgx = gx / 2
-    hgy = gy / 2
+    # Inner guard ring geometry
+    ig_inner_x = round(hw + ig_inner_offset, 4)
+    ig_inner_y = round(hl + ig_inner_offset, 4)
+    ig_outer_x = round(hw + ig_outer_offset, 4)
+    ig_outer_y = round(hl + ig_outer_offset, 4)
+    ig_contact_x = round(ig_outer_x - ig_contact_inset, 4)
+    ig_contact_y = round(ig_outer_y - ig_contact_inset, 4)
 
-    guard_strip = end_contact_size + 2 * diff_surround
-    guard_outer_x = hgx + guard_strip / 2
-    guard_outer_y = hgy + guard_strip / 2
-    guard_inner_x = hgx - guard_strip / 2
-    guard_inner_y = hgy - guard_strip / 2
+    # Outer guard ring geometry
+    og_inner_x = round(ig_outer_x + og_inner_gap, 4)
+    og_inner_y = round(ig_outer_y + og_inner_gap, 4)
+    og_outer_x = round(og_inner_x + og_strip, 4)
+    og_outer_y = round(og_inner_y + og_strip, 4)
+    og_contact_x = round(og_outer_x - og_contact_inset, 4)
+    og_contact_y = round(og_outer_y - og_contact_inset, 4)
 
-    # --- Inner diode (P+ diffusion) ---
+    # Contact counts
+    nc_x = _nc_inner(wa)
+    nc_y = _nc_inner(la)
+    nc_gx = _nc_guard(nc_x, volt)
+    nc_gy = _nc_guard(nc_y, volt)
+    pitch_x = _inner_pitch(nc_x)
+    pitch_y = _inner_pitch(nc_y)
+
+    # Outer guard ring side nc: side contacts are in y direction, constrained by og_inner_y
+    nc_outer_side_y = _nc_outer_guard_side(og_inner_y)
+
+    # --- Inner device (P+ diffusion) ---
     c.add_ref(
         gf.components.rectangle(size=(wa, la), layer=layer["comp"])
     ).move((-hw, -hl))
@@ -531,249 +539,78 @@ def diode_pd2nw(
         gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])
     ).move((-hw, -hl))
 
-    # P+ implant on inner diode
-    pplus_enc = 0.16
+    # P+ implant on inner device
+    pplus_hw = round(hw + 0.16, 4)
+    pplus_hl = round(hl + 0.16, 4)
     c.add_ref(
         gf.components.rectangle(
-            size=(wa + 2 * pplus_enc, la + 2 * pplus_enc), layer=layer["pplus"]
+            size=(2 * pplus_hw, 2 * pplus_hl), layer=layer["pplus"]
         )
-    ).move((-hw - pplus_enc, -hl - pplus_enc))
+    ).move((-pplus_hw, -pplus_hl))
 
     # Inner contacts
-    dev_surround = diff_surround
-    inner_w = wa - 2 * dev_surround
-    inner_h = la - 2 * dev_surround
-
-    con_pitch = contact_size + contact_spacing
-    inner_nc = max(1, floor((inner_w + contact_spacing) / con_pitch))
-    inner_nr = max(1, floor((inner_h + contact_spacing) / con_pitch))
-    inner_array_w = inner_nc * contact_size + (inner_nc - 1) * contact_spacing
-    inner_array_h = inner_nr * contact_size + (inner_nr - 1) * contact_spacing
-    inner_x0 = -inner_array_w / 2
-    inner_y0 = -inner_array_h / 2
-
-    con_rect = gf.components.rectangle(
-        size=(contact_size, contact_size), layer=layer["contact"]
-    )
-    c.add_ref(
-        con_rect,
-        columns=inner_nc,
-        rows=inner_nr,
-        column_pitch=con_pitch,
-        row_pitch=con_pitch,
-    ).move((inner_x0, inner_y0))
+    inner_xs = _positions(nc_x, pitch_x)
+    inner_ys = _positions(nc_y, pitch_y)
+    _place_contacts(c, inner_xs, inner_ys)
 
     # Inner metal1
-    if wa < la:
-        orient = "vert"
-    else:
-        orient = "horz"
+    _inner_metal1(c, wa, la)
 
-    inner_m1_hw = inner_array_w / 2
-    inner_m1_hh = inner_array_h / 2
-    if orient in ("vert", "full"):
-        inner_m1_hh += metal_surround
-    if orient in ("horz", "full"):
-        inner_m1_hw += metal_surround
+    # --- Inner guard ring (N+ comp ring = cathode) ---
+    _guard_ring_comp(c, ig_inner_x, ig_inner_y, ig_outer_x, ig_outer_y)
 
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * inner_m1_hw, 2 * inner_m1_hh), layer=layer["metal1"]
-        )
-    ).move((-inner_m1_hw, -inner_m1_hh))
+    # N+ implant: ring (annular) matching inner guard ring comp
+    np_outer_x = round(ig_outer_x + nplus_enc_out, 4)
+    np_outer_y = round(ig_outer_y + nplus_enc_out, 4)
+    np_inner_x = round(ig_inner_x - nplus_enc_in, 4)
+    np_inner_y = round(ig_inner_y - nplus_enc_in, 4)
+    _guard_ring_comp(c, np_inner_x, np_inner_y, np_outer_x, np_outer_y, lyr="nplus")
 
-    # --- Guard ring (nsd type for pd2nw) ---
-    # Guard ring comp strips
-    hgs = guard_strip / 2
+    # Inner guard ring metal1 (ring: 4 strips)
+    _guard_metal1(c, ig_inner_x, ig_inner_y, ig_outer_x, ig_outer_y, diff_surround)
 
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * guard_outer_x, guard_strip), layer=layer["comp"]
-        )
-    ).move((-guard_outer_x, hgy - hgs))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * guard_outer_x, guard_strip), layer=layer["comp"]
-        )
-    ).move((-guard_outer_x, -hgy - hgs))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(guard_strip, 2 * guard_outer_y), layer=layer["comp"]
-        )
-    ).move((-hgx - hgs, -guard_outer_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(guard_strip, 2 * guard_outer_y), layer=layer["comp"]
-        )
-    ).move((hgx - hgs, -guard_outer_y))
-
-    # N+ implant on guard ring (frame shape)
-    nplus_gr_enc = 0.03
-    np_outer_x = guard_outer_x + nplus_gr_enc
-    np_outer_y = guard_outer_y + nplus_gr_enc
-    np_inner_x = guard_inner_x - nplus_gr_enc
-    np_inner_y = guard_inner_y - nplus_gr_enc
-
-    np_strip_h = np_outer_y - np_inner_y
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * np_outer_x, np_strip_h), layer=layer["nplus"]
-        )
-    ).move((-np_outer_x, np_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * np_outer_x, np_strip_h), layer=layer["nplus"]
-        )
-    ).move((-np_outer_x, -np_outer_y))
-    np_strip_w = np_outer_x - np_inner_x
-    np_mid_h = 2 * np_inner_y
-    c.add_ref(
-        gf.components.rectangle(
-            size=(np_strip_w, np_mid_h), layer=layer["nplus"]
-        )
-    ).move((-np_outer_x, -np_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(np_strip_w, np_mid_h), layer=layer["nplus"]
-        )
-    ).move((np_inner_x, -np_inner_y))
-
-    # Guard ring metal1 ring
-    m1_ring_outer_x = hgx + end_contact_size / 2 + metal_surround
-    m1_ring_outer_y = hgy + end_contact_size / 2 + metal_surround
-    m1_ring_inner_x = hgx - end_contact_size / 2 - metal_surround
-    m1_ring_inner_y = hgy - end_contact_size / 2 - metal_surround
-
-    m1_strip_tb = m1_ring_outer_y - m1_ring_inner_y
-    m1_strip_lr = m1_ring_outer_x - m1_ring_inner_x
-
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * m1_ring_outer_x, m1_strip_tb), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, m1_ring_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * m1_ring_outer_x, m1_strip_tb), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, -m1_ring_outer_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(m1_strip_lr, 2 * m1_ring_inner_y), layer=layer["metal1"]
-        )
-    ).move((-m1_ring_outer_x, -m1_ring_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(m1_strip_lr, 2 * m1_ring_inner_y), layer=layer["metal1"]
-        )
-    ).move((m1_ring_inner_x, -m1_ring_inner_y))
-
-    # Guard ring contacts
-    metal_spacing = 0.23
-    ch = gy - end_contact_size - 2 * (metal_surround + metal_spacing)
-    if ch < end_contact_size:
-        ch = end_contact_size
-
-    gr_con_pitch = end_contact_size + contact_spacing
-    gr_nr = max(1, floor((ch + contact_spacing) / gr_con_pitch))
-    gr_array_h = gr_nr * end_contact_size + (gr_nr - 1) * contact_spacing
-    gr_y0 = -gr_array_h / 2
-
-    gr_con_rect = gf.components.rectangle(
-        size=(end_contact_size, end_contact_size), layer=layer["contact"]
-    )
-
-    c.add_ref(
-        gr_con_rect, columns=1, rows=gr_nr, row_pitch=gr_con_pitch
-    ).move((-hgx - end_contact_size / 2, gr_y0))
-    c.add_ref(
-        gr_con_rect, columns=1, rows=gr_nr, row_pitch=gr_con_pitch
-    ).move((hgx - end_contact_size / 2, gr_y0))
-
-    cw_tb = gx - end_contact_size - 2 * (metal_surround + metal_spacing)
-    if cw_tb < end_contact_size:
-        cw_tb = end_contact_size
-    gr_nc_tb = max(1, floor((cw_tb + contact_spacing) / gr_con_pitch))
-    gr_array_w = gr_nc_tb * end_contact_size + (gr_nc_tb - 1) * contact_spacing
-    gr_x0 = -gr_array_w / 2
-
-    c.add_ref(
-        gr_con_rect, columns=gr_nc_tb, rows=1, column_pitch=gr_con_pitch
-    ).move((gr_x0, hgy - end_contact_size / 2))
-    c.add_ref(
-        gr_con_rect, columns=gr_nc_tb, rows=1, column_pitch=gr_con_pitch
-    ).move((gr_x0, -hgy - end_contact_size / 2))
+    # Inner guard ring contacts
+    _guard_contacts(c, ig_contact_x, ig_contact_y, nc_gx, nc_gy)
 
     # Nwell
-    nw_enc = sub_surround
+    nw_hx = round(ig_outer_x + nw_enc, 4)
+    nw_hy = round(ig_outer_y + nw_enc, 4)
     c.add_ref(
         gf.components.rectangle(
-            size=(
-                2 * (guard_outer_x + nw_enc),
-                2 * (guard_outer_y + nw_enc),
-            ),
-            layer=layer["nwell"],
+            size=(2 * nw_hx, 2 * nw_hy), layer=layer["nwell"]
         )
-    ).move((-(guard_outer_x + nw_enc), -(guard_outer_y + nw_enc)))
+    ).move((-nw_hx, -nw_hy))
 
-    # LVPWELL (outside guard ring, ring shape)
-    # From reference: lvpwell ring around nwell
-    lvp_width = guard_outer_y + nw_enc  # outer edge of nwell
-    lvp_ring_w = 0.81  # observed ring width
-    # Actually the lvpwell ring width varies. Let me compute from the reference.
-    # For wa=0.45: nwell=2.05x2.05, lvpwell ring outer=3.67(wide)x0.81(tall)
-    # lvpwell outer edge = nwell edge + some gap?
-    # nwell outer = 1.025. lvpwell inner = 1.025. lvpwell outer = 1.025+0.81 = 1.835
-    # But reference shows lvpwell_outer_y = 1.835 for wa=0.45,la=0.45.
-    guard_ring_dist = 0.33  # diff_spacing from ruleset
-    gr_sub_enc = diff_surround
-    lvp_inner_x = guard_outer_x + nw_enc
-    lvp_inner_y = guard_outer_y + nw_enc
-    lvp_outer_x = lvp_inner_x + guard_strip + diff_surround * 2  # ring width
-    lvp_outer_y = lvp_inner_y + guard_strip + diff_surround * 2
+    # --- Outer guard ring (P+ comp = LVPWELL ground) ---
+    _guard_ring_comp(c, og_inner_x, og_inner_y, og_outer_x, og_outer_y)
 
-    # The LVPWELL is a ring with width matching the guard ring pattern
-    # From reference analysis: the lvpwell ring width = 0.81 for all sizes
-    # This is: sub_surround + guard_strip + some_extra
-    lvp_ring = 0.81  # constant ring width from reference
-    lvp_outer_x = lvp_inner_x + lvp_ring
-    lvp_outer_y = lvp_inner_y + lvp_ring
+    # Outer pplus: ring with asymmetric outer (x:+0.030, y:+0.020) matching Magic decomposition
+    _pplus_ring_outer(c, og_inner_x, og_inner_y, og_outer_x, og_outer_y, lyr="pplus")
 
-    # LVPWELL ring (4 strips)
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * lvp_outer_x, lvp_ring), layer=layer["lvpwell"]
-        )
-    ).move((-lvp_outer_x, lvp_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(2 * lvp_outer_x, lvp_ring), layer=layer["lvpwell"]
-        )
-    ).move((-lvp_outer_x, -lvp_outer_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(lvp_ring, 2 * lvp_inner_y), layer=layer["lvpwell"]
-        )
-    ).move((-lvp_outer_x, -lvp_inner_y))
-    c.add_ref(
-        gf.components.rectangle(
-            size=(lvp_ring, 2 * lvp_inner_y), layer=layer["lvpwell"]
-        )
-    ).move((lvp_inner_x, -lvp_inner_y))
+    # Outer guard ring metal1 (ring: 4 strips)
+    _guard_metal1(c, og_inner_x, og_inner_y, og_outer_x, og_outer_y, diff_surround)
+
+    # Outer guard ring contacts (left/right columns only, no top/bottom rows)
+    og_gy_positions = _positions(nc_outer_side_y, 0.47)
+    _place_contacts(c, [-og_contact_x], og_gy_positions)
+    _place_contacts(c, [og_contact_x], og_gy_positions)
+
+    # LVPWELL: ring (outer guard ring to nwell boundary)
+    lvp_outer_x = round(og_outer_x + lvpwell_enc, 4)
+    lvp_outer_y = round(og_outer_y + lvpwell_enc, 4)
+    lvp_inner_x = round(nw_hx, 4)
+    lvp_inner_y = round(nw_hy, 4)
+    _guard_ring_comp(c, lvp_inner_x, lvp_inner_y, lvp_outer_x, lvp_outer_y, lyr="lvpwell")
 
     # Dualgate for 6.0V
     if volt == "6.0V":
-        dg_enc = dg_enc_cmp = 0.24
-        # Dualgate encloses everything including lvpwell
+        dg_hx = round(og_outer_x + dg_enc, 4)
+        dg_hy = round(og_outer_y + dg_enc, 4)
         c.add_ref(
             gf.components.rectangle(
-                size=(
-                    2 * (lvp_outer_x + dg_enc),
-                    2 * (lvp_outer_y + dg_enc),
-                ),
-                layer=layer["dualgate"],
+                size=(2 * dg_hx, 2 * dg_hy), layer=layer["dualgate"]
             )
-        ).move((-(lvp_outer_x + dg_enc), -(lvp_outer_y + dg_enc)))
+        ).move((-dg_hx, -dg_hy))
 
     # Ports
     c.add_port(
@@ -786,8 +623,8 @@ def diode_pd2nw(
     )
     c.add_port(
         name="cathode",
-        center=(0, hgy),
-        width=gx,
+        center=(0, ig_contact_y),
+        width=2 * ig_outer_x,
         orientation=90,
         layer=layer["metal1"],
         port_type="electrical",
