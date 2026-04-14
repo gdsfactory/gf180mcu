@@ -70,7 +70,9 @@ def cap_mim(
     cap_via_y0 = -cap_array_h / 2
 
     # --- Arm via cluster (contact column to the right) ---
-    arm_nrows = max(1, floor(cl / arm_via_pitch))
+    # arm_nrows: fit via array centered in the arm metal3 region with end_surround+diff_surround enclosure
+    m3_arm_enc_y = end_surround + diff_surround  # nominal vertical enclosure (0.375)
+    arm_nrows = floor((lc + 2 * (bot_surround - m3_arm_enc_y - via_size / 2)) / arm_via_pitch) + 1
     arm_ncols = floor(contact_size / via_size) + 2  # 3 for default params
 
     arm_via_array_w = (arm_ncols - 1) * arm_via_pitch + via_size
@@ -79,16 +81,16 @@ def cap_mim(
     # Arm via start position (relative to fusetop center)
     cursor_x = hw + bot_surround + end_spacing
     arm_via_x0 = cursor_x - contact_size / 2 + (arm_via_pitch - end_surround)
-    arm_via_y0 = -arm_via_array_h / 2
+    arm_via_y0 = -arm_via_array_h / 2  # centered vertically
 
     # Arm via center
     arm_via_cx = arm_via_x0 + arm_via_array_w / 2
 
     # --- Metal3 arm ---
     m3_arm_enc_x = 0.25  # horizontal via enclosure in m3
-    m3_arm_enc_y = end_surround + diff_surround  # 0.375, vertical enclosure
+    # m3_arm_h is derived from cl (arm region height): m3_arm_h = cl + arm_via_pitch - via_size - 2*metal_surround
     m3_arm_w = arm_via_array_w + 2 * m3_arm_enc_x
-    m3_arm_h = arm_via_array_h + 2 * m3_arm_enc_y
+    m3_arm_h = cl + arm_via_pitch - via_size - 2 * metal_surround
     m3_arm_cx = arm_via_cx
     m3_arm_right = m3_arm_cx + m3_arm_w / 2
 
