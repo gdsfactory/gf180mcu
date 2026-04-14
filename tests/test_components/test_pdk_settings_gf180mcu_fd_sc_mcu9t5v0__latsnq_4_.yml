@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__latsnq_4
+ports:
+  D:
+    center:
+    - 2.52
+    - 1.4
+    layer: metal1
+    name: D
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  E:
+    center:
+    - 3.64
+    - 2.52
+    layer: metal1
+    name: E
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Q:
+    center:
+    - 13.72
+    - 1.96
+    layer: metal1
+    name: Q
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SETN:
+    center:
+    - 7
+    - 1.96
+    layer: metal1
+    name: SETN
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 12.645
+    - 4.59
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 15.235
+    - 0.45
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

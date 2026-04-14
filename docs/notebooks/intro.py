@@ -27,5 +27,5 @@ from gf180mcu import PDK, cells
 
 # %%
 PDK.activate()
-c = cells.diode_dw2ps()
+c = cells.diode_nd2ps()
 c.plot()

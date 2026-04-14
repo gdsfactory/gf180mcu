@@ -1,0 +1,112 @@
+info: {}
+name: npn_00p54x16p00
+ports:
+  I1_default_B:
+    center:
+    - 7.485
+    - 5.885
+    layer: metal1
+    name: I1_default_B
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I1_default_B1:
+    center:
+    - 5.885
+    - 22.945
+    layer: metal1
+    name: I1_default_B1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_B2:
+    center:
+    - 5.885
+    - 5.885
+    layer: metal1
+    name: I1_default_B2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_C:
+    center:
+    - 8.225
+    - 5.145
+    layer: metal1
+    name: I1_default_C
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I1_default_C1:
+    center:
+    - 5.145
+    - 23.685
+    layer: metal1
+    name: I1_default_C1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_C2:
+    center:
+    - 5.145
+    - 5.145
+    layer: metal1
+    name: I1_default_C2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_E:
+    center:
+    - 6.625
+    - 6.625
+    layer: metal1
+    name: I1_default_E
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_S:
+    center:
+    - 0.305
+    - 0.305
+    layer: metal1
+    name: I1_default_S
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_S1:
+    center:
+    - 0.305
+    - 0.305
+    layer: metal1
+    name: I1_default_S1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  I1_default_S2:
+    center:
+    - 10.565
+    - 0.305
+    layer: metal1
+    name: I1_default_S2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I1_default_S3:
+    center:
+    - 13.065
+    - 0.305
+    layer: metal1
+    name: I1_default_S3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  I1_default_S4:
+    center:
+    - 0.305
+    - 28.525
+    layer: metal1
+    name: I1_default_S4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+settings: {}

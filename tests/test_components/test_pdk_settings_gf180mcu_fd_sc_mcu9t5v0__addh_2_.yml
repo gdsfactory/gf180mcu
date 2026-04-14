@@ -1,0 +1,58 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__addh_2
+ports:
+  A:
+    center:
+    - 5.88
+    - 2.52
+    layer: metal1
+    name: A
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B:
+    center:
+    - 4.2
+    - 2.52
+    layer: metal1
+    name: B
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  CO:
+    center:
+    - 1.4
+    - 2.52
+    layer: metal1
+    name: CO
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  S:
+    center:
+    - 10.36
+    - 1.4
+    layer: metal1
+    name: S
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 0.43
+    - 4.59
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 11.22
+    - 0.45
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

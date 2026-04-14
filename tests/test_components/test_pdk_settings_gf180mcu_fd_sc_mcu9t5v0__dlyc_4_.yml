@@ -1,0 +1,40 @@
+info: {}
+name: gf180mcu_fd_sc_mcu9t5v0__dlyc_4
+ports:
+  I:
+    center:
+    - 0.84
+    - 1.4
+    layer: metal1
+    name: I
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 13.94
+    - 4.59
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.48
+    - 0.45
+    layer: metal1
+    name: VSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Z:
+    center:
+    - 12.6
+    - 1.4
+    layer: metal1
+    name: Z
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

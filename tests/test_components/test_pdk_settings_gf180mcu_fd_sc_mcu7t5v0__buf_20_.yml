@@ -1,0 +1,40 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__buf_20
+ports:
+  I:
+    center:
+    - 5.32
+    - 1.96
+    layer: metal1
+    name: I
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 1.4
+    - 3.92
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.4
+    - 0
+    layer: metal1
+    name: VSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Z:
+    center:
+    - 22.68
+    - 1.96
+    layer: metal1
+    name: Z
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}

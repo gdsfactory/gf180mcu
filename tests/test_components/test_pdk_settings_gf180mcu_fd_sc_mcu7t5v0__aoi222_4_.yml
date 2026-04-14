@@ -1,0 +1,85 @@
+info: {}
+name: gf180mcu_fd_sc_mcu7t5v0__aoi222_4
+ports:
+  A1:
+    center:
+    - 23.8
+    - 1.96
+    layer: metal1
+    name: A1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A2:
+    center:
+    - 21
+    - 1.4
+    layer: metal1
+    name: A2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B1:
+    center:
+    - 9.8
+    - 1.96
+    layer: metal1
+    name: B1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  B2:
+    center:
+    - 13.16
+    - 1.96
+    layer: metal1
+    name: B2
+    orientation: 270
+    port_type: electrical
+    width: 0.2
+  C1:
+    center:
+    - 7.56
+    - 1.96
+    layer: metal1
+    name: C1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  C2:
+    center:
+    - 3.64
+    - 1.96
+    layer: metal1
+    name: C2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 1.4
+    - 3.92
+    layer: metal1
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 1.4
+    - 0
+    layer: metal1
+    name: VSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ZN:
+    center:
+    - 24.92
+    - 0.84
+    layer: metal1
+    name: ZN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}
