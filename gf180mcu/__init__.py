@@ -1,7 +1,7 @@
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
-from gf180mcu import cells, layers
+from gf180mcu import cells, fixed, layers
 from gf180mcu.config import PATH
 from gf180mcu.layers import (
     LAYER,
@@ -19,13 +19,15 @@ __all__ = [
     "LAYER_VIEWS",
     "PATH",
     "LayerMap",
+    "cells",
+    "fixed",
     "get_layer_stack",
     "layer",
     "layers",
 ]
 __version__ = "0.5.0"
 
-_cells = get_cells(cells)
+_cells = get_cells([cells, fixed])
 
 
 PDK = Pdk(

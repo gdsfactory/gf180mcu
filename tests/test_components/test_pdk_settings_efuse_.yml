@@ -1,0 +1,22 @@
+info: {}
+name: efuse
+ports:
+  in:
+    center:
+    - 329.924
+    - 231.654
+    layer: metal1
+    name: in
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  out:
+    center:
+    - 332.194
+    - 231.688
+    layer: metal1
+    name: out
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings: {}
