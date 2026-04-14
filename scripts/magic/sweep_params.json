@@ -12,6 +12,14 @@
     "_diode": {
       "wa": "w",
       "la": "l"
+    },
+    "_cap": {
+      "lc": "l",
+      "wc": "w"
+    },
+    "_moscap": {
+      "lc": "l",
+      "wc": "w"
     }
   },
   "devices": {
@@ -961,7 +969,8 @@
           "lc": 10.0,
           "wc": 10.0
         }
-      ]
+      ],
+      "param_map_ref": "_moscap"
     },
     "nmoscap_6p0": {
       "cell_fn": "cap_mos",
@@ -983,7 +992,8 @@
           "lc": 5.0,
           "wc": 5.0
         }
-      ]
+      ],
+      "param_map_ref": "_moscap"
     },
     "diode_nd2ps_03v3": {
       "cell_fn": "diode_nd2ps",
@@ -1149,7 +1159,8 @@
           "lc": 3.0,
           "wc": 7.0
         }
-      ]
+      ],
+      "param_map_ref": "_cap"
     },
     "ppolyf_u": {
       "cell_fn": "res",
