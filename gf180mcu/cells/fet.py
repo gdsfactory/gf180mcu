@@ -1080,7 +1080,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
 # nfet
 # ---------------------------------------------------------------------------
 
-@gf.cell(tags={"type": "fet"})
+@gf.cell(tags=["fet"])
 def nfet(
     l_gate: float = 0.28,
     w_gate: float = 0.22,
@@ -1120,7 +1120,7 @@ def nfet(
     return c
 
 
-@gf.cell(tags={"type": "fet"})
+@gf.cell(tags=["fet"])
 def pfet(
     l_gate: float = 0.28,
     w_gate: float = 0.22,
@@ -1160,7 +1160,7 @@ def pfet(
     return c
 
 
-@gf.cell(tags={"type": "fet"})
+@gf.cell(tags=["fet"])
 def nfet_06v0_nvt(
     l_gate: float = 1.8,
     w_gate: float = 0.8,

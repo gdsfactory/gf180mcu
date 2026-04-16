@@ -24,7 +24,7 @@ from .layers_def import layer
 from .via_generator import via_generator, via_stack
 
 
-@gf.cell(tags={"type": "draw_cap_mos"})
+@gf.cell(tags=["draw_cap_mos"])
 def cap_mos_inst(
     lc: float = 0.1,
     wc: float = 0.1,
