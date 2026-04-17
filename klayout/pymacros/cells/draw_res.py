@@ -95,7 +95,7 @@ def draw_metal_res(
     return layout.cell(cell_name)
 
 
-@gf.cell
+@gf.cell(tags=["draw_res"])
 def pcmpgr_gen(dn_rect, grw: float = 0.36) -> gf.Component:
     """Return deepnwell guardring.
 
@@ -262,7 +262,7 @@ def pcmpgr_gen(dn_rect, grw: float = 0.36) -> gf.Component:
     return c
 
 
-@gf.cell
+@gf.cell(tags=["draw_res"])
 def plus_res_inst(
     l_res: float = 0.1,
     w_res: float = 0.1,
@@ -553,7 +553,7 @@ def draw_pplus_res(
     return layout.cell(cell_name)
 
 
-@gf.cell
+@gf.cell(tags=["draw_res"])
 def polyf_res_inst(
     l_res: float = 0.1,
     w_res: float = 0.1,
@@ -1069,7 +1069,7 @@ def draw_well_res(
     well_rect.dxmin = res_mk.dxmin - nw_res_ext
     well_rect.dymin = res_mk.dymin + nw_res_enc
 
-    @gf.cell
+    @gf.cell(tags=["draw_res"])
     def comp_related_gen(size: Float2 = (0.42, 0.42)) -> gf.Component:
         c = gf.Component()
 

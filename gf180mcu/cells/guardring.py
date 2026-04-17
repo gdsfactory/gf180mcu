@@ -8,7 +8,7 @@ from gf180mcu.layers import LAYER, layer
 dn_rect = partial(gf.components.rectangle, layer=LAYER.dnwell)
 
 
-@gf.cell
+@gf.cell(tags=["guardring"])
 def pcmpgr_gen(dn_rect=dn_rect, grw: float = 0.36) -> gf.Component:
     """Return deepnwell guardring.
 

@@ -5,7 +5,7 @@ from gdsfactory.cross_section import port_names_electrical, port_types_electrica
 from gdsfactory.typings import CrossSectionSpec, LayerSpec, Size
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"])
 def wire_corner(
     cross_section: CrossSectionSpec = "metal2", width: float | None = None
 ) -> gf.Component:
@@ -24,7 +24,7 @@ def wire_corner(
     )
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"])
 def wire_corner45(
     cross_section: CrossSectionSpec = "metal2",
     radius: float = 10,
@@ -55,7 +55,7 @@ def wire_corner45(
 ####################
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"])
 def straight(
     length: float = 10,
     cross_section: CrossSectionSpec = "metal1",
@@ -73,7 +73,7 @@ def straight(
     )
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"])
 def bend(
     radius: float | None = None,
     angle: float = 90,
@@ -105,7 +105,7 @@ def bend(
     )
 
 
-@gf.cell
+@gf.cell(tags=["waveguides"])
 def bend_s(
     size: Size = (11, 1.8),
     cross_section: CrossSectionSpec = "metal1",
