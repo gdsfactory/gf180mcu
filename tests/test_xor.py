@@ -12,16 +12,17 @@ import json
 import pathlib
 import tempfile
 
-import klayout.db as kdb
 import pytest
+
+import klayout.db as kdb
 
 # ---------------------------------------------------------------------------
 # Skip layers: label layers and boundary markers
 # ---------------------------------------------------------------------------
 
 SKIP_LAYERS = {
-    (0, 0),      # empty/context
-    (235, 4),    # prBoundary
+    (0, 0),  # empty/context
+    (235, 4),  # prBoundary
 }
 
 # Skip any datatype 5 (label layers) dynamically in xor_gds_files
@@ -139,6 +140,7 @@ def test_xor(device_name: str, params: dict, cell_module: str) -> None:
     if cell_fn is None:
         try:
             import gf180mcu
+
             fn = gf180mcu._cells.get(cell_fn_name)
             if fn and callable(fn):
                 cell_fn = fn
@@ -153,8 +155,10 @@ def test_xor(device_name: str, params: dict, cell_module: str) -> None:
     try:
         sig = inspect.signature(cell_fn)
         accepted = {
-            k for k, p in sig.parameters.items()
-            if p.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+            k
+            for k, p in sig.parameters.items()
+            if p.kind
+            not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
         }
     except (ValueError, TypeError):
         accepted = set(all_params.keys())
@@ -177,8 +181,7 @@ def test_xor(device_name: str, params: dict, cell_module: str) -> None:
         if failures:
             lines = [f"  ({l},{d}): {msg}" for (l, d), msg in sorted(failures.items())]
             raise AssertionError(
-                f"XOR differences for {device_name} with {params}:\n"
-                + "\n".join(lines)
+                f"XOR differences for {device_name} with {params}:\n" + "\n".join(lines)
             )
     finally:
         run_gds.unlink(missing_ok=True)
