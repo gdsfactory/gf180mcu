@@ -25,7 +25,7 @@ from .layers_def import layer
 from .via_generator import via_generator, via_stack
 
 
-@gf.cell
+@gf.cell(tags=["draw_fet"])
 def labels_gen(
     label_str: str = "",
     position: Float2 = (0.1, 0.1),
@@ -828,7 +828,7 @@ def bulk_gr_gen(
     # return c
 
 
-@gf.cell
+@gf.cell(tags=["draw_fet"])
 def pcmpgr_gen(dn_rect, grw: float = 0.36) -> gf.Component:
     """Return deepnwell guardring.
 
@@ -995,7 +995,7 @@ def pcmpgr_gen(dn_rect, grw: float = 0.36) -> gf.Component:
     return c
 
 
-@gf.cell
+@gf.cell(tags=["draw_fet"])
 def nfet_deep_nwell(
     volt="3.3V",
     deepnwell: bool = False,
@@ -1751,7 +1751,7 @@ def draw_nfet(
     # return c
 
 
-@gf.cell
+@gf.cell(tags=["draw_fet"])
 def pfet_deep_nwell(
     volt="3.3V",
     deepnwell: bool = False,

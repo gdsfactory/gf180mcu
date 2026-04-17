@@ -1210,7 +1210,7 @@ def _highR_poly_res(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell
+@gf.cell(tags=["res"])
 def res(
     l_res: float = 0.1,
     w_res: float = 0.1,

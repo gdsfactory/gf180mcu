@@ -26,7 +26,7 @@ from gdsfactory.typings import Float2, LayerSpec
 from .layers_def import layer
 
 
-@gf.cell
+@gf.cell(tags=["via_generator"])
 def via_generator(
     x_range: Float2 = (0, 1),
     y_range: Float2 = (0, 1),
@@ -70,7 +70,7 @@ def via_generator(
     return c
 
 
-@gf.cell
+@gf.cell(tags=["via_generator"])
 def via_stack(
     x_range: Float2 = (0, 1),
     y_range: Float2 = (0, 1),
