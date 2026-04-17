@@ -72,7 +72,10 @@ def cap_mim(
     # --- Arm via cluster (contact column to the right) ---
     # arm_nrows: fit via array centered in the arm metal3 region with end_surround+diff_surround enclosure
     m3_arm_enc_y = end_surround + diff_surround  # nominal vertical enclosure (0.375)
-    arm_nrows = floor((lc + 2 * (bot_surround - m3_arm_enc_y - via_size / 2)) / arm_via_pitch) + 1
+    arm_nrows = (
+        floor((lc + 2 * (bot_surround - m3_arm_enc_y - via_size / 2)) / arm_via_pitch)
+        + 1
+    )
     arm_ncols = floor(contact_size / via_size) + 2  # 3 for default params
 
     arm_via_array_w = (arm_ncols - 1) * arm_via_pitch + via_size
@@ -113,15 +116,13 @@ def cap_mim(
     # ---- Draw all layers ----
 
     # Fusetop (cap plate)
-    c.add_ref(
-        gf.components.rectangle(size=(wc, lc), layer=layer["fusetop"])
-    ).move((gx(-hw), gy(-hl)))
+    c.add_ref(gf.components.rectangle(size=(wc, lc), layer=layer["fusetop"])).move(
+        (gx(-hw), gy(-hl))
+    )
 
     # Cap marker (0.2 larger than fusetop on each side)
     c.add_ref(
-        gf.components.rectangle(
-            size=(wc + 0.4, lc + 0.4), layer=layer["cap_mk"]
-        )
+        gf.components.rectangle(size=(wc + 0.4, lc + 0.4), layer=layer["cap_mk"])
     ).move((gx(-hw - 0.2), gy(-hl - 0.2)))
 
     # Metal3 on cap (fusetop shrunk by cap_surround)
@@ -151,21 +152,15 @@ def cap_mim(
     ).move((gx(m2_xmin), gy(m2_ymin)))
     # Left strip (between top and bottom strips, left of fusetop)
     c.add_ref(
-        gf.components.rectangle(
-            size=(-(m2_xmin + hw), lc), layer=bottom_layer
-        )
+        gf.components.rectangle(size=(-(m2_xmin + hw), lc), layer=bottom_layer)
     ).move((gx(m2_xmin), gy(-hl)))
     # Right strip (between top and bottom strips, right of fusetop including arm)
     c.add_ref(
-        gf.components.rectangle(
-            size=(m2_xmax - hw, lc), layer=bottom_layer
-        )
+        gf.components.rectangle(size=(m2_xmax - hw, lc), layer=bottom_layer)
     ).move((gx(hw), gy(-hl)))
 
     # Via2 on cap (left cluster)
-    via_rect = gf.components.rectangle(
-        size=(via_size, via_size), layer=via_layer
-    )
+    via_rect = gf.components.rectangle(size=(via_size, via_size), layer=via_layer)
     c.add_ref(
         via_rect,
         columns=cap_ncols,

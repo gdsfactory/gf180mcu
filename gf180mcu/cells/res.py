@@ -85,7 +85,9 @@ def _draw_contacts_2d(
 # We precompute the shapes from reference analysis.
 
 _NSD_IMPLANT_OUTER_BLOAT = 0.16  # nplus extends outside comp by this amount
-_NSD_IMPLANT_INNER_BLOAT = 0.11  # nplus extends inside comp (toward center) by this amount
+_NSD_IMPLANT_INNER_BLOAT = (
+    0.11  # nplus extends inside comp (toward center) by this amount
+)
 # psd bloat is more complex - approximately 0.02-0.03 with corner patches
 
 
@@ -164,9 +166,7 @@ def _guard_ring(
     )
 
     # 2. Draw implant layer around guard ring comp
-    _draw_guard_ring_implant(
-        c, gw, gh, implant_layer, implant_bloat, is_psd
-    )
+    _draw_guard_ring_implant(c, gw, gh, implant_layer, implant_bloat, is_psd)
 
     # 3. Draw metal ring (full metal ring as seen in references)
     _draw_guard_ring_metal(c, gw, gh)
@@ -274,26 +274,42 @@ def _draw_guard_ring_implant(
 
         # Top bar
         c.add_polygon(
-            [(-outer_x, inner_y), (outer_x, inner_y),
-             (outer_x, outer_y), (-outer_x, outer_y)],
+            [
+                (-outer_x, inner_y),
+                (outer_x, inner_y),
+                (outer_x, outer_y),
+                (-outer_x, outer_y),
+            ],
             layer=implant_layer,
         )
         # Bottom bar
         c.add_polygon(
-            [(-outer_x, -outer_y), (outer_x, -outer_y),
-             (outer_x, -inner_y), (-outer_x, -inner_y)],
+            [
+                (-outer_x, -outer_y),
+                (outer_x, -outer_y),
+                (outer_x, -inner_y),
+                (-outer_x, -inner_y),
+            ],
             layer=implant_layer,
         )
         # Left bar
         c.add_polygon(
-            [(-outer_x, -inner_y), (-inner_x, -inner_y),
-             (-inner_x, inner_y), (-outer_x, inner_y)],
+            [
+                (-outer_x, -inner_y),
+                (-inner_x, -inner_y),
+                (-inner_x, inner_y),
+                (-outer_x, inner_y),
+            ],
             layer=implant_layer,
         )
         # Right bar
         c.add_polygon(
-            [(inner_x, -inner_y), (outer_x, -inner_y),
-             (outer_x, inner_y), (inner_x, inner_y)],
+            [
+                (inner_x, -inner_y),
+                (outer_x, -inner_y),
+                (outer_x, inner_y),
+                (inner_x, inner_y),
+            ],
             layer=implant_layer,
         )
     else:
@@ -311,10 +327,10 @@ def _draw_guard_ring_implant(
         ci_y = hh - hdifft  # comp inner Y
 
         # psd bloat values (from reference analysis, consistent across sizes)
-        b_out = 0.02   # bloat on comp outer edge for top/bottom bars
+        b_out = 0.02  # bloat on comp outer edge for top/bottom bars
         b_side = 0.03  # bloat on comp inner/outer edge for side bars
         side_y_gap = 0.125  # how far below ci_y the side bars end
-        corner_h = 0.105   # corner patch height = side_y_gap - b_out
+        corner_h = 0.105  # corner patch height = side_y_gap - b_out
 
         # Inner X edge of side bars / corner patches
         side_inner_x = ci_x - b_side
@@ -501,8 +517,7 @@ def _metal_res(
 
     # Metal (centered, w x (l + 2*ext))
     c.add_polygon(
-        [(-hw, -(hl + ext)), (hw, -(hl + ext)),
-         (hw, hl + ext), (-hw, hl + ext)],
+        [(-hw, -(hl + ext)), (hw, -(hl + ext)), (hw, hl + ext), (-hw, hl + ext)],
         layer=m_layer,
     )
 
@@ -590,8 +605,7 @@ def _poly_res(
 
     # 2. Poly2 (30,0): w x 2*poly_ext_y centered
     c.add_polygon(
-        [(-hw, -poly_ext_y), (hw, -poly_ext_y),
-         (hw, poly_ext_y), (-hw, poly_ext_y)],
+        [(-hw, -poly_ext_y), (hw, -poly_ext_y), (hw, poly_ext_y), (-hw, poly_ext_y)],
         layer=layer["poly2"],
     )
 
@@ -599,8 +613,7 @@ def _poly_res(
     if has_sab:
         sab_hw = hw + sab_ext_x
         c.add_polygon(
-            [(-sab_hw, -hl), (sab_hw, -hl),
-             (sab_hw, hl), (-sab_hw, hl)],
+            [(-sab_hw, -hl), (sab_hw, -hl), (sab_hw, hl), (-sab_hw, hl)],
             layer=layer["sab"],
         )
 
@@ -646,7 +659,9 @@ def _poly_res(
     gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
 
     _guard_ring(
-        c, gx, gy,
+        c,
+        gx,
+        gy,
         plus_diff_layer=layer["comp"],
         plus_contact_layer=layer["contact"],
         sub_type_layer=well_layer,
@@ -711,15 +726,13 @@ def _diff_res(
     # 2. SAB (49,0): extends sab_ext_x beyond res_mk in X, same Y as res_mk
     sab_hw = hw + sab_ext_x
     c.add_polygon(
-        [(-sab_hw, -hl), (sab_hw, -hl),
-         (sab_hw, hl), (-sab_hw, hl)],
+        [(-sab_hw, -hl), (sab_hw, -hl), (sab_hw, hl), (-sab_hw, hl)],
         layer=layer["sab"],
     )
 
     # 3. Comp body (22,0): w x 2*comp_ext_y centered
     c.add_polygon(
-        [(-hw, -comp_ext_y), (hw, -comp_ext_y),
-         (hw, comp_ext_y), (-hw, comp_ext_y)],
+        [(-hw, -comp_ext_y), (hw, -comp_ext_y), (hw, comp_ext_y), (-hw, comp_ext_y)],
         layer=layer["comp"],
     )
 
@@ -760,7 +773,9 @@ def _diff_res(
     gy = fh + 2 * (end_spacing + _DIFF_SURROUND) + _CONTACT_SIZE
 
     _guard_ring(
-        c, gx, gy,
+        c,
+        gx,
+        gy,
         plus_diff_layer=layer["comp"],
         plus_contact_layer=layer["contact"],
         sub_type_layer=well_layer,
@@ -809,8 +824,7 @@ def _well_res(
 
     # Draw nwell
     c.add_polygon(
-        [(-hw, -nwell_hy), (hw, -nwell_hy),
-         (hw, nwell_hy), (-hw, nwell_hy)],
+        [(-hw, -nwell_hy), (hw, -nwell_hy), (hw, nwell_hy), (-hw, nwell_hy)],
         layer=layer["nwell"],
     )
 
@@ -881,13 +895,21 @@ def _well_res(
     m_hw = max(cpl, _CONTACT_SIZE) / 2 + _METAL_SURROUND
     m_hh = _CONTACT_SIZE / 2
     c.add_polygon(
-        [(-m_hw, end_cy - m_hh), (m_hw, end_cy - m_hh),
-         (m_hw, end_cy + m_hh), (-m_hw, end_cy + m_hh)],
+        [
+            (-m_hw, end_cy - m_hh),
+            (m_hw, end_cy - m_hh),
+            (m_hw, end_cy + m_hh),
+            (-m_hw, end_cy + m_hh),
+        ],
         layer=layer["metal1"],
     )
     c.add_polygon(
-        [(-m_hw, -(end_cy + m_hh)), (m_hw, -(end_cy + m_hh)),
-         (m_hw, -(end_cy - m_hh)), (-m_hw, -(end_cy - m_hh))],
+        [
+            (-m_hw, -(end_cy + m_hh)),
+            (m_hw, -(end_cy + m_hh)),
+            (m_hw, -(end_cy - m_hh)),
+            (-m_hw, -(end_cy - m_hh)),
+        ],
         layer=layer["metal1"],
     )
 
@@ -907,8 +929,8 @@ def _well_res(
     well_ext = _HX + _DIFF_SURROUND + _SUB_SURROUND
     lvpwell_ox = gx / 2 + well_ext  # outer X
     lvpwell_oy = gy / 2 + well_ext  # outer Y
-    lvpwell_ix = hw                  # inner X = nwell body edge
-    lvpwell_iy = nwell_hy            # inner Y = nwell body edge
+    lvpwell_ix = hw  # inner X = nwell body edge
+    lvpwell_iy = nwell_hy  # inner Y = nwell body edge
 
     # Top bar
     c.add_polygon(
@@ -952,7 +974,9 @@ def _well_res(
     )
 
     _guard_ring(
-        c, gx, gy,
+        c,
+        gx,
+        gy,
         plus_diff_layer=layer["comp"],
         plus_contact_layer=layer["contact"],
         sub_type_layer=layer["lvpwell"],
@@ -1124,8 +1148,7 @@ def _highR_poly_res(
 
     # 5. Poly2
     c.add_polygon(
-        [(-hw, -poly_ext_y), (hw, -poly_ext_y),
-         (hw, poly_ext_y), (-hw, poly_ext_y)],
+        [(-hw, -poly_ext_y), (hw, -poly_ext_y), (hw, poly_ext_y), (-hw, poly_ext_y)],
         layer=layer["poly2"],
     )
 
@@ -1172,7 +1195,9 @@ def _highR_poly_res(
     well_ext_extra_6p0 = 0.04 if is_6p0 else 0.0
 
     _guard_ring(
-        c, gx, gy,
+        c,
+        gx,
+        gy,
         plus_diff_layer=layer["comp"],
         plus_contact_layer=layer["contact"],
         sub_type_layer=well_layer,
@@ -1270,8 +1295,11 @@ def res(
 
     if res_type in ("rm1", "rm2", "rm3"):
         ext = 0.315
-        m_layer = {"rm1": layer["metal1"], "rm2": layer["metal2"],
-                    "rm3": layer["metal3"]}[res_type]
+        m_layer = {
+            "rm1": layer["metal1"],
+            "rm2": layer["metal2"],
+            "rm3": layer["metal3"],
+        }[res_type]
         out.add_port(
             name="r0",
             center=(0, hl + ext),

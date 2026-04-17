@@ -85,7 +85,7 @@ namespace eval gf180mcu {
 
 proc gf180mcu::addtechmenu {framename} {
    global Winopts Opts
-   
+
    # Check for difference between magic 8.1.125 and earlier, and 8.1.126 and later
    if {[catch {${framename}.titlebar cget -height}]} {
       set layoutframe ${framename}.pane.top
@@ -131,8 +131,8 @@ proc gf180mcu::addtechmenu {framename} {
 
    magic::add_toolkit_menu $layoutframe "Devices 2" pdk2
 
-   magic::add_toolkit_command $layoutframe "ppolyf_s        - 7 Ohm/sq " "magic::gencell gf180mcu::ppolyf_s" pdk2 
-   magic::add_toolkit_command $layoutframe "npolyf_s        - 7 Ohm/sq " "magic::gencell gf180mcu::ppolyf_s" pdk2 
+   magic::add_toolkit_command $layoutframe "ppolyf_s        - 7 Ohm/sq " "magic::gencell gf180mcu::ppolyf_s" pdk2
+   magic::add_toolkit_command $layoutframe "npolyf_s        - 7 Ohm/sq " "magic::gencell gf180mcu::ppolyf_s" pdk2
    magic::add_toolkit_command $layoutframe "nplus_u   (3.3V) -  85 Ohm/sq " "magic::gencell gf180mcu::nplus_u" pdk2
    magic::add_toolkit_command $layoutframe "pplus_u   (3.3V) - 128 Ohm/sq " "magic::gencell gf180mcu::pplus_u" pdk2
    magic::add_toolkit_command $layoutframe "nplus_u  (6.0V) -  85 Ohm/sq " "magic::gencell gf180mcu::nplus_u_6p0" pdk2
@@ -568,7 +568,7 @@ proc gf180mcu::diode_dialog {device parameters} {
     if {[dict exists $parameters compatible]} {
        set sellist [dict get $parameters compatible]
        # Reserved word "gencell" has special behavior to change the
-       # underlying device type 
+       # underlying device type
        dict set parameters gencell $device
        magic::add_selectlist gencell "Device type" $sellist $parameters
     }
@@ -641,14 +641,14 @@ proc gf180mcu::diode_check {parameters} {
 
     # Normalize distance units to microns
     set l [magic::spice2float $l]
-    set l [magic::3digitpastdecimal $l] 
+    set l [magic::3digitpastdecimal $l]
     set w [magic::spice2float $w]
-    set w [magic::3digitpastdecimal $w] 
+    set w [magic::3digitpastdecimal $w]
 
     set area [magic::spice2float $area]
-    set area [magic::3digitpastdecimal $area] 
+    set area [magic::3digitpastdecimal $area]
     set peri [magic::spice2float $peri]
-    set peri [magic::3digitpastdecimal $peri] 
+    set peri [magic::3digitpastdecimal $peri]
 
     if {$l == 0} {
         # Calculate L from W and area
@@ -662,11 +662,11 @@ proc gf180mcu::diode_check {parameters} {
     if {$w < $wmin} {
 	puts stderr "Diode width must be >= $wmin"
 	dict set parameters w $wmin
-    } 
+    }
     if {$l < $lmin} {
 	puts stderr "Diode length must be >= $lmin"
 	dict set parameters l $lmin
-    } 
+    }
     # Calculate area and perimeter from L and W
     set area [expr ($l * $w)]
     dict set parameters area [magic::float2spice $area]
@@ -960,7 +960,7 @@ proc gf180mcu::diode_nd2ps_03v3_draw {parameters} {
     ]
     set drawdict [dict merge $gf180mcu::ruleset $newdict $parameters]
     return [gf180mcu::diode_draw $drawdict]
-} 
+}
 
 #----------------------------------------------------------------
 
@@ -1102,7 +1102,7 @@ proc gf180mcu::cap_recalc {field parameters} {
 #
 #  wmin   Minimum allowed width
 #  lmin   Minimum allowed length
-#  dc     Area to remove to calculated area 
+#  dc     Area to remove to calculated area
 #----------------------------------------------------------------
 
 #----------------------------------------------------------------
@@ -1688,9 +1688,9 @@ proc gf180mcu::cap_check {parameters} {
 
     # Normalize distance units to microns
     set l [magic::spice2float $l]
-    set l [magic::3digitpastdecimal $l] 
+    set l [magic::3digitpastdecimal $l]
     set w [magic::spice2float $w]
-    set w [magic::3digitpastdecimal $w] 
+    set w [magic::3digitpastdecimal $w]
 
     set val   [magic::spice2float $val]
     set carea [magic::spice2float $carea]
@@ -1719,22 +1719,22 @@ proc gf180mcu::cap_check {parameters} {
 	puts stderr "Capacitor width must be >= $wmin"
 	dict set parameters w $wmin
 	set w $wmin
-    } 
+    }
     if {$l < $lmin} {
 	puts stderr "Capacitor length must be >= $lmin"
 	dict set parameters l $lmin
 	set l $lmin
-    } 
+    }
     if {($wmax > 0) && ($w > $wmax)} {
 	puts stderr "Capacitor width must be <= $wmax"
 	dict set parameters w $wmax
 	set w $wmax
-    } 
+    }
     if {($lmax > 0) && ($l > $lmax)} {
 	puts stderr "Capacitor length must be <= $lmax"
 	dict set parameters l $lmax
 	set l $lmax
-    } 
+    }
     # Calculate value from L and W
     set cval [expr ($l * $w * $carea + 2 * ($l + $w) * $cperi - 4 * $dc)]
     dict set parameters val [magic::float2spice $cval]
@@ -1833,7 +1833,7 @@ proc gf180mcu::npolyf_s_defaults {} {
 
 #----------------------------------------------------------------
 # nplus_u: Specify all user-editable default values and those
-# needed by nplus_u_check 
+# needed by nplus_u_check
 #----------------------------------------------------------------
 
 proc gf180mcu::nplus_u_defaults {} {
@@ -1939,7 +1939,7 @@ proc gf180mcu::ppolyf_u_1k_6p0_defaults {} {
 		compatible {ppolyf_u_1k ppolyf_u_1k_6p0}}
 }
 #endif (HRPOLY1K)
- 
+
 #----------------------------------------------------------------
 # resistor: Conversion from SPICE netlist parameters to toolkit
 #----------------------------------------------------------------
@@ -2052,7 +2052,7 @@ proc gf180mcu::ppolyf_u_1k_6p0_convert {parameters} {
 
 proc gf180mcu::res_dialog {device parameters} {
     # Editable fields:      w, l, t, nx, m, val
-    # Checked fields:  
+    # Checked fields:
 
     magic::add_entry val "Value (ohms)" $parameters
     if {[dict exists $parameters snake]} {
@@ -2070,7 +2070,7 @@ proc gf180mcu::res_dialog {device parameters} {
     if {[dict exists $parameters compatible]} {
        set sellist [dict get $parameters compatible]
        # Reserved word "gencell" has special behavior to change the
-       # underlying device type 
+       # underlying device type
        dict set parameters gencell $device
        magic::add_selectlist gencell "Device type" $sellist $parameters
     }
@@ -3057,7 +3057,7 @@ proc gf180mcu::res_check {device parameters} {
     if {$w < $wmin} {
 	puts stderr "Resistor width must be >= $wmin um"
 	dict set parameters w $wmin
-    } 
+    }
     # Val and W specified - no L
     if {$l == 0}  {
    	set l [expr ($w - $dw) * $val / $rho]
@@ -3079,15 +3079,15 @@ proc gf180mcu::res_check {device parameters} {
     if {$l < $lmin} {
 	puts stderr "Resistor length must be >= $lmin um"
 	dict set parameters l $lmin
-    } 
+    }
     if {$nx < 1} {
 	puts stderr "X repeat must be >= 1"
 	dict set parameters nx 1
-    } 
+    }
     if {$m < 1} {
 	puts stderr "Y repeat must be >= 1"
 	dict set parameters m 1
-    } 
+    }
 
     # Snake resistors cannot have width greater than length
     if {$snake == 1} {
@@ -3500,7 +3500,7 @@ proc gf180mcu::mos_dialog {device parameters} {
     if {[dict exists $parameters compatible]} {
        set sellist [dict get $parameters compatible]
        # Reserved word "gencell" has special behavior to change the
-       # underlying device type 
+       # underlying device type
        dict set parameters gencell $device
        magic::add_selectlist gencell "Device type" $sellist $parameters
     }
@@ -4163,7 +4163,7 @@ proc gf180mcu::mos_draw {parameters} {
     }
 
     if {($guard != 0)} {
-        # Somewhat tricky. . . if the width is small and the diffusion is 
+        # Somewhat tricky. . . if the width is small and the diffusion is
         # a dogbone, and the top or bottom poly contact is missing, then
         # the spacing to the guard ring may be limited by diffusion spacing, not
         # poly to diffusion.
@@ -4558,9 +4558,9 @@ proc gf180mcu::mos_check {parameters} {
     }
 
     # Normalize distance units to microns
-    set l [magic::spice2float $l] 
+    set l [magic::spice2float $l]
     set l [magic::3digitpastdecimal $l]
-    set w [magic::spice2float $w] 
+    set w [magic::spice2float $w]
     set w [magic::3digitpastdecimal $w]
 
     # nf, m must be integer
@@ -4585,24 +4585,24 @@ proc gf180mcu::mos_check {parameters} {
     if {$l < $lmin} {
 	puts stderr "Mos length must be >= $lmin um"
         dict set parameters l $lmin
-    } 
+    }
     if {($lmax > 0) && ($l > $lmax)} {
 	puts stderr "MOS length must be <= $lmax"
 	dict set parameters l $lmax
 	set l $lmax
-    } 
+    }
     if {$w < $wmin} {
 	puts stderr "Mos width must be >= $wmin um"
         dict set parameters w $wmin
-    } 
+    }
     if {$nf < 1} {
 	puts stderr "NF must be >= 1"
         dict set parameters nf 1
-    } 
+    }
     if {$m < 1} {
 	puts stderr "M must be >= 1"
         dict set parameters m 1
-    } 
+    }
     if {$diffcov < 20 } {
 	puts stderr "Diffusion contact coverage must be at least 20%"
         dict set parameters diffcov 20
@@ -4874,7 +4874,7 @@ proc gf180mcu::fixed_dialog {parameters} {
     if [dict exists $parameters pitchx] {
 	set pitchux [magic::i2u $pitchx]
 	set stepux [magic::spice2float $xstep]
-        set deltax [magic::3digitpastdecimal [expr $pitchux - $stepux]] 
+        set deltax [magic::3digitpastdecimal [expr $pitchux - $stepux]]
         # An array size 1 should not cause deltax to go negative
 	if {$deltax < 0.0} {set deltax 0.0}
 	dict set parameters deltax $deltax
@@ -4882,7 +4882,7 @@ proc gf180mcu::fixed_dialog {parameters} {
     if [dict exists $parameters pitchy] {
 	set pitchuy [magic::i2u $pitchy]
 	set stepuy [magic::spice2float $ystep]
-        set deltay [magic::3digitpastdecimal [expr $pitchuy - $stepuy]] 
+        set deltay [magic::3digitpastdecimal [expr $pitchuy - $stepuy]]
         # An array size 1 should not cause deltay to go negative
 	if {$deltay < 0.0} {set deltay 0.0}
 	dict set parameters deltay $deltay
@@ -4957,10 +4957,10 @@ proc gf180mcu::fixed_draw {devname parameters} {
     # Instantiate the cell.  The name corresponds to the cell in the primdev directory.
     set instname [getcell ${devname}]
 
-    set deltax [magic::spice2float $deltax] 
-    set deltay [magic::spice2float $deltay] 
-    set xstep [magic::spice2float $xstep] 
-    set ystep [magic::spice2float $ystep] 
+    set deltax [magic::spice2float $deltax]
+    set deltay [magic::spice2float $deltay]
+    set xstep [magic::spice2float $xstep]
+    set ystep [magic::spice2float $ystep]
 
     # Array stepping
     if {$nx > 1 || $ny > 1} {
@@ -5034,9 +5034,9 @@ proc gf180mcu::fixed_check {parameters} {
     }
 
     # Normalize distance units to microns
-    set deltax [magic::spice2float $deltax -1] 
+    set deltax [magic::spice2float $deltax -1]
     set deltax [magic::3digitpastdecimal $deltax]
-    set deltay [magic::spice2float $deltay -1] 
+    set deltay [magic::spice2float $deltay -1]
     set deltay [magic::3digitpastdecimal $deltay]
 
     # nx, ny must be integer
@@ -5115,5 +5115,3 @@ proc gf180mcu::pnp_10p00x10p00_check {parameters} {
 proc gf180mcu::pnp_10p00x00p42_check {parameters} {
     return [gf180mcu::fixed_check $parameters]
 }
-
-

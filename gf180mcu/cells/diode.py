@@ -18,21 +18,20 @@ Contact rules:
   Contact inset from guard comp outer: 0.190 (03v3), 0.180 (06v0 or outer guard)
 """
 
-from math import floor
-
 import gdsfactory as gf
-import numpy as np
 from gdsfactory.typings import Float2
 
-from gf180mcu.layers import layer
 from gf180mcu.cells.via_generator import via_generator, via_stack
-
+from gf180mcu.layers import layer
 
 # ---------------------------------------------------------------------------
 # Helper: exact rectangle placement (bypasses gdsfactory snap_to_grid2x)
 # ---------------------------------------------------------------------------
 
-def _add_rect(c: gf.Component, x0: float, y0: float, x1: float, y1: float, lyr: str) -> None:
+
+def _add_rect(
+    c: gf.Component, x0: float, y0: float, x1: float, y1: float, lyr: str
+) -> None:
     """Add an exact rectangle polygon directly, avoiding snap-to-grid rounding."""
     c.add_polygon([(x0, y0), (x0, y1), (x1, y1), (x1, y0)], layer=layer[lyr])
 
@@ -40,6 +39,7 @@ def _add_rect(c: gf.Component, x0: float, y0: float, x1: float, y1: float, lyr: 
 # ---------------------------------------------------------------------------
 # Helper: contact position generation
 # ---------------------------------------------------------------------------
+
 
 def _positions(nc: int, pitch: float) -> list:
     """nc contact centre positions centred on zero."""
@@ -297,6 +297,7 @@ def _inner_metal1(c: gf.Component, wa: float, la: float) -> None:
 # diode_nd2ps
 # ---------------------------------------------------------------------------
 
+
 @gf.cell(tags=["diode"])
 def diode_nd2ps(
     la: float = 0.45,
@@ -327,10 +328,10 @@ def diode_nd2ps(
 
     # Voltage-dependent geometry constants (all from reference GDS analysis)
     if volt == "3.3V":
-        dev_spacing = 0.300   # gap between inner comp and guard ring comp inner edge
-        guard_inner_offset = 0.300   # guard_inner = wa/2 + this
-        guard_outer_offset = 0.680   # guard_outer = wa/2 + this (strip = 0.380)
-        contact_inset = 0.190        # guard contact center to guard comp outer edge
+        dev_spacing = 0.300  # gap between inner comp and guard ring comp inner edge
+        guard_inner_offset = 0.300  # guard_inner = wa/2 + this
+        guard_outer_offset = 0.680  # guard_outer = wa/2 + this (strip = 0.380)
+        contact_inset = 0.190  # guard contact center to guard comp outer edge
         nplus_enc = 0.16
         dg_enc = 0.24
     else:  # 6.0V
@@ -364,22 +365,20 @@ def diode_nd2ps(
 
     # --- Inner device ---
     # Comp
-    c.add_ref(
-        gf.components.rectangle(size=(wa, la), layer=layer["comp"])
-    ).move((-hw, -hl))
+    c.add_ref(gf.components.rectangle(size=(wa, la), layer=layer["comp"])).move(
+        (-hw, -hl)
+    )
 
     # Diode marker
-    c.add_ref(
-        gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])
-    ).move((-hw, -hl))
+    c.add_ref(gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])).move(
+        (-hw, -hl)
+    )
 
     # N+ implant (solid rect enclosing inner comp)
     nplus_hw = round(hw + nplus_enc, 4)
     nplus_hl = round(hl + nplus_enc, 4)
     c.add_ref(
-        gf.components.rectangle(
-            size=(2 * nplus_hw, 2 * nplus_hl), layer=layer["nplus"]
-        )
+        gf.components.rectangle(size=(2 * nplus_hw, 2 * nplus_hl), layer=layer["nplus"])
     ).move((-nplus_hw, -nplus_hl))
 
     # Inner contacts
@@ -395,10 +394,14 @@ def diode_nd2ps(
     _guard_ring_comp(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y)
 
     # P+ implant: ring with notched corners matching Magic VLSI decomposition
-    _pplus_ring(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, lyr="pplus")
+    _pplus_ring(
+        c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, lyr="pplus"
+    )
 
     # Guard ring metal1 (ring: 4 strips)
-    _guard_metal1(c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, diff_surround)
+    _guard_metal1(
+        c, guard_inner_x, guard_inner_y, guard_outer_x, guard_outer_y, diff_surround
+    )
 
     # Guard ring contacts
     _guard_contacts(c, guard_contact_x, guard_contact_y, nc_gx, nc_gy)
@@ -407,9 +410,7 @@ def diode_nd2ps(
     lvp_hx = round(guard_outer_x + lvpwell_enc, 4)
     lvp_hy = round(guard_outer_y + lvpwell_enc, 4)
     c.add_ref(
-        gf.components.rectangle(
-            size=(2 * lvp_hx, 2 * lvp_hy), layer=layer["lvpwell"]
-        )
+        gf.components.rectangle(size=(2 * lvp_hx, 2 * lvp_hy), layer=layer["lvpwell"])
     ).move((-lvp_hx, -lvp_hy))
 
     # Dualgate for 6.0V
@@ -447,6 +448,7 @@ def diode_nd2ps(
 # diode_pd2nw
 # ---------------------------------------------------------------------------
 
+
 @gf.cell(tags=["diode"])
 def diode_pd2nw(
     la: float = 0.45,
@@ -477,16 +479,16 @@ def diode_pd2nw(
 
     if volt == "3.3V":
         # Inner guard ring
-        ig_inner_offset = 0.300   # guard_inner = wa/2 + this
-        ig_outer_offset = 0.680   # guard_outer = wa/2 + this
+        ig_inner_offset = 0.300  # guard_inner = wa/2 + this
+        ig_outer_offset = 0.680  # guard_outer = wa/2 + this
         ig_contact_inset = 0.190
         nw_enc = 0.12
-        nplus_enc_out = 0.16     # nplus outer enc on ig_outer
-        nplus_enc_in = 0.090     # nplus inner enc on ig_inner (inward)
+        nplus_enc_out = 0.16  # nplus outer enc on ig_outer
+        nplus_enc_in = 0.090  # nplus inner enc on ig_inner (inward)
         lvpwell_enc = 0.12
         # Outer guard ring (relative to inner guard outer)
-        og_inner_gap = 0.450     # outer_guard_inner = inner_guard_outer + this
-        og_strip = 0.360         # outer_guard_outer = outer_guard_inner + this
+        og_inner_gap = 0.450  # outer_guard_inner = inner_guard_outer + this
+        og_strip = 0.360  # outer_guard_outer = outer_guard_inner + this
         # outer_guard_outer = inner_guard_outer + 0.450 + 0.360 = inner_guard_outer + 0.810
         og_contact_inset = 0.180
         dg_enc = 0.24
@@ -496,7 +498,7 @@ def diode_pd2nw(
         ig_contact_inset = 0.180
         nw_enc = 0.16
         nplus_enc_out = 0.16
-        nplus_enc_in = 0.070     # nplus inner enc (inward) for 6.0V
+        nplus_enc_in = 0.070  # nplus inner enc (inward) for 6.0V
         lvpwell_enc = 0.16
         og_inner_gap = 0.520
         og_strip = 0.360
@@ -534,21 +536,19 @@ def diode_pd2nw(
     nc_outer_side_y = _nc_outer_guard_side(og_inner_y)
 
     # --- Inner device (P+ diffusion) ---
-    c.add_ref(
-        gf.components.rectangle(size=(wa, la), layer=layer["comp"])
-    ).move((-hw, -hl))
+    c.add_ref(gf.components.rectangle(size=(wa, la), layer=layer["comp"])).move(
+        (-hw, -hl)
+    )
 
-    c.add_ref(
-        gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])
-    ).move((-hw, -hl))
+    c.add_ref(gf.components.rectangle(size=(wa, la), layer=layer["diode_mk"])).move(
+        (-hw, -hl)
+    )
 
     # P+ implant on inner device
     pplus_hw = round(hw + 0.16, 4)
     pplus_hl = round(hl + 0.16, 4)
     c.add_ref(
-        gf.components.rectangle(
-            size=(2 * pplus_hw, 2 * pplus_hl), layer=layer["pplus"]
-        )
+        gf.components.rectangle(size=(2 * pplus_hw, 2 * pplus_hl), layer=layer["pplus"])
     ).move((-pplus_hw, -pplus_hl))
 
     # Inner contacts
@@ -579,9 +579,7 @@ def diode_pd2nw(
     nw_hx = round(ig_outer_x + nw_enc, 4)
     nw_hy = round(ig_outer_y + nw_enc, 4)
     c.add_ref(
-        gf.components.rectangle(
-            size=(2 * nw_hx, 2 * nw_hy), layer=layer["nwell"]
-        )
+        gf.components.rectangle(size=(2 * nw_hx, 2 * nw_hy), layer=layer["nwell"])
     ).move((-nw_hx, -nw_hy))
 
     # --- Outer guard ring (P+ comp = LVPWELL ground) ---
@@ -603,7 +601,9 @@ def diode_pd2nw(
     lvp_outer_y = round(og_outer_y + lvpwell_enc, 4)
     lvp_inner_x = round(nw_hx, 4)
     lvp_inner_y = round(nw_hy, 4)
-    _guard_ring_comp(c, lvp_inner_x, lvp_inner_y, lvp_outer_x, lvp_outer_y, lyr="lvpwell")
+    _guard_ring_comp(
+        c, lvp_inner_x, lvp_inner_y, lvp_outer_x, lvp_outer_y, lyr="lvpwell"
+    )
 
     # Dualgate for 6.0V
     if volt == "6.0V":
@@ -639,6 +639,7 @@ def diode_pd2nw(
 # ---------------------------------------------------------------------------
 # diode_nw2ps  (ported from KLayout draw_diode_nw2ps)
 # ---------------------------------------------------------------------------
+
 
 @gf.cell(tags=["diode"])
 def diode_nw2ps(
@@ -776,6 +777,7 @@ def diode_nw2ps(
 # ---------------------------------------------------------------------------
 # diode_pw2dw  (ported from KLayout draw_diode_pw2dw)
 # ---------------------------------------------------------------------------
+
 
 @gf.cell(tags=["diode"])
 def diode_pw2dw(
@@ -1084,6 +1086,7 @@ def diode_pw2dw(
 # ---------------------------------------------------------------------------
 # diode_dw2ps  (ported from KLayout draw_diode_dw2ps)
 # ---------------------------------------------------------------------------
+
 
 @gf.cell(tags=["diode"])
 def diode_dw2ps(
@@ -1504,6 +1507,7 @@ def diode_dw2ps(
 # ---------------------------------------------------------------------------
 # sc_diode  (ported from KLayout draw_sc_diode)
 # ---------------------------------------------------------------------------
+
 
 @gf.cell(tags=["diode"])
 def sc_diode(
