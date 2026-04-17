@@ -34,7 +34,7 @@ dev = [
   "pytest-github-actions-annotate-failures",
   "towncrier"
 ]
-docs = ["jupytext", "matplotlib", "jupyter-book>=0.15.1,<2.2"]
+docs = ["jupytext", "matplotlib", "jupyter-book==1.0.3"]
 tests = ["pytest", "pytest-cov"]
 
 [tool.codespell]
