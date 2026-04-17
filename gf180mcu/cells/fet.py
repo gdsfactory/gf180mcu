@@ -64,12 +64,12 @@ _RULES = dict(
 )
 
 # Physical GDS dimensions (after CIF conversion)
-_CIF_CONTACT_CUT = 0.22         # contact cut on GDS layer 33
-_CIF_DIFF_SURROUND = 0.07       # active/poly surround in GDS
-_CIF_POLY_SURROUND = 0.07       # poly surround in GDS
-_CIF_METAL_SURROUND = 0.06      # metal1 surround in GDS
-_CIF_CONTACT_GAP = 0.25         # min gap between contact cuts
-_CIF_CONTACT_PITCH = 0.47       # _CIF_CONTACT_CUT + _CIF_CONTACT_GAP
+_CIF_CONTACT_CUT = 0.22  # contact cut on GDS layer 33
+_CIF_DIFF_SURROUND = 0.07  # active/poly surround in GDS
+_CIF_POLY_SURROUND = 0.07  # poly surround in GDS
+_CIF_METAL_SURROUND = 0.06  # metal1 surround in GDS
+_CIF_CONTACT_GAP = 0.25  # min gap between contact cuts
+_CIF_CONTACT_PITCH = 0.47  # _CIF_CONTACT_CUT + _CIF_CONTACT_GAP
 
 # Layer aliases
 _L_COMP = layer["comp"]
@@ -94,6 +94,7 @@ _L_PR_BNDRY = layer["pr_bndry"]
 # Helper: add a snapped rectangle
 # ---------------------------------------------------------------------------
 
+
 def _rect(c, x0, y0, x1, y1, layer_spec):
     x0, y0, x1, y1 = _snap(x0), _snap(y0), _snap(x1), _snap(y1)
     if abs(x1 - x0) < 1e-6 or abs(y1 - y0) < 1e-6:
@@ -104,6 +105,7 @@ def _rect(c, x0, y0, x1, y1, layer_spec):
 # ---------------------------------------------------------------------------
 # Contact cut array — places 0.22 x 0.22 cuts with 0.47 pitch
 # ---------------------------------------------------------------------------
+
 
 def _contact_cuts(c, cx, cy, w_envelope, h_envelope):
     """Place contact cuts within an envelope of size (w_envelope, h_envelope)
@@ -144,16 +146,15 @@ def _contact_cuts(c, cx, cy, w_envelope, h_envelope):
         for iy in range(ny):
             x = _snap(cx - span_x / 2.0 + ix * pitch)
             y = _snap(cy - span_y / 2.0 + iy * pitch)
-            _rect(c, x - cut / 2, y - cut / 2,
-                  x + cut / 2, y + cut / 2, _L_CONTACT)
+            _rect(c, x - cut / 2, y - cut / 2, x + cut / 2, y + cut / 2, _L_CONTACT)
 
 
 # ---------------------------------------------------------------------------
 # draw_contact — replicates gf180mcu::draw_contact
 # ---------------------------------------------------------------------------
 
-def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert",
-                   no_cuts=False):
+
+def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert", no_cuts=False):
     """Draw contact with surrounding active/poly and metal1.
 
     w, h: requested contact area size (painted dimensions).
@@ -206,8 +207,19 @@ def _draw_contact(c, cx, cy, w, h, rules, active_layer, orient="vert",
 # Guard ring — replicates gf180mcu::guard_ring
 # ---------------------------------------------------------------------------
 
-def _guard_ring(c, gx, gy, rules, sub_layer, full_metal=True,
-                glc=True, grc=True, gtc=False, gbc=False):
+
+def _guard_ring(
+    c,
+    gx,
+    gy,
+    rules,
+    sub_layer,
+    full_metal=True,
+    glc=True,
+    grc=True,
+    gtc=False,
+    gbc=False,
+):
     """Draw guard ring centered at origin.
 
     gx, gy: guard ring size measured to contact centers (painted coords).
@@ -228,19 +240,19 @@ def _guard_ring(c, gx, gy, rules, sub_layer, full_metal=True,
     hdiffh = (gy + difft) / 2.0
 
     # Guard ring diffusion (comp layer) — 4 bars forming a ring
-    _rect(c, -hdiffw, hh - hdifft, hdiffw, hh + hdifft, _L_COMP)    # top
+    _rect(c, -hdiffw, hh - hdifft, hdiffw, hh + hdifft, _L_COMP)  # top
     _rect(c, -hdiffw, -hh - hdifft, hdiffw, -hh + hdifft, _L_COMP)  # bottom
-    _rect(c, hw - hdifft, -hdiffh, hw + hdifft, hdiffh, _L_COMP)    # right
+    _rect(c, hw - hdifft, -hdiffh, hw + hdifft, hdiffh, _L_COMP)  # right
     _rect(c, -hw - hdifft, -hdiffh, -hw + hdifft, hdiffh, _L_COMP)  # left
 
     # Full metal ring
     if full_metal:
         hmetw = (gx + contact_size) / 2.0
         hmeth = (gy + contact_size) / 2.0
-        _rect(c, -hmetw, hh - hx, hmetw, hh + hx, _L_METAL1)      # top
-        _rect(c, -hmetw, -hh - hx, hmetw, -hh + hx, _L_METAL1)    # bottom
-        _rect(c, hw - hx, -hmeth, hw + hx, hmeth, _L_METAL1)       # right
-        _rect(c, -hw - hx, -hmeth, -hw + hx, hmeth, _L_METAL1)     # left
+        _rect(c, -hmetw, hh - hx, hmetw, hh + hx, _L_METAL1)  # top
+        _rect(c, -hmetw, -hh - hx, hmetw, -hh + hx, _L_METAL1)  # bottom
+        _rect(c, hw - hx, -hmeth, hw + hx, hmeth, _L_METAL1)  # right
+        _rect(c, -hw - hx, -hmeth, -hw + hx, hmeth, _L_METAL1)  # left
 
     # Contact height/width for side/top-bottom contacts
     ch = gy - contact_size - 2 * (metal_surround + metal_spacing)
@@ -262,8 +274,7 @@ def _guard_ring(c, gx, gy, rules, sub_layer, full_metal=True,
 
     # Substrate/well layer
     sub_ext = hx + diff_surround + sub_surround
-    _rect(c, -hw - sub_ext, -hh - sub_ext,
-          hw + sub_ext, hh + sub_ext, sub_layer)
+    _rect(c, -hw - sub_ext, -hh - sub_ext, hw + sub_ext, hh + sub_ext, sub_layer)
 
     return (-hw - sub_ext, -hh - sub_ext, hw + sub_ext, hh + sub_ext)
 
@@ -271,6 +282,7 @@ def _guard_ring(c, gx, gy, rules, sub_layer, full_metal=True,
 # ---------------------------------------------------------------------------
 # Guard ring implant
 # ---------------------------------------------------------------------------
+
 
 def _guard_ring_implant(c, gx, gy, implant_layer, rules):
     """Draw implant for the guard ring.
@@ -314,34 +326,82 @@ def _guard_ring_implant(c, gx, gy, implant_layer, rules):
 
     if implant_layer == _L_PPLUS:
         # NFET guard ring: pplus with small CIF bloat (~0.02-0.03)
-        enc_tb = 0.02   # top/bottom bar bloat
+        enc_tb = 0.02  # top/bottom bar bloat
         enc_side_x = 0.03  # side bar X bloat
 
         # Top bar
-        _rect(c, -bar_outer_x - enc_tb, bar_inner_y - enc_tb,
-              bar_outer_x + enc_tb, bar_outer_y + enc_tb, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_tb,
+            bar_inner_y - enc_tb,
+            bar_outer_x + enc_tb,
+            bar_outer_y + enc_tb,
+            implant_layer,
+        )
         # Bottom bar
-        _rect(c, -bar_outer_x - enc_tb, -bar_outer_y - enc_tb,
-              bar_outer_x + enc_tb, -bar_inner_y + enc_tb, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_tb,
+            -bar_outer_y - enc_tb,
+            bar_outer_x + enc_tb,
+            -bar_inner_y + enc_tb,
+            implant_layer,
+        )
         # Left side bar (main body)
-        _rect(c, -side_outer_x - enc_side_x, -side_impl_half_y,
-              -side_inner_x + enc_side_x, side_impl_half_y, implant_layer)
+        _rect(
+            c,
+            -side_outer_x - enc_side_x,
+            -side_impl_half_y,
+            -side_inner_x + enc_side_x,
+            side_impl_half_y,
+            implant_layer,
+        )
         # Right side bar (main body)
-        _rect(c, side_inner_x - enc_side_x, -side_impl_half_y,
-              side_outer_x + enc_side_x, side_impl_half_y, implant_layer)
+        _rect(
+            c,
+            side_inner_x - enc_side_x,
+            -side_impl_half_y,
+            side_outer_x + enc_side_x,
+            side_impl_half_y,
+            implant_layer,
+        )
         # Corner pieces (bridge between bars and side bars)
         # Top-left corner
-        _rect(c, -bar_outer_x - enc_tb, side_impl_half_y,
-              -side_inner_x + enc_side_x, bar_inner_y - enc_tb, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_tb,
+            side_impl_half_y,
+            -side_inner_x + enc_side_x,
+            bar_inner_y - enc_tb,
+            implant_layer,
+        )
         # Top-right corner
-        _rect(c, side_inner_x - enc_side_x, side_impl_half_y,
-              bar_outer_x + enc_tb, bar_inner_y - enc_tb, implant_layer)
+        _rect(
+            c,
+            side_inner_x - enc_side_x,
+            side_impl_half_y,
+            bar_outer_x + enc_tb,
+            bar_inner_y - enc_tb,
+            implant_layer,
+        )
         # Bottom-left corner
-        _rect(c, -bar_outer_x - enc_tb, -bar_inner_y + enc_tb,
-              -side_inner_x + enc_side_x, -side_impl_half_y, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_tb,
+            -bar_inner_y + enc_tb,
+            -side_inner_x + enc_side_x,
+            -side_impl_half_y,
+            implant_layer,
+        )
         # Bottom-right corner
-        _rect(c, side_inner_x - enc_side_x, -bar_inner_y + enc_tb,
-              bar_outer_x + enc_tb, -side_impl_half_y, implant_layer)
+        _rect(
+            c,
+            side_inner_x - enc_side_x,
+            -bar_inner_y + enc_tb,
+            bar_outer_x + enc_tb,
+            -side_impl_half_y,
+            implant_layer,
+        )
 
     else:
         # PFET guard ring: nplus with outer bloat 0.16, inner bloat varies
@@ -355,28 +415,40 @@ def _guard_ring_implant(c, gx, gy, implant_layer, rules):
 
         # Inner boundary of the nplus ring
         inner_x = _snap(side_inner_x - enc_in)  # inner X
-        inner_y = _snap(bar_inner_y - enc_in)    # inner Y
+        inner_y = _snap(bar_inner_y - enc_in)  # inner Y
 
         # Top bar (full width, from inner_y to outer top)
-        _rect(c, -bar_outer_x - enc_out, inner_y,
-              bar_outer_x + enc_out, bar_outer_y + enc_out, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_out,
+            inner_y,
+            bar_outer_x + enc_out,
+            bar_outer_y + enc_out,
+            implant_layer,
+        )
         # Bottom bar
-        _rect(c, -bar_outer_x - enc_out, -bar_outer_y - enc_out,
-              bar_outer_x + enc_out, -inner_y, implant_layer)
+        _rect(
+            c,
+            -bar_outer_x - enc_out,
+            -bar_outer_y - enc_out,
+            bar_outer_x + enc_out,
+            -inner_y,
+            implant_layer,
+        )
         # Left side bar (between inner_y bounds)
-        _rect(c, -side_outer_x - enc_out, -inner_y,
-              -inner_x, inner_y, implant_layer)
+        _rect(c, -side_outer_x - enc_out, -inner_y, -inner_x, inner_y, implant_layer)
         # Right side bar
-        _rect(c, inner_x, -inner_y,
-              side_outer_x + enc_out, inner_y, implant_layer)
+        _rect(c, inner_x, -inner_y, side_outer_x + enc_out, inner_y, implant_layer)
 
 
 # ---------------------------------------------------------------------------
 # Device implant
 # ---------------------------------------------------------------------------
 
-def _device_implant_region(finger_results, bloat, channel_bloat=None,
-                           gate_bloat=0.23, use_gate=True):
+
+def _device_implant_region(
+    finger_results, bloat, channel_bloat=None, gate_bloat=0.23, use_gate=True
+):
     """Build a kdb.Region for the device implant or v5_xtor.
 
     For each finger, creates the typed-diffusion shape:
@@ -398,14 +470,14 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
         # Channel extent (hw in Y, full X)
         cx0, cy0, cx1, cy1 = r["channel"]
         cb = channel_bloat if channel_bloat is not None else bloat
-        region.insert(kdb.Box(um(cx0 - cb), um(cy0 - cb),
-                              um(cx1 + cb), um(cy1 + cb)))
+        region.insert(kdb.Box(um(cx0 - cb), um(cy0 - cb), um(cx1 + cb), um(cy1 + cb)))
 
         # Dogbone tabs (individual rectangles, not bounding box)
         for tab in r.get("dogbone_tabs", []):
             t0, t1, t2, t3 = tab
-            region.insert(kdb.Box(um(t0 - bloat), um(t1 - bloat),
-                                  um(t2 + bloat), um(t3 + bloat)))
+            region.insert(
+                kdb.Box(um(t0 - bloat), um(t1 - bloat), um(t2 + bloat), um(t3 + bloat))
+            )
 
     # Gate region: for dogbone devices (w < cdwmin), add each finger's gate
     # individually so the gap between fingers is preserved (nplus notch at
@@ -413,22 +485,34 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
     if use_gate and finger_results:
         # Detect dogbone: channel Y extent < active Y extent
         r0 = finger_results[0]
-        is_dogbone = abs(r0["channel"][3] - r0["channel"][1]) < \
-                     abs(r0["active"][3] - r0["active"][1]) - 0.001
+        is_dogbone = (
+            abs(r0["channel"][3] - r0["channel"][1])
+            < abs(r0["active"][3] - r0["active"][1]) - 0.001
+        )
         if is_dogbone and len(finger_results) > 1:
             for r in finger_results:
                 gx0, gy0, gx1, gy1 = r["gate"]
-                region.insert(kdb.Box(
-                    um(gx0 - gate_bloat), um(gy0 - gate_bloat),
-                    um(gx1 + gate_bloat), um(gy1 + gate_bloat)))
+                region.insert(
+                    kdb.Box(
+                        um(gx0 - gate_bloat),
+                        um(gy0 - gate_bloat),
+                        um(gx1 + gate_bloat),
+                        um(gy1 + gate_bloat),
+                    )
+                )
         else:
             gate_x0 = min(r["gate"][0] for r in finger_results)
             gate_y0 = min(r["gate"][1] for r in finger_results)
             gate_x1 = max(r["gate"][2] for r in finger_results)
             gate_y1 = max(r["gate"][3] for r in finger_results)
-            region.insert(kdb.Box(
-                um(gate_x0 - gate_bloat), um(gate_y0 - gate_bloat),
-                um(gate_x1 + gate_bloat), um(gate_y1 + gate_bloat)))
+            region.insert(
+                kdb.Box(
+                    um(gate_x0 - gate_bloat),
+                    um(gate_y0 - gate_bloat),
+                    um(gate_x1 + gate_bloat),
+                    um(gate_y1 + gate_bloat),
+                )
+            )
 
     return region.merged()
 
@@ -436,8 +520,9 @@ def _device_implant_region(finger_results, bloat, channel_bloat=None,
 def _draw_region(c, region, layer_spec):
     """Draw a kdb.Region as polygons on the given layer."""
     for poly in region.each():
-        points = [(_snap(p.x / 1000.0), _snap(p.y / 1000.0))
-                  for p in poly.each_point_hull()]
+        points = [
+            (_snap(p.x / 1000.0), _snap(p.y / 1000.0)) for p in poly.each_point_hull()
+        ]
         if len(points) >= 3:
             c.add_polygon(points, layer=layer_spec)
 
@@ -445,6 +530,7 @@ def _draw_region(c, region, layer_spec):
 # ---------------------------------------------------------------------------
 # Single MOS device geometry computation
 # ---------------------------------------------------------------------------
+
 
 def _mos_geometry(w, l, rules, topc=True, botc=True):
     """Compute geometry for one MOS finger using Magic's algorithm.
@@ -527,13 +613,15 @@ def _mos_geometry(w, l, rules, topc=True, botc=True):
     # Poly gate: hw + poly_ext_top (= gate_extension or gate_to_polycont)
     # Contact pad: hw + gate_to_polycont + poly_surround + contact_size/2
     if topc:
-        top_ext = max(poly_ext_top,
-                      gate_to_polycont + poly_surround + contact_size / 2.0)
+        top_ext = max(
+            poly_ext_top, gate_to_polycont + poly_surround + contact_size / 2.0
+        )
     else:
         top_ext = poly_ext_top
     if botc:
-        bot_ext = max(poly_ext_bot,
-                      gate_to_polycont + poly_surround + contact_size / 2.0)
+        bot_ext = max(
+            poly_ext_bot, gate_to_polycont + poly_surround + contact_size / 2.0
+        )
     else:
         bot_ext = poly_ext_bot
     fh = hw + top_ext + hw + bot_ext
@@ -549,17 +637,25 @@ def _mos_geometry(w, l, rules, topc=True, botc=True):
     # These are typically smaller than the poly extent, so fh is dominated by poly pads.
 
     return dict(
-        w=w, l=l, hw=hw, hl=hl,
+        w=w,
+        l=l,
+        hw=hw,
+        hl=hl,
         gate_to_diffcont=gate_to_diffcont,
         gate_to_polycont=gate_to_polycont,
         gate_extension=gate_extension,
-        diff_grow_d=diff_grow_d, diff_grow_s=diff_grow_s,
-        poly_ext_top=poly_ext_top, poly_ext_bot=poly_ext_bot,
+        diff_grow_d=diff_grow_d,
+        diff_grow_s=diff_grow_s,
+        poly_ext_top=poly_ext_top,
+        poly_ext_bot=poly_ext_bot,
         diffcont_orient=diffcont_orient,
         ddover=ddover,
-        cdw=cdw, cpl=cpl,
-        fw=fw, fh=fh,
-        cdwmin=cdwmin, cplmin=cplmin,
+        cdw=cdw,
+        cpl=cpl,
+        fw=fw,
+        fh=fh,
+        cdwmin=cdwmin,
+        cplmin=cplmin,
     )
 
 
@@ -567,8 +663,10 @@ def _mos_geometry(w, l, rules, topc=True, botc=True):
 # Draw single MOS device finger
 # ---------------------------------------------------------------------------
 
-def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
-                     dss=False, asym=False):
+
+def _draw_mos_finger(
+    c, cx, cy, geom, rules, evens=1, topc=True, botc=True, dss=False, asym=False
+):
     """Draw one MOS finger at (cx, cy). Returns device extents."""
     w = geom["w"]
     l = geom["l"]
@@ -592,7 +690,7 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
     if evens == 1:
         dside = -1  # drain left
     else:
-        dside = 1   # drain right
+        dside = 1  # drain right
     sside = -dside
 
     # --- Diffusion (comp) painting ---
@@ -622,12 +720,10 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
         sub_surround_v = rules.get("sub_surround", 0.12)
         if sside == -1:
             # Source on left, drain on right
-            _rect(c, source_left, cy - hw,
-                  cx + hl - sub_surround_v, cy + hw, _L_COMP)
+            _rect(c, source_left, cy - hw, cx + hl - sub_surround_v, cy + hw, _L_COMP)
         else:
             # Source on right, drain on left
-            _rect(c, cx - hl + sub_surround_v, cy - hw,
-                  source_right, cy + hw, _L_COMP)
+            _rect(c, cx - hl + sub_surround_v, cy - hw, source_right, cy + hw, _L_COMP)
     else:
         _rect(c, comp_left, cy - hw, comp_right, cy + hw, _L_COMP)
 
@@ -687,26 +783,52 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
         if dside == -1:
             # Drain on left
             _rect(c, d_outer_edge, cy - hw, d_mid_edge, cy + hw, _L_COMP)
-            _rect(c, d_mid_edge, cy - hw_reduced, d_inner_edge,
-                  cy + hw_reduced, _L_COMP)
+            _rect(
+                c, d_mid_edge, cy - hw_reduced, d_inner_edge, cy + hw_reduced, _L_COMP
+            )
         else:
             # Drain on right
             d_outer_edge = _snap(drain_cx + hc_half + diff_surround)
             d_mid_edge = _snap(drain_cx - ms_phys)
             d_inner_edge = _snap(drain_cx - hc_half)
-            _rect(c, d_inner_edge, cy - hw_reduced, d_mid_edge,
-                  cy + hw_reduced, _L_COMP)
+            _rect(
+                c, d_inner_edge, cy - hw_reduced, d_mid_edge, cy + hw_reduced, _L_COMP
+            )
             _rect(c, d_mid_edge, cy - hw, d_outer_edge, cy + hw, _L_COMP)
         # Still draw drain metal (no comp from draw_contact for asym drain)
         cw_m = max(0, contact_size)
         ch_m = max(cdw, contact_size)
-        _rect(c, drain_cx - cw_m / 2, cy - ch_m / 2 - metal_surround,
-              drain_cx + cw_m / 2, cy + ch_m / 2 + metal_surround, _L_METAL1)
+        _rect(
+            c,
+            drain_cx - cw_m / 2,
+            cy - ch_m / 2 - metal_surround,
+            drain_cx + cw_m / 2,
+            cy + ch_m / 2 + metal_surround,
+            _L_METAL1,
+        )
     else:
-        _draw_contact(c, drain_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
-                      no_cuts=drain_no_cuts)
-    _draw_contact(c, source_cx, cy, 0, cdw, rules, _L_COMP, diffcont_orient,
-                  no_cuts=source_no_cuts)
+        _draw_contact(
+            c,
+            drain_cx,
+            cy,
+            0,
+            cdw,
+            rules,
+            _L_COMP,
+            diffcont_orient,
+            no_cuts=drain_no_cuts,
+        )
+    _draw_contact(
+        c,
+        source_cx,
+        cy,
+        0,
+        cdw,
+        rules,
+        _L_COMP,
+        diffcont_orient,
+        no_cuts=source_no_cuts,
+    )
 
     # --- Poly contacts ---
     if topc:
@@ -792,9 +914,21 @@ def _draw_mos_finger(c, cx, cy, geom, rules, evens=1, topc=True, botc=True,
 # Main MOS drawing — replicates gf180mcu::mos_draw
 # ---------------------------------------------------------------------------
 
-def _mos_draw(c, w, l, nf, rules, is_nfet=True,
-              topc=True, botc=True, guard=True, full_metal=True,
-              dss=False, asym=False):
+
+def _mos_draw(
+    c,
+    w,
+    l,
+    nf,
+    rules,
+    is_nfet=True,
+    topc=True,
+    botc=True,
+    guard=True,
+    full_metal=True,
+    dss=False,
+    asym=False,
+):
     """Draw complete MOSFET with guard ring."""
     contact_size = rules["contact_size"]
     diff_surround = rules["diff_surround"]
@@ -849,9 +983,9 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
     all_finger_results = []
     for i in range(nf):
         fx = start_x + i * dx
-        result = _draw_mos_finger(c, fx, 0, geom, rules,
-                                  evens=evens, topc=topc, botc=botc,
-                                  dss=dss, asym=asym)
+        result = _draw_mos_finger(
+            c, fx, 0, geom, rules, evens=evens, topc=topc, botc=botc, dss=dss, asym=asym
+        )
         all_finger_results.append(result)
         evens = 1 - evens
 
@@ -863,14 +997,17 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         act_y0 = min(r["active"][1] for r in all_finger_results)
         act_x1 = max(r["active"][2] for r in all_finger_results)
         act_y1 = max(r["active"][3] for r in all_finger_results)
-        _rect(c, act_x0 - 0.18, act_y0 - 0.18,
-              act_x1 + 0.18, act_y1 + 0.18, dev_implant)
+        _rect(
+            c, act_x0 - 0.18, act_y0 - 0.18, act_x1 + 0.18, act_y1 + 0.18, dev_implant
+        )
     elif asym and all_finger_results:
         # 10V asymmetric: gate region bloated by 0.23 (bounding box)
         # + source side channel bloated by 0.16 (no drain channel contribution).
         import klayout.db as kdb
+
         def um(v):
             return round(v * 1000)
+
         impl_region = kdb.Region()
         hw_v = geom["hw"]
         # Gate region: bounding box of all gates, bloated by 0.23
@@ -878,9 +1015,14 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         gate_y0 = min(r["gate"][1] for r in all_finger_results)
         gate_x1 = max(r["gate"][2] for r in all_finger_results)
         gate_y1 = max(r["gate"][3] for r in all_finger_results)
-        impl_region.insert(kdb.Box(
-            um(gate_x0 - 0.23), um(gate_y0 - 0.23),
-            um(gate_x1 + 0.23), um(gate_y1 + 0.23)))
+        impl_region.insert(
+            kdb.Box(
+                um(gate_x0 - 0.23),
+                um(gate_y0 - 0.23),
+                um(gate_x1 + 0.23),
+                um(gate_y1 + 0.23),
+            )
+        )
         # Source side channel: bloated by 0.16
         for r in all_finger_results:
             scx = r["source_cx"]
@@ -895,9 +1037,11 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
                 # Source on left
                 s_x0 = cx0  # source outer
                 s_x1 = (cx0 + cx1) / 2 + geom["hl"]  # gate right edge
-            impl_region.insert(kdb.Box(
-                um(s_x0 - 0.16), um(-hw_v - 0.16),
-                um(s_x1 + 0.16), um(hw_v + 0.16)))
+            impl_region.insert(
+                kdb.Box(
+                    um(s_x0 - 0.16), um(-hw_v - 0.16), um(s_x1 + 0.16), um(hw_v + 0.16)
+                )
+            )
         impl_region = impl_region.merged()
         _draw_region(c, impl_region, dev_implant)
     elif all_finger_results:
@@ -910,8 +1054,10 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
     # morphological closing to fill tiny CIF notches (matching Magic output).
     if dss and all_finger_results:
         import klayout.db as kdb
+
         def um(v):
             return round(v * 1000)
+
         sab_enc = rules["gate_extension"]
         sab_region = kdb.Region()
         hw_v = geom["hw"]
@@ -927,14 +1073,18 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
                 # Drain contact surround
                 dcx = r["drain_cx"]
                 ds_hw = contact_size / 2.0 + diff_surround
-                sab_region.insert(kdb.Box(
-                    um(dcx - ds_hw), um(-dog_half),
-                    um(dcx + ds_hw), um(dog_half)))
+                sab_region.insert(
+                    kdb.Box(
+                        um(dcx - ds_hw), um(-dog_half), um(dcx + ds_hw), um(dog_half)
+                    )
+                )
                 # Source contact surround
                 scx = r["source_cx"]
-                sab_region.insert(kdb.Box(
-                    um(scx - ds_hw), um(-dog_half),
-                    um(scx + ds_hw), um(dog_half)))
+                sab_region.insert(
+                    kdb.Box(
+                        um(scx - ds_hw), um(-dog_half), um(scx + ds_hw), um(dog_half)
+                    )
+                )
         sab_region = sab_region.merged()
         sab_region = sab_region.sized(round(sab_enc * 1000))
         # Morphological closing: fill tiny CIF notches (< 0.10 um)
@@ -946,6 +1096,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
 
     if asym and all_finger_results:
         import klayout.db as kdb
+
         def um(v):
             return round(v * 1000)
 
@@ -989,22 +1140,28 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
 
             if dcx < scx:
                 # Drain left: main body from x0 (outer left) to x_step
-                mvsd_region.insert(kdb.Box(
-                    um(x0), um(-mvsd_y_outer), um(x_step), um(mvsd_y_outer)))
+                mvsd_region.insert(
+                    kdb.Box(um(x0), um(-mvsd_y_outer), um(x_step), um(mvsd_y_outer))
+                )
                 # Wings from x_step to x1
-                mvsd_region.insert(kdb.Box(
-                    um(x_step), um(-mvsd_y_outer), um(x1), um(-inner_y)))
-                mvsd_region.insert(kdb.Box(
-                    um(x_step), um(inner_y), um(x1), um(mvsd_y_outer)))
+                mvsd_region.insert(
+                    kdb.Box(um(x_step), um(-mvsd_y_outer), um(x1), um(-inner_y))
+                )
+                mvsd_region.insert(
+                    kdb.Box(um(x_step), um(inner_y), um(x1), um(mvsd_y_outer))
+                )
             else:
                 # Drain right: main body from x_step to x1 (outer right)
-                mvsd_region.insert(kdb.Box(
-                    um(x_step), um(-mvsd_y_outer), um(x1), um(mvsd_y_outer)))
+                mvsd_region.insert(
+                    kdb.Box(um(x_step), um(-mvsd_y_outer), um(x1), um(mvsd_y_outer))
+                )
                 # Wings from x0 to x_step
-                mvsd_region.insert(kdb.Box(
-                    um(x0), um(-mvsd_y_outer), um(x_step), um(-inner_y)))
-                mvsd_region.insert(kdb.Box(
-                    um(x0), um(inner_y), um(x_step), um(mvsd_y_outer)))
+                mvsd_region.insert(
+                    kdb.Box(um(x0), um(-mvsd_y_outer), um(x_step), um(-inner_y))
+                )
+                mvsd_region.insert(
+                    kdb.Box(um(x0), um(inner_y), um(x_step), um(mvsd_y_outer))
+                )
 
         mvsd_region = mvsd_region.merged()
         _draw_region(c, mvsd_region, mvsd_layer)
@@ -1015,11 +1172,18 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         hx_c = contact_size / 2.0
         sub_ext = hx_c + diff_surround + sub_surround
         dg_enc = 0.08
-        _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
-              gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
+        _rect(
+            c,
+            -(gx / 2 + sub_ext + dg_enc),
+            -(gy / 2 + sub_ext + dg_enc),
+            gx / 2 + sub_ext + dg_enc,
+            gy / 2 + sub_ext + dg_enc,
+            _L_DUALGATE,
+        )
 
     if volt in ("5.0V", "10.0V") and all_finger_results:
         import klayout.db as kdb
+
         def um(v):
             return round(v * 1000)
 
@@ -1041,8 +1205,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
                     # Source left
                     src_x0 = _snap(scx - contact_size / 2 - diff_surround)
                     src_x1 = finger_cx + hl_v
-                v5_region.insert(kdb.Box(um(src_x0), um(-hw_v),
-                                         um(src_x1), um(hw_v)))
+                v5_region.insert(kdb.Box(um(src_x0), um(-hw_v), um(src_x1), um(hw_v)))
         else:
             for r in all_finger_results:
                 # Channel comp (main body)
@@ -1062,16 +1225,21 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
         chan_y0 = min(r["channel"][1] for r in all_finger_results)
         chan_x1 = max(r["channel"][2] for r in all_finger_results)
         chan_y1 = max(r["channel"][3] for r in all_finger_results)
-        _rect(c, chan_x0 - 0.26, chan_y0 - 0.26,
-              chan_x1 + 0.26, chan_y1 + 0.26, _L_NAT)
+        _rect(c, chan_x0 - 0.26, chan_y0 - 0.26, chan_x1 + 0.26, chan_y1 + 0.26, _L_NAT)
 
         # Dualgate for NVT
         sub_surround = rules["sub_surround"]
         hx_c = contact_size / 2.0
         sub_ext = hx_c + diff_surround + sub_surround
         dg_enc = 0.08
-        _rect(c, -(gx / 2 + sub_ext + dg_enc), -(gy / 2 + sub_ext + dg_enc),
-              gx / 2 + sub_ext + dg_enc, gy / 2 + sub_ext + dg_enc, _L_DUALGATE)
+        _rect(
+            c,
+            -(gx / 2 + sub_ext + dg_enc),
+            -(gy / 2 + sub_ext + dg_enc),
+            gx / 2 + sub_ext + dg_enc,
+            gy / 2 + sub_ext + dg_enc,
+            _L_DUALGATE,
+        )
 
     # prBoundary removed — Magic's 10x FIXED_BBOX is unnecessarily large
 
@@ -1079,6 +1247,7 @@ def _mos_draw(c, w, l, nf, rules, is_nfet=True,
 # ---------------------------------------------------------------------------
 # nfet
 # ---------------------------------------------------------------------------
+
 
 @gf.cell(tags=["fet"])
 def nfet(
@@ -1104,7 +1273,31 @@ def nfet(
     dss: bool = False,
     asym: bool = False,
 ) -> gf.Component:
-    """Return NFET transistor matching Magic VLSI geometry."""
+    """Return NFET transistor matching Magic VLSI geometry.
+
+    Args:
+        l_gate: gate length in microns.
+        w_gate: gate width in microns.
+        sd_con_col: number of source/drain contact columns.
+        inter_sd_l: inter source/drain length.
+        nf: number of gate fingers.
+        grw: guard-ring width; set to 0 to disable the guard ring.
+        volt: voltage rating ("3.3V", "5.0V", "6.0V", "10.0V").
+        bulk: bulk connection option.
+        con_bet_fin: contacts between fingers.
+        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        interdig: interdigitated layout toggle.
+        patt: gate pattern option.
+        deepnwell: deep N-well toggle.
+        pcmpgr: P-comp guard-ring toggle.
+        label: add text labels.
+        sd_label: per-terminal source/drain label strings.
+        g_label: gate label strings.
+        sub_label: substrate label string.
+        patt_label: enable pattern labels.
+        dss: drain-side symmetric spacing.
+        asym: asymmetric layout.
+    """
     c = gf.Component()
     rules = dict(_RULES)
     rules["volt"] = volt
@@ -1115,8 +1308,9 @@ def nfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
-    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0,
-              dss=dss, asym=asym)
+    _mos_draw(
+        c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0, dss=dss, asym=asym
+    )
     return c
 
 
@@ -1144,7 +1338,31 @@ def pfet(
     dss: bool = False,
     asym: bool = False,
 ) -> gf.Component:
-    """Return PFET transistor matching Magic VLSI geometry."""
+    """Return PFET transistor matching Magic VLSI geometry.
+
+    Args:
+        l_gate: gate length in microns.
+        w_gate: gate width in microns.
+        sd_con_col: number of source/drain contact columns.
+        inter_sd_l: inter source/drain length.
+        nf: number of gate fingers.
+        grw: guard-ring width; set to 0 to disable the guard ring.
+        volt: voltage rating ("3.3V", "5.0V", "6.0V", "10.0V").
+        bulk: bulk connection option.
+        con_bet_fin: contacts between fingers.
+        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        interdig: interdigitated layout toggle.
+        patt: gate pattern option.
+        deepnwell: deep N-well toggle.
+        pcmpgr: P-comp guard-ring toggle.
+        label: add text labels.
+        sd_label: per-terminal source/drain label strings.
+        g_label: gate label strings.
+        sub_label: substrate label string.
+        patt_label: enable pattern labels.
+        dss: drain-side symmetric spacing.
+        asym: asymmetric layout.
+    """
     c = gf.Component()
     rules = dict(_RULES)
     rules["volt"] = volt
@@ -1155,8 +1373,9 @@ def pfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
-    _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0,
-              dss=dss, asym=asym)
+    _mos_draw(
+        c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0, dss=dss, asym=asym
+    )
     return c
 
 
@@ -1179,7 +1398,26 @@ def nfet_06v0_nvt(
     sub_label: str = "",
     patt_label: bool = False,
 ) -> gf.Component:
-    """Return Native NFET 6V transistor matching Magic VLSI geometry."""
+    """Return Native NFET 6V transistor matching Magic VLSI geometry.
+
+    Args:
+        l_gate: gate length in microns.
+        w_gate: gate width in microns.
+        sd_con_col: number of source/drain contact columns.
+        inter_sd_l: inter source/drain length.
+        nf: number of gate fingers.
+        grw: guard-ring width; set to 0 to disable the guard ring.
+        bulk: bulk connection option.
+        con_bet_fin: contacts between fingers.
+        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        interdig: interdigitated layout toggle.
+        patt: gate pattern option.
+        label: add text labels.
+        sd_label: per-terminal source/drain label strings.
+        g_label: gate label strings.
+        sub_label: substrate label string.
+        patt_label: enable pattern labels.
+    """
     c = gf.Component()
     rules = dict(_RULES)
     rules["volt"] = "nvt"

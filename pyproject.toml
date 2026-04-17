@@ -38,7 +38,8 @@ docs = ["jupytext", "matplotlib", "jupyter-book>=0.15.1,<2.2"]
 tests = ["pytest", "pytest-cov"]
 
 [tool.codespell]
-ignore-words-list = "inout,ags,souce"
+ignore-words-list = "inout,ags,souce,te,hepl,deivces,accomodate"
+skip = "*.lock,*.svg,*.gds,*.oas,*.lib,*.tcl,scripts/magic/*,tests/test_components/test_pdk_settings_*.yml"
 
 [tool.gdsfactoryplus.pdk]
 name = "gf180mcu"
@@ -69,7 +70,9 @@ ignore = [
   "C901",  # too complex
   "B905",  # `zip()` without an explicit `strict=` parameter
   "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
-  'B006'
+  'B006',
+  "RUF002",  # ambiguous unicode in docstrings (× and − intentional for EE notation)
+  "RUF003"  # ambiguous unicode in comments (same)
 ]
 select = [
   "B",  # flake8-bugbear
@@ -86,7 +89,14 @@ select = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+# PDK cell files keep intermediate rule-lookups as named locals for parity
+# with the upstream spec; `l` = gate length (standard EE symbol).
+"gf180mcu/cells/*.py" = ["F841", "E741", "RUF034"]
 "gf180mcu/cells/__init__.py" = ["F403"]
+# Auto-generated wrappers for 498 standard cells — duplicate defs across 7t/9t
+# libraries are by design and unused locals don't apply.
+"gf180mcu/logic/__init__.py" = ["F811", "F841", "F401"]
+"tests/*.py" = ["E741", "PERF401"]
 
 [tool.setuptools.package-data]
 "*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg", '*.GDS', "*.json", "*.txt"]

@@ -1,7 +1,7 @@
 from gdsfactory.get_factories import get_cells
 from gdsfactory.pdk import Pdk
 
-from gf180mcu import cells, fixed, logic, layers
+from gf180mcu import cells, fixed, layers, logic
 from gf180mcu.config import PATH
 from gf180mcu.layers import (
     LAYER,

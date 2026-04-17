@@ -1,4 +1,5 @@
 install:
+	git submodule update --init --recursive
 	uv sync --extra docs --extra dev
 
 all:
