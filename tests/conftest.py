@@ -5,12 +5,21 @@ import pathlib
 import shutil
 
 import gdsfactory as gf
+import pytest
 from gdsfactory.name import clean_name, get_name_short
+
+from gf180mcu import PDK
 
 PROJECT_ROOT = pathlib.Path(__file__).parent.parent
 DIFF_DIR = PROJECT_ROOT / "test_diffs"
 
 _config = {"update_gds_refs": False}
+
+
+@pytest.fixture(autouse=True)
+def activate_pdk() -> None:
+    """Activate PDK for every test."""
+    PDK.activate()
 
 
 def pytest_addoption(parser):
