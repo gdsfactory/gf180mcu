@@ -24,10 +24,14 @@ __all__ = [
     "get_layer_stack",
     "layer",
     "layers",
+    "logic",
 ]
 __version__ = "0.5.0"
 
-_cells = get_cells([cells, fixed, logic])
+# Logic cells are DRC-clean pre-built std cells imported from GDS; they don't
+# need to be test-built as PDK partials, so exclude them from PDK.cells.
+# Access via `from gf180mcu import logic` instead.
+_cells = get_cells([cells, fixed])
 
 
 PDK = Pdk(

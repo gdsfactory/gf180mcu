@@ -5,6 +5,8 @@ root: index
 chapters:
   - file: migration
   - file: cells
+  - file: logic_7t
+  - file: logic_9t
   - file: tutorial
     sections:
       - glob: notebooks/*

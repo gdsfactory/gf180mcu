@@ -53,6 +53,7 @@ notebooks:
 
 
 docs:
+	git submodule update --init --recursive
 	uv run --extra docs python docs/write_cells.py
 	uv run --extra docs jupyter-book build docs
 
