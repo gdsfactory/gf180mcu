@@ -1,6 +1,9 @@
-"""Generate cells.rst documentation for all GF180MCU cells.
+"""Generate doc pages for all GF180MCU cells.
 
-Groups cells into PCells, Fixed, and Logic sections.
+Writes:
+  docs/cells.rst       — PCells + Fixed
+  docs/logic_7t.rst    — 7-track 5V std cells (with plots)
+  docs/logic_9t.rst    — 9-track 5V std cells (with plots)
 """
 
 import inspect
@@ -8,9 +11,12 @@ import pathlib
 
 from gdsfactory.serialization import clean_value_json
 
-from gf180mcu import PDK
+from gf180mcu import PDK, logic
 
-filepath = pathlib.Path(__file__).parent.absolute() / "cells.rst"
+docs_dir = pathlib.Path(__file__).parent.absolute()
+filepath = docs_dir / "cells.rst"
+logic_7t_path = docs_dir / "logic_7t.rst"
+logic_9t_path = docs_dir / "logic_9t.rst"
 cells = PDK.cells
 
 skip = {
@@ -39,14 +45,20 @@ logic_9t_names = []
 for name in sorted(cells.keys()):
     if name in skip or name.startswith("_"):
         continue
+    if "fd_sc_mcu" in name:
+        continue  # std cells documented on dedicated logic_7t/9t pages
+    if name in ("efuse",) or name.startswith("npn_") or name.startswith("pnp_"):
+        fixed_names.append(name)
+    else:
+        pcell_names.append(name)
+
+for name in sorted(n for n in dir(logic) if not n.startswith("_")):
+    if not callable(getattr(logic, name)):
+        continue
     if "fd_sc_mcu7t5v0" in name:
         logic_7t_names.append(name)
     elif "fd_sc_mcu9t5v0" in name:
         logic_9t_names.append(name)
-    elif name in ("efuse",) or name.startswith("npn_") or name.startswith("pnp_"):
-        fixed_names.append(name)
-    else:
-        pcell_names.append(name)
 
 
 def _module_for(name: str) -> str:
@@ -123,26 +135,37 @@ Fixed Cells (BJT, eFuse)
 """
         )
 
-    f.write(
-        """
 
-Logic Cells — 7-track 5V (gf180mcu_fd_sc_mcu7t5v0)
------------------------------------------------------
+def _write_logic_page(path: pathlib.Path, title: str, names: list[str]) -> None:
+    with open(path, "w+") as f:
+        underline = "=" * len(title)
+        f.write(f"{title}\n{underline}\n\n")
+        for name in names:
+            print(name)
+            f.write(
+                f"""
+{name}
+{"^" * len(name)}
+
+.. autofunction:: gf180mcu.logic.{name}
+
+.. plot::
+
+   from gf180mcu import PDK, logic
+   PDK.activate()
+   logic.{name}().plot()
+
 """
-    )
+            )
 
-    for name in logic_7t_names:
-        print(name)
-        f.write(f"- ``{name}``\n")
 
-    f.write(
-        """
-
-Logic Cells — 9-track 5V (gf180mcu_fd_sc_mcu9t5v0)
------------------------------------------------------
-"""
-    )
-
-    for name in logic_9t_names:
-        print(name)
-        f.write(f"- ``{name}``\n")
+_write_logic_page(
+    logic_7t_path,
+    "Logic Cells — 7-track 5V (gf180mcu_fd_sc_mcu7t5v0)",
+    logic_7t_names,
+)
+_write_logic_page(
+    logic_9t_path,
+    "Logic Cells — 9-track 5V (gf180mcu_fd_sc_mcu9t5v0)",
+    logic_9t_names,
+)

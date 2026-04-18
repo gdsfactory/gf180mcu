@@ -11,6 +11,8 @@ tests/gds_ref/*.oas
 *.fsp
 uv.lock
 docs/cells.rst
+docs/logic_7t.rst
+docs/logic_9t.rst
 
 # Distribution / packaging
 .Python

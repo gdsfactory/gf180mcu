@@ -24,6 +24,7 @@ __all__ = [
     "get_layer_stack",
     "layer",
     "layers",
+    "logic",
 ]
 __version__ = "0.5.0"
 
