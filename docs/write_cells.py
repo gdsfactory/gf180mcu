@@ -45,6 +45,8 @@ logic_9t_names = []
 for name in sorted(cells.keys()):
     if name in skip or name.startswith("_"):
         continue
+    if "fd_sc_mcu" in name:
+        continue  # std cells documented on dedicated logic_7t/9t pages
     if name in ("efuse",) or name.startswith("npn_") or name.startswith("pnp_"):
         fixed_names.append(name)
     else:
