@@ -39,4 +39,3 @@ PDK = Pdk(
     cross_sections=cross_sections,
     routing_strategies=routing_strategies,
 )
-PDK.activate()
