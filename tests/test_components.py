@@ -4,10 +4,10 @@ import gdsfactory as gf
 import kfactory as kf
 import numpy as np
 import pytest
+from conftest import difftest
 from gdsfactory.component import Component
 from pytest_regressions.data_regression import DataRegressionFixture
 
-from conftest import difftest
 from gf180mcu import PDK
 
 skip_test = {"res_dev", "nfet", "pfet"}
