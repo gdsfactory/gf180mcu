@@ -26,7 +26,7 @@ __all__ = [
     "layers",
     "logic",
 ]
-__version__ = "0.5.0"
+__version__ = "1.0.0"
 
 _cells = get_cells([cells, fixed, logic])
 
