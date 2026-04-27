@@ -1,4 +1,4 @@
-# gf180mcu 0.5.0
+# gf180mcu 1.0.0
 
 <!-- BADGES:START -->
 [![Docs](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml)
