@@ -1,0 +1,12 @@
+info: {}
+name: nfet_deep_nwell_DFalse_PFalse_IS0p1_0p1_IX0p1_IY0p1_G0p36
+ports: {}
+settings:
+  deepnwell: false
+  grw: 0.36
+  inst_size:
+  - 0.1
+  - 0.1
+  inst_xmin: 0.1
+  inst_ymin: 0.1
+  pcmpgr: false

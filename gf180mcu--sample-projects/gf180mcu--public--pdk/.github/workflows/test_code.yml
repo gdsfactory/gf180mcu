@@ -1,0 +1,32 @@
+name: Test code
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+    - uses: pre-commit/action@v3.0.1
+
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      max-parallel: 12
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install Dependencies
+        run: uv sync --all-extras
+      - name: Run Tests
+        run: make test

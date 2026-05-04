@@ -1,0 +1,12 @@
+info: {}
+name: labels_gen_LS_P0p1_0p1_Lmetal1_label_LFalse_LNone_LVL1_I0
+ports: {}
+settings:
+  index: 0
+  label: false
+  label_str: ''
+  label_valid_len: 1
+  layer: metal1_label
+  position:
+  - 0.1
+  - 0.1

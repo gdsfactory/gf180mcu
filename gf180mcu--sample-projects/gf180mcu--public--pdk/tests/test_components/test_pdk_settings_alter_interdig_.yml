@@ -1,0 +1,15 @@
+info: {}
+name: alter_interdig_SDFrectangle_Mgdsfactorypcomponentspshap_91096da8
+ports: {}
+settings:
+  label: false
+  nf: 1
+  nl: 1
+  pat: ''
+  patt_label: false
+  pc1: Farray_Mgdsfactorypcomponentspcontainersparray_component_SCFrectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  pc2: Farray_Mgdsfactorypcomponentspcontainersparray_component_SCFrectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  pc_spacing: 0.1
+  pc_x: 0.1
+  sd_diff: Frectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  sd_l: 0.36

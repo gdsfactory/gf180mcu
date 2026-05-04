@@ -1,0 +1,17 @@
+info: {}
+name: interdigit_SDFrectangle_Mgdsfactorypcomponentspshapespr_a64e025e
+ports: {}
+settings:
+  gate_con_pos: top
+  label: false
+  nf: 1
+  patt:
+  - ''
+  patt_label: false
+  pc1: Farray_Mgdsfactorypcomponentspcontainersparray_component_SCFrectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  pc2: Farray_Mgdsfactorypcomponentspcontainersparray_component_SCFrectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  pc_spacing: 0.1
+  pc_x: 0.1
+  poly_con: Frectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  sd_diff: Frectangle_Mgdsfactorypcomponentspshapesprectangle_SLcomp
+  sd_l: 0.15
