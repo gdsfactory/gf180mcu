@@ -44,6 +44,14 @@ skip = "*.lock,*.svg,*.gds,*.oas,*.lib,*.tcl,scripts/magic/*,tests/test_componen
 [tool.gdsfactoryplus.pdk]
 name = "gf180mcu"
 
+
+[tool.elvis]
+short-layers = [[34, 0], [35, 0], [36, 0], [38, 0], [42, 0], [40, 0], [46, 0], [41, 0], [81, 0], [82, 0], [53, 0]]
+connected-layers = [[[34, 0], [36, 0]], [[36, 0], [42, 0]], [[42, 0], [46, 0]], [[46, 0], [81, 0]], [[81, 0], [53, 0]]]
+
+[tool.elvis.equivalent-ports]
+pad = ["e1", "e2", "e3", "e4", "pad"]
+
 [tool.mypy]
 python_version = "3.12"
 strict = true
