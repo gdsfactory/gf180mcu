@@ -123,7 +123,7 @@ def via_stack(
 
     """
     c = gf.Component()
-    _m_enc: Float2 = (m_enc, m_enc) if isinstance(m_enc, (int, float)) else m_enc
+    _m_enc: Float2 = (m_enc, m_enc) if isinstance(m_enc, int | float) else m_enc
     if metal_level >= 1:
         con_gen = via_generator(
             x_range=x_range,
