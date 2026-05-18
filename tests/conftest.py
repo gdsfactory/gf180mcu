@@ -28,6 +28,7 @@ def pytest_configure(config):
 
     DIFF_DIR.mkdir(exist_ok=True)
     _config["update_gds_refs"] = config.getoption("--update-gds-refs", default=False)
+    _config["force_regen"] = config.getoption("--force-regen", default=False)
 
 
 def _render_gds_to_png(gds_path: pathlib.Path, png_path: pathlib.Path) -> None:
@@ -96,6 +97,11 @@ def difftest(
         return
 
     if _config["update_gds_refs"]:
+        if _config.get("force_regen"):
+            shutil.copy(run_file, ref_file)
+            print(f"  Force-updated reference: {ref_file}")
+            return
+
         # Open diff GDS in KLayout for interactive visual review
         print(f"\nGDS mismatch for {test_name!r}")
         print(f"  Reference: {ref_file}")

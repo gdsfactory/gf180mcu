@@ -1,5 +1,6 @@
 install:
 	git submodule update --init --recursive
+	uv venv --python 3.12
 	uv sync --extra docs --extra dev
 
 all:
@@ -20,7 +21,7 @@ test:
 test-ports:
 	uv run pytest -s tests/test_components.py::test_optical_port_positions
 
-test-force:
+test-force: install
 	uv run pytest -s --update-gds-refs --force-regen
 
 cov:
