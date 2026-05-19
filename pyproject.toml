@@ -79,27 +79,27 @@ fix = true
 
 [tool.ruff.lint]
 ignore = [
-  "E501", # line too long, handled by black
-  "B008", # do not perform function calls in argument defaults
-  "C901", # too complex
-  "B905", # `zip()` without an explicit `strict=` parameter
-  "C408", # C408 Unnecessary `dict` call (rewrite as a literal)
+  "E501",  # line too long, handled by black
+  "B008",  # do not perform function calls in argument defaults
+  "C901",  # too complex
+  "B905",  # `zip()` without an explicit `strict=` parameter
+  "C408",  # C408 Unnecessary `dict` call (rewrite as a literal)
   'B006',
-  "RUF002", # ambiguous unicode in docstrings (× and − intentional for EE notation)
-  "RUF003" # ambiguous unicode in comments (same)
+  "RUF002",  # ambiguous unicode in docstrings (× and − intentional for EE notation)
+  "RUF003"  # ambiguous unicode in comments (same)
 ]
 select = [
-  "B", # flake8-bugbear
-  "C", # flake8-comprehensions
+  "B",  # flake8-bugbear
+  "C",  # flake8-comprehensions
   # "D",  # pydocstyle
-  "E", # pycodestyle errors
-  "F", # pyflakes
-  "I", # isort
-  "T10", # flake8-debugger
-  "UP", # pyupgrade
-  "W", # pycodestyle warnings
-  "PERF", # performance improvements
-  "RUF" # ruff
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "I",  # isort
+  "T10",  # flake8-debugger
+  "UP",  # pyupgrade
+  "W",  # pycodestyle warnings
+  "PERF",  # performance improvements
+  "RUF"  # ruff
 ]
 
 [tool.ruff.lint.per-file-ignores]
