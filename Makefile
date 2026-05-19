@@ -27,7 +27,6 @@ test-force: install
 cov:
 	uv run pytest --cov=gf180
 
-
 update:
 	pur
 
@@ -52,10 +51,16 @@ jupytext:
 notebooks:
 	jupytext docs/**/*.py --to ipynb
 
+docs-pdf:
+	cp CHANGELOG.md docs/changelog.md
+	uv run mkdocs build -f mkdocs-pdf.yml
 
 docs:
-	git submodule update --init --recursive
-	uv run --extra docs python docs/write_cells.py
-	uv run --extra docs jupyter-book build docs
+	cp CHANGELOG.md docs/changelog.md
+	uv run --extra docs zensical build
 
-.PHONY: drc doc docs
+docs-serve:
+	cp CHANGELOG.md docs/changelog.md
+	uv run --extra docs zensical serve -a localhost:8080
+
+.PHONY: drc drc-sample doc docs docs-pdf build
