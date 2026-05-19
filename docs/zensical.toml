@@ -9,7 +9,7 @@ nav = [
     {"Migration" = "migration.md"}
   ]}
 ]
-site_dir = "docs/_build/html"
+site_dir = "_build/html"
 site_name = "GlobalFoundries 180nm MCU"
 site_url = "https://gdsfactory.github.io/gf180mcu"
 
