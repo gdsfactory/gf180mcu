@@ -51,16 +51,24 @@ jupytext:
 notebooks:
 	jupytext docs/**/*.py --to ipynb
 
-docs-pdf:
-	cp CHANGELOG.md docs/changelog.md
+nbdocs:
+	rm -rf docs/intro.md
+	find notebooks -maxdepth 1 -mindepth 1 -name "*.ipynb" | sort | \
+		xargs -P4 -I{} uv run --extra docs jupyter nbconvert \
+			--execute --to markdown --embed-images {} --output-dir docs
+	uv run python docs/hooks.py docs/intro.md
+
+sync-docs:
+	uv run python -c "import re; from pathlib import Path; t=Path('CHANGELOG.md').read_text(); Path('docs/changelog.md').write_text(re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', t))"
+	cp README.md docs/index.md
+
+docs-pdf: nbdocs sync-docs
 	uv run mkdocs build -f mkdocs-pdf.yml
 
-docs:
-	cp CHANGELOG.md docs/changelog.md
+docs: nbdocs sync-docs
 	uv run --extra docs zensical build -f docs/zensical.toml
 
-docs-serve:
-	cp CHANGELOG.md docs/changelog.md
+docs-serve: nbdocs sync-docs
 	uv run --extra docs zensical serve -f docs/zensical.toml -a localhost:8080
 
 update-changelog:
