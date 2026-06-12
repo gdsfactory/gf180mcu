@@ -137,9 +137,11 @@ with open(filepath, "w+") as f:
         if name not in skip_plot:
             has_gds = _write_gds(name, cells[name])
             if has_gds:
-                f.write(f"![{name}](kwasm/gds/{name}.png)\n\n")
+                f.write('=== "Static"\n\n')
+                f.write(f"    ![{name}](kwasm/gds/{name}.png)\n\n")
+                f.write('=== "Dynamic"\n\n')
                 f.write(
-                    f'<iframe src="kwasm/viewer.html?url=gds/{name}.gds"'
+                    f'    <iframe src="kwasm/viewer.html?url=gds/{name}.gds"'
                     f' loading="lazy" width="100%" height="400"'
                     f' style="border:none"></iframe>\n\n'
                 )
@@ -172,9 +174,11 @@ def _write_logic_page(path: pathlib.Path, title: str, names: list[str]) -> None:
             f.write(f"::: gf180mcu.logic.{name}\n\n")
             has_gds = _write_gds(name, func)
             if has_gds:
-                f.write(f"![{name}](kwasm/gds/{name}.png)\n\n")
+                f.write('=== "Static"\n\n')
+                f.write(f"    ![{name}](kwasm/gds/{name}.png)\n\n")
+                f.write('=== "Dynamic"\n\n')
                 f.write(
-                    f'<iframe src="kwasm/viewer.html?url=gds/{name}.gds"'
+                    f'    <iframe src="kwasm/viewer.html?url=gds/{name}.gds"'
                     f' loading="lazy" width="100%" height="400"'
                     f' style="border:none"></iframe>\n\n'
                 )
