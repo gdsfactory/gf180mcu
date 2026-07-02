@@ -1,5 +1,7 @@
 # gf180mcu 1.0.0
 
+GlobalFoundries' 180nm MCU process, a fully open-source CMOS technology (built on Google's open PDK initiative) for mixed-signal and analog IC design.
+
 <!-- BADGES:START -->
 [![Docs](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/pages.yml)
 [![Tests](https://github.com/gdsfactory/gf180mcu/actions/workflows/test_code.yml/badge.svg)](https://github.com/gdsfactory/gf180mcu/actions/workflows/test_code.yml)
