@@ -6,6 +6,8 @@ from gdsfactory.typings import Float2, LayerSpec, Size, Spacing
 
 from gf180mcu.layers import layer
 
+from ._common import _add_pins
+
 
 @gf.cell(tags=["via_generator"])
 def via_generator(
@@ -80,6 +82,7 @@ def via_generator(
         port_type="electrical",
     )
 
+    _add_pins(c)
     return c
 
 
@@ -203,4 +206,5 @@ def via_stack(
             port_type="electrical",
         )
 
+    _add_pins(c)
     return c

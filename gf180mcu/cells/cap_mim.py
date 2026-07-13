@@ -10,6 +10,8 @@ import gdsfactory as gf
 
 from gf180mcu.layers import layer
 
+from ._common import _add_pins
+
 
 @gf.cell(tags=["cap_mim"])
 def cap_mim(
@@ -198,4 +200,5 @@ def cap_mim(
 
     # VLSIR Simulation Metadata
 
+    _add_pins(c)
     return c

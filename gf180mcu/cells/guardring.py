@@ -5,6 +5,8 @@ import gdsfactory as gf
 from gf180mcu.cells.via_generator import via_generator
 from gf180mcu.layers import LAYER, layer
 
+from ._common import _add_pins
+
 dn_rect = partial(gf.components.rectangle, layer=LAYER.dnwell)
 
 
@@ -188,4 +190,5 @@ def pcmpgr_gen(dn_rect=dn_rect, grw: float = 0.36) -> gf.Component:
         port_type="electrical",
     )
 
+    _add_pins(c)
     return c
