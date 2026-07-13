@@ -24,6 +24,8 @@ from gdsfactory.typings import Float2
 from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
 
+from ._common import _add_pins
+
 # ---------------------------------------------------------------------------
 # Helper: exact rectangle placement (bypasses gdsfactory snap_to_grid2x)
 # ---------------------------------------------------------------------------
@@ -441,6 +443,7 @@ def diode_nd2ps(
         port_type="electrical",
     )
 
+    _add_pins(c)
     return c
 
 
@@ -633,6 +636,7 @@ def diode_pd2nw(
         port_type="electrical",
     )
 
+    _add_pins(c)
     return c
 
 
@@ -771,6 +775,7 @@ def diode_nw2ps(
         dg.dxmin = pcmp.dxmin - dg_enc_cmp
         dg.dymin = pcmp.dymin - dg_enc_cmp
 
+    _add_pins(c)
     return c
 
 
@@ -1080,6 +1085,7 @@ def diode_pw2dw(
         dg.dxmin = dn_rect.dxmin - dg_enc_dn
         dg.dymin = dn_rect.dymin - dg_enc_dn
 
+    _add_pins(c)
     return c
 
 
@@ -1501,6 +1507,7 @@ def diode_dw2ps(
         dg.dxmin = dn_rect.dxmin - dg_enc_dn
         dg.dymin = dn_rect.dymin - dg_enc_dn
 
+    _add_pins(c)
     return c
 
 
@@ -1884,4 +1891,5 @@ def sc_diode(
             )
         )  # guardring metal1
 
+    _add_pins(c)
     return c

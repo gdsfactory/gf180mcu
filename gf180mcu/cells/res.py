@@ -13,6 +13,8 @@ from gdsfactory.typings import LayerSpec
 
 from gf180mcu.layers import layer
 
+from ._common import _add_pins
+
 # ---------------------------------------------------------------------------
 # Magic technology constants (from gf180mcu_generators.tcl ruleset)
 # ---------------------------------------------------------------------------
@@ -1336,4 +1338,5 @@ def res(
 
     # VLSIR Simulation Metadata
 
+    _add_pins(out)
     return out

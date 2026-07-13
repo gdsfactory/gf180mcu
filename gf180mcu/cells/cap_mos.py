@@ -27,6 +27,8 @@ import gdsfactory as gf
 
 from gf180mcu.layers import layer
 
+from ._common import _add_pins
+
 # ---------------------------------------------------------------------------
 # Grid snapping — Magic CIF output grid is 5 nm
 # ---------------------------------------------------------------------------
@@ -444,4 +446,5 @@ def cap_mos(
     voltage = "3p3" if not is_6v else "6p0"
     suffix = "_b" if "_b" in type else ""
 
+    _add_pins(c)
     return c
