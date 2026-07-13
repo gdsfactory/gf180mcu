@@ -56,13 +56,6 @@ def _has_pin_polygon_near_port(comp, port, pin_layer_tuple: tuple[int, int]) -> 
     return not (region & probe).is_empty()
 
 
-def _port_pin_layer(comp, port) -> tuple[int, int]:
-    """Map the port's drawing layer (datatype 0) to its pin layer (datatype 2)."""
-    info = comp.kcl.layout.get_info(port.layer)
-    drawing = (info.layer, info.datatype)
-    return _PIN_LAYER_MAP.get(drawing, drawing)
-
-
 @pytest.mark.parametrize("cell_name", CELL_NAMES)
 def test_geometric_pin_present(cell_name):
     """Each electrical port on a metal layer must have a polygon on the corresponding pin layer.
