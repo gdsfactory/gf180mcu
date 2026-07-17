@@ -77,17 +77,14 @@ make test
 
 ## Release
 
-1. Bump the version:
-
 ```bash
-tbump 0.0.1
+gh workflow run release.yml --repo gdsfactory/gf180mcu -f version=X.Y.Z
 ```
 
-2. Push the tag:
+Or from inside the repo directory (no `--repo` needed):
 
 ```bash
-git push --tags
+gh workflow run release.yml -f version=X.Y.Z
 ```
-This triggers the release workflow that builds wheels and uploads them.
 
-3. Create a pull request with the updated changelog since last release.
+where `+gfpN` suffix is optional (e.g. `3.11.0+gfp0`).
