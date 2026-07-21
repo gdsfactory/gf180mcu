@@ -61,7 +61,7 @@ def xor_gds_files(
     failures = {}
 
     for key in all_layers:
-        if key in SKIP_LAYERS or key[1] == 5:  # skip label datatypes
+        if key in SKIP_LAYERS or key[1] in (2, 5):  # skip pin and label datatypes
             continue
         in_ref = key in layers_ref
         in_new = key in layers_new
