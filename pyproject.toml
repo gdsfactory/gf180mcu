@@ -32,9 +32,11 @@ dev = [
   "pytest-cov",
   "pytest_regressions",
   "pytest-github-actions-annotate-failures",
-  "towncrier"
+  "towncrier",
+
 ]
 docs = ["jupytext", "matplotlib", "jupyter-book==1.0.3"]
+pex = ["gf-pex @ git+https://github.com/doplaydo/gf-pex.git@dev/diogo-main"]
 tests = ["pytest", "pytest-cov"]
 
 [tool.codespell]
