@@ -50,6 +50,10 @@ name = "gf180mcu"
 python_version = "3.12"
 strict = true
 
+[[tool.mypy.overrides]]
+module = "gf180mcu.pex.*"
+ignore_errors = true
+
 [tool.pylsp-mypy]
 enabled = true
 live_mode = true
@@ -64,6 +68,7 @@ testpaths = ["tests"]
 
 [tool.ruff]
 fix = true
+extend-exclude = ["gf180mcu/pex/"]
 
 [tool.ruff.lint]
 ignore = [
