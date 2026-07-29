@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-import pytest
 import kfactory as kf
+import pytest
 
 from gf180mcu import PDK
 
@@ -17,12 +17,12 @@ def activate_pdk():
 
 # Drawing layer (datatype 0) → pin layer (datatype 2)
 _PIN_LAYER_MAP: dict[tuple[int, int], tuple[int, int]] = {
-    (34, 0): (34, 2),   # metal1      → metal1_pin
-    (36, 0): (36, 2),   # metal2      → metal2_pin
-    (42, 0): (42, 2),   # metal3      → metal3_pin
-    (46, 0): (46, 2),   # metal4      → metal4_pin
-    (81, 0): (81, 2),   # metal5      → metal5_pin
-    (53, 0): (53, 2),   # metaltop    → metaltop_pin
+    (34, 0): (34, 2),  # metal1      → metal1_pin
+    (36, 0): (36, 2),  # metal2      → metal2_pin
+    (42, 0): (42, 2),  # metal3      → metal3_pin
+    (46, 0): (46, 2),  # metal4      → metal4_pin
+    (81, 0): (81, 2),  # metal5      → metal5_pin
+    (53, 0): (53, 2),  # metaltop    → metaltop_pin
 }
 
 # Electrical PCells with geometric/logical pins added.
@@ -79,7 +79,9 @@ def test_geometric_pin_present(cell_name):
             f"No geometric pin polygon near port '{port.name}' on layer {pin_layer} in {cell_name}"
         )
     if not checked_any:
-        pytest.skip(f"All ports in {cell_name} are on unmapped (non-metal) layers; no geometric pin check performed")
+        pytest.skip(
+            f"All ports in {cell_name} are on unmapped (non-metal) layers; no geometric pin check performed"
+        )
 
 
 @pytest.mark.parametrize("cell_name", CELL_NAMES)
