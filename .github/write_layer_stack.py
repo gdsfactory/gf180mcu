@@ -15,8 +15,8 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
-from gf180.config import PATH
-from gf180 import PDK
+from gf180mcu.config import PATH
+from gf180mcu import PDK
 
 BANDS = [("", PDK)]
 
@@ -510,7 +510,7 @@ CSS = '''<style>
 def main():
     filepath = PATH.repo / "docs" / "layer_stack.md"
     filepath.parent.mkdir(parents=True, exist_ok=True)
-
+    console = Console()
     console.print(Panel("[bold blue]Layer Stack Doc Generator[/bold blue]", subtitle=str(filepath)))
 
     parts = ["# Layer Stack\n"]
