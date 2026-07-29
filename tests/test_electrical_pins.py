@@ -25,10 +25,6 @@ _PIN_LAYER_MAP: dict[tuple[int, int], tuple[int, int]] = {
     (53, 0): (53, 2),  # metaltop    → metaltop_pin
 }
 
-# Electrical PCells with geometric/logical pins added.
-# NOTE: diode_nw2ps, diode_pw2dw, diode_dw2ps are excluded — they call _add_pins
-# but define no add_port(..., port_type="electrical") calls, so they have no
-# electrical ports. This is a source-code bug to be fixed separately.
 CELL_NAMES = [
     "cap_mim",
     "cap_mos",
@@ -72,7 +68,6 @@ def test_geometric_pin_present(cell_name):
         drawing = (info.layer, info.datatype)
         pin_layer = _PIN_LAYER_MAP.get(drawing)
         if pin_layer is None:
-            # Port is on a via/contact layer without a dedicated pin layer — skip geometric check
             continue
         checked_any = True
         assert _has_pin_polygon_near_port(c, port, pin_layer), (
