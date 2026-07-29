@@ -10,6 +10,11 @@ import json
 import math
 from pathlib import Path
 
+from rich.console import Console
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.table import Table
+
 from gf180.config import PATH
 from gf180 import PDK
 
@@ -502,20 +507,26 @@ CSS = '''<style>
 </style>'''
 
 
-
 def main():
     filepath = PATH.repo / "docs" / "layer_stack.md"
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
+    console.print(Panel("[bold blue]Layer Stack Doc Generator[/bold blue]", subtitle=str(filepath)))
+
     parts = ["# Layer Stack\n"]
-    parts.append("Interactive layer stack and cross-section visualizations. "
-                 "Hover for details, Ctrl+scroll to zoom, drag to pan, double-click to reset.\n")
+    parts.append(
+        "Interactive layer stack and cross-section visualizations. "
+        "Hover for details, Ctrl+scroll to zoom, drag to pan, double-click to reset.\n"
+    )
 
     for band_label, pdk in BANDS:
+        label = band_label or "default"
+        console.print(f"\n[bold cyan]Processing band:[/bold cyan] {label}")
+
         pdk.activate()
         ls = getattr(pdk, "layer_stack", None)
         if ls is None:
-            print(f"  Skipping {band_label or 'default'}: no layer_stack")
+            console.print(f"  [yellow]⚠ Skipping {label}: no layer_stack found[/yellow]")
             continue
 
         if band_label:
@@ -524,28 +535,59 @@ def main():
         parts.append(CSS)
         parts.append('\n<div class="layer-stack-viz">')
 
-        layers = _extract_layers(ls)
-        layers, ticks = _compute_layout(layers)
-        if layers:
-            sid = _next_id()
-            parts.append('<div class="section">')
-            parts.append('  <h2>Layer Stack</h2>')
-            parts.append(f'  <div class="viz-container">{_render_layer_stack(layers, ticks, sid)}</div>')
-            parts.append('</div>')
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+            task = progress.add_task("Extracting layers...", total=None)
+            layers = _extract_layers(ls)
+            layers, ticks = _compute_layout(layers)
+            progress.update(task, description=f"Extracted {len(layers)} layers")
 
-        xs = _extract_cross_sections(pdk, ls)
-        if xs:
-            sid = _next_id()
-            parts.append('<div class="section">')
-            parts.append('  <h2>Cross-Sections</h2>')
-            parts.append(f'  <div class="viz-container">{_render_cross_sections(xs, ls, sid)}</div>')
-            parts.append('</div>')
+            if layers:
+                table = Table(title="Layers", show_lines=False, header_style="bold magenta")
+                table.add_column("Name")
+                table.add_column("Material")
+                table.add_column("Type")
+                table.add_column("zmin (µm)", justify="right")
+                table.add_column("zmax (µm)", justify="right")
+                table.add_column("GDS", justify="right")
+                for l in layers:
+                    table.add_row(
+                        l["name"], l["material"], l["type"],
+                        str(l["zmin"]), str(l["zmax"]),
+                        str(l["gds"]) if l["gds"] is not None else "—",
+                    )
+                progress.stop()
+                console.print(table)
+                progress.start()
+
+                sid = _next_id()
+                parts.append('<div class="section">')
+                parts.append('  <h2>Layer Stack</h2>')
+                parts.append(f'  <div class="viz-container">{_render_layer_stack(layers, ticks, sid)}</div>')
+                parts.append('</div>')
+                progress.update(task, description="Rendered layer stack SVG")
+            else:
+                console.print("  [yellow]No layers with non-zero thickness found[/yellow]")
+
+            progress.update(task, description="Extracting cross-sections...")
+            xs = _extract_cross_sections(pdk, ls)
+            progress.update(task, description=f"Extracted {len(xs)} cross-section(s)")
+
+            if xs:
+                console.print(f"  [green]✓[/green] Cross-sections: {', '.join(x['name'] for x in xs)}")
+                sid = _next_id()
+                parts.append('<div class="section">')
+                parts.append('  <h2>Cross-Sections</h2>')
+                parts.append(f'  <div class="viz-container">{_render_cross_sections(xs, ls, sid)}</div>')
+                parts.append('</div>')
+                progress.update(task, description="Rendered cross-section SVG")
+            else:
+                console.print("  [yellow]No cross-sections found[/yellow]")
 
         parts.append('</div>')
 
     content = "\n".join(parts) + "\n"
     filepath.write_text(content)
-    print(f"Wrote {filepath}")
+    console.print(f"\n[bold green]✓ Wrote {filepath}[/bold green] ({len(content):,} bytes)")
 
 
 if __name__ == "__main__":
