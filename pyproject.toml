@@ -32,7 +32,8 @@ dev = [
   "pytest-cov",
   "pytest_regressions",
   "pytest-github-actions-annotate-failures",
-  "towncrier"
+  "towncrier",
+  "rich"
 ]
 docs = [
   "jupyter",
