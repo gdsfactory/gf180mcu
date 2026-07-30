@@ -15,6 +15,8 @@ def _add_pins(component, port_pin_mapping: dict[str, list[str]] | None = None) -
         component,
         port_pin_mapping=port_pin_mapping,
         pin_label_layer_map={
+            LAYER.comp: LAYER.comp_label,
+            LAYER.poly2: LAYER.poly2_label,
             LAYER.metal1: LAYER.metal1_label,
             LAYER.metal2: LAYER.metal2_label,
             LAYER.metal3: LAYER.metal3_label,
