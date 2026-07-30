@@ -7,7 +7,7 @@ from gdsfactory.add_pins import AddPinFunction, add_pin_rectangle_inside
 from gdsfactory.typings import LayerSpec
 
 
-def _add_pins(component, port_pin_mapping: dict[str, list[str]] | None = None) -> None:
+def _add_pins(component: Component, port_pin_mapping: dict[str, list[str]] | None = None) -> None:
     """Register logical electrical pins; geometric pin drawing disabled pending reference GDS update."""
     from gf180mcu import LAYER
 
