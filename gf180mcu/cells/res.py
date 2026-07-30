@@ -1338,5 +1338,5 @@ def res(
 
     # VLSIR Simulation Metadata
 
-    _add_pins(out)
+    _add_pins(out, port_pin_mapping={"r0": ["r0"], "r1": ["r1"]})
     return out

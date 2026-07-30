@@ -200,5 +200,5 @@ def cap_mim(
 
     # VLSIR Simulation Metadata
 
-    _add_pins(c)
+    _add_pins(c, port_pin_mapping={"top": ["top"], "bottom": ["bottom"]})
     return c

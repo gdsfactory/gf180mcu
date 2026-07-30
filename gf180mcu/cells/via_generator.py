@@ -82,7 +82,7 @@ def via_generator(
         port_type="electrical",
     )
 
-    _add_pins(c)
+    _add_pins(c, port_pin_mapping={"e": ["e1", "e2"]})
     return c
 
 
@@ -206,5 +206,5 @@ def via_stack(
             port_type="electrical",
         )
 
-    _add_pins(c)
+    _add_pins(c, port_pin_mapping={"e": ["e1", "e2"]})
     return c

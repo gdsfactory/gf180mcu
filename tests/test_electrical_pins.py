@@ -15,14 +15,14 @@ def activate_pdk():
     PDK.activate()
 
 
-# Drawing layer (datatype 0) → pin layer (datatype 2)
+# Drawing layer (datatype 0) -> pin layer (datatype 2)
 _PIN_LAYER_MAP: dict[tuple[int, int], tuple[int, int]] = {
-    (34, 0): (34, 2),  # metal1      → metal1_pin
-    (36, 0): (36, 2),  # metal2      → metal2_pin
-    (42, 0): (42, 2),  # metal3      → metal3_pin
-    (46, 0): (46, 2),  # metal4      → metal4_pin
-    (81, 0): (81, 2),  # metal5      → metal5_pin
-    (53, 0): (53, 2),  # metaltop    → metaltop_pin
+    (34, 0): (34, 2),  # metal1      -> metal1_pin
+    (36, 0): (36, 2),  # metal2      -> metal2_pin
+    (42, 0): (42, 2),  # metal3      -> metal3_pin
+    (46, 0): (46, 2),  # metal4      -> metal4_pin
+    (81, 0): (81, 2),  # metal5      -> metal5_pin
+    (53, 0): (53, 2),  # metaltop    -> metaltop_pin
 }
 
 CELL_NAMES = [
@@ -30,11 +30,30 @@ CELL_NAMES = [
     "cap_mos",
     "diode_nd2ps",
     "diode_pd2nw",
+    "diode_nw2ps",
+    "diode_pw2dw",
+    "diode_dw2ps",
+    "sc_diode",
     "res",
     "via_generator",
     "via_stack",
     "pcmpgr_gen",
 ]
+
+EXPECTED_PIN_NAMES: dict[str, set[str]] = {
+    "cap_mim": {"top", "bottom"},
+    "cap_mos": {"gate", "source_drain"},
+    "diode_nd2ps": {"anode", "cathode"},
+    "diode_pd2nw": {"anode", "cathode"},
+    "diode_nw2ps": {"cathode", "anode"},
+    "diode_pw2dw": {"anode", "cathode"},
+    "diode_dw2ps": {"cathode"},
+    "sc_diode": {"cathode", "anode"},
+    "res": {"r0", "r1"},
+    "via_generator": {"e"},
+    "via_stack": {"e"},
+    "pcmpgr_gen": {"guardring"},
+}
 
 
 def _has_pin_polygon_near_port(comp, port, pin_layer_tuple: tuple[int, int]) -> bool:
@@ -83,7 +102,7 @@ def test_geometric_pin_present(cell_name):
 
 @pytest.mark.parametrize("cell_name", CELL_NAMES)
 def test_logical_pin_registered(cell_name):
-    """create_pin() must have been called — c.pins must be non-empty."""
+    """create_pin() must have been called -- c.pins must be non-empty."""
     c = PDK.cells[cell_name]()
     assert len(c.pins) > 0, f"No logical pins registered on {cell_name}"
 
@@ -98,3 +117,15 @@ def test_port_type_is_electrical(cell_name):
         assert port.port_type == "electrical", (
             f"Port '{port.name}' has type '{port.port_type}', expected 'electrical' in {cell_name}"
         )
+
+
+@pytest.mark.parametrize("cell_name", CELL_NAMES)
+def test_expected_pin_names(cell_name):
+    """Verify that each cell registers the expected set of logical pin names."""
+    c = PDK.cells[cell_name]()
+    actual_pin_names = {pin.name for pin in c.pins}
+    expected = EXPECTED_PIN_NAMES[cell_name]
+    assert expected.issubset(actual_pin_names), (
+        f"{cell_name}: missing pins {expected - actual_pin_names}; "
+        f"got {actual_pin_names}"
+    )

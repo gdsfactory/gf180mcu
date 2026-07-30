@@ -190,5 +190,5 @@ def pcmpgr_gen(dn_rect=dn_rect, grw: float = 0.36) -> gf.Component:
         port_type="electrical",
     )
 
-    _add_pins(c)
+    _add_pins(c, port_pin_mapping={"guardring": ["guardring"]})
     return c
