@@ -170,18 +170,11 @@ def test_xor(device_name: str, params: dict, cell_module: str) -> None:
     if not ref_gds.exists():
         pytest.skip(f"Reference GDS not found: {ref_gds}")
 
-    # Generate and compare — strip pin/label layers before writing
-    # Very important!!! Compare only drawing layers and core logic layers, not additional logic layers.
+    # Generate and compare
     component = cell_fn(**filtered_params)
-    c = component.dup()
-    layout = c.kcl.layout
-    for li in layout.layer_indices():
-        info = layout.get_info(li)
-        if info.datatype in SKIP_DATATYPES:
-            c.shapes(li).clear()
     with tempfile.NamedTemporaryFile(suffix=".gds", delete=False) as tmp:
         run_gds = pathlib.Path(tmp.name)
-    c.write_gds(str(run_gds))
+    component.write_gds(str(run_gds))
 
     try:
         failures = xor_gds_files(ref_gds, run_gds)
