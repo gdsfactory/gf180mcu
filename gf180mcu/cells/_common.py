@@ -16,10 +16,9 @@ _METAL_PIN_LAYERS: list[tuple[tuple[int, int], tuple[int, int]]] = [
 
 def _add_pins(component) -> None:
     """Add geometric pin markers and register logical pins for electrical ports."""
-    layout = component.kcl.layout
+    kcl = component.kcl
     pin_layer_map = {
-        idx: pin_spec
+        kcl.layer(ln, dt): pin_spec
         for (ln, dt), pin_spec in _METAL_PIN_LAYERS
-        if (idx := layout.find_layer(ln, dt)) >= 0
     }
-    add_electric_pins(component, pin_layer_map=pin_layer_map or None)
+    add_electric_pins(component, pin_layer_map=pin_layer_map)
