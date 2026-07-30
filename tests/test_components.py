@@ -9,21 +9,11 @@ from gdsfactory.component import Component
 from pytest_regressions.data_regression import DataRegressionFixture
 
 from gf180mcu import PDK
-from gf180mcu.layers import layer as _layer
 
 skip_test = {"res_dev", "nfet", "pfet"}
 cells = PDK.cells
 cell_names = set(cells.keys()) - set(skip_test)
 dirpath = pathlib.Path(__file__).absolute().parent / "gds_ref"
-
-_PIN_LAYERS = [
-    _layer.metal1_pin,
-    _layer.metal2_pin,
-    _layer.metal3_pin,
-    _layer.metal4_pin,
-    _layer.metal5_pin,
-    _layer.metaltop_pin,
-]
 
 
 @pytest.fixture(params=cell_names, scope="function")
@@ -33,10 +23,7 @@ def component(request) -> Component:
 
 def test_pdk_gds(component: Component) -> None:
     """Avoid regressions in GDS geometry shapes and layers."""
-    name = component.name
-    c = component.dup()
-    c.remove_layers(_PIN_LAYERS)
-    difftest(c, test_name=name, dirpath=dirpath)
+    difftest(component, dirpath=dirpath)
 
 
 def test_pdk_settings(
