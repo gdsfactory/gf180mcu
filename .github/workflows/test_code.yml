@@ -4,8 +4,75 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  test:
-    uses: doplaydo/pdk-ci-workflow-public/.github/workflows/test_code.yml@main
-    secrets:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      - name: Fetch canonical pre-commit config
+        run: |
+          python3 -c "
+          import yaml, os
+          exclude = None
+          try:
+              with open('.pre-commit-config.yaml') as f:
+                  cfg = yaml.safe_load(f)
+              if cfg and 'exclude' in cfg:
+                  exclude = cfg['exclude']
+          except Exception:
+              pass
+          if exclude:
+              with open('.repo-exclude', 'w') as f:
+                  f.write(exclude)
+          " 2>/dev/null || true
+
+          curl -fSL "https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow-public/main/templates/.pre-commit-config.yaml" \
+            -o .pre-commit-config.yaml
+
+          if [ -f .repo-exclude ]; then
+            python3 << 'PYEOF'
+          import yaml
+          with open('.repo-exclude') as f:
+              exclude = f.read().strip()
+          with open('.pre-commit-config.yaml') as f:
+              cfg = yaml.safe_load(f)
+          cfg['exclude'] = exclude
+          with open('.pre-commit-config.yaml', 'w') as f:
+              yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+          PYEOF
+            rm .repo-exclude
+          fi
+      - name: Run pre-commit (no cache — rev uses mutable main branch)
+        run: |
+          pip install pre-commit
+          pre-commit run --all-files
+
+  test_code:
+    runs-on: ubuntu-latest
+    env:
       GFP_API_KEY: ${{ secrets.GFP_API_KEY }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: '3.12'
+      - name: Install uv
+        uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+      - name: Install dependencies
+        run: make install
+      - name: Test with pytest
+        run: make test
+      - name: Upload difftest artifacts
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: difftest-report-test_code
+          path: test_diffs/
+          if-no-files-found: ignore
+          retention-days: 3
