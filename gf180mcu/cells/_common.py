@@ -18,7 +18,6 @@ def _add_pins(component) -> None:
     """Add geometric pin markers and register logical pins for electrical ports."""
     kcl = component.kcl
     pin_layer_map = {
-        kcl.layer(ln, dt): pin_spec
-        for (ln, dt), pin_spec in _METAL_PIN_LAYERS
+        kcl.layer(ln, dt): pin_spec for (ln, dt), pin_spec in _METAL_PIN_LAYERS
     }
     add_electric_pins(component, pin_layer_map=pin_layer_map)
