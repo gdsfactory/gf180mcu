@@ -1,5 +1,24 @@
 info: {}
 name: cap_mim_MOA_MLM4_L5_W5_LFalse_TL_BL
+ports:
+  bottom:
+    center:
+    - 0
+    - 0
+    layer: metal2
+    name: bottom
+    orientation: 90
+    port_type: electrical
+    width: 8.69
+  top:
+    center:
+    - -1.245
+    - 0
+    layer: metal3
+    name: top
+    orientation: 90
+    port_type: electrical
+    width: 5
 settings:
   bot_label: ''
   label: false
