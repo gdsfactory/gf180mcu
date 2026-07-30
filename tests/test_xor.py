@@ -25,7 +25,7 @@ SKIP_LAYERS = {
     (235, 4),  # prBoundary
 }
 
-SKIP_DATATYPES = {2, 5}  # pin, label
+SKIP_DATATYPES = {2, 5, 10}  # pin, label
 
 
 def xor_gds_files(
