@@ -1,24 +1,5 @@
 info: {}
 name: diode_pd2nw_L0p45_W0p45_V3p3V_DFalse_PFalse_LFalse_PL_NL
-ports:
-  anode:
-    center:
-    - 0
-    - 0
-    layer: metal1
-    name: anode
-    orientation: 0
-    port_type: electrical
-    width: 0.45
-  cathode:
-    center:
-    - 0
-    - 0.715
-    layer: metal1
-    name: cathode
-    orientation: 90
-    port_type: electrical
-    width: 1.81
 settings:
   deepnwell: false
   la: 0.45

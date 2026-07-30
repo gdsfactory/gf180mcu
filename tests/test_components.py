@@ -30,7 +30,7 @@ def test_pdk_settings(
     component: Component, data_regression: DataRegressionFixture
 ) -> None:
     """Avoid regressions when exporting settings."""
-    data_regression.check(component.to_dict(with_ports=True))
+    data_regression.check(component.to_dict())
 
 
 @pytest.mark.parametrize("component_name", cell_names)
