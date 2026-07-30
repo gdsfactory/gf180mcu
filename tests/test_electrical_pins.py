@@ -52,7 +52,9 @@ def _has_pin_polygon_near_port(comp, port, pin_layer_tuple: tuple[int, int]) -> 
     return not (region & probe).is_empty()
 
 
-@pytest.mark.skip(reason="Geometric pin drawing disabled; pin_layer_map values set to None pending reference GDS update")
+@pytest.mark.skip(
+    reason="Geometric pin drawing disabled; pin_layer_map values set to None pending reference GDS update"
+)
 @pytest.mark.parametrize("cell_name", CELL_NAMES)
 def test_geometric_pin_present(cell_name):
     """Each electrical port on a metal layer must have a polygon on the corresponding pin layer.
