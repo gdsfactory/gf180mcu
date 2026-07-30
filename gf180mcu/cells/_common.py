@@ -9,20 +9,22 @@ from gdsfactory.typings import LayerSpec
 
 def _add_pins(component, port_pin_mapping: dict[str, list[str]] | None = None) -> None:
     """Register logical electrical pins; geometric pin drawing disabled pending reference GDS update."""
+    from gf180mcu import LAYER
+
     _add_electric_pins(
         component,
         port_pin_mapping=port_pin_mapping,
         # Avoid XOR diff regressions against refs in label layers.
-        # pin_label_layer_map={
-        #    LAYER.comp: LAYER.comp_label,
-        #    LAYER.poly2: LAYER.poly2_label,
-        #    LAYER.metal1: LAYER.metal1_label,
-        #    LAYER.metal2: LAYER.metal2_label,
-        #    LAYER.metal3: LAYER.metal3_label,
-        #    LAYER.metal4: LAYER.metal4_label,
-        #    LAYER.metal5: LAYER.metal5_label,
-        #    LAYER.metaltop: LAYER.metaltop_label,
-        # },
+        pin_label_layer_map={
+            LAYER.comp: LAYER.comp_label,
+            LAYER.poly2: LAYER.poly2_label,
+            LAYER.metal1: LAYER.metal1_label,
+            LAYER.metal2: LAYER.metal2_label,
+            LAYER.metal3: LAYER.metal3_label,
+            LAYER.metal4: LAYER.metal4_label,
+            LAYER.metal5: LAYER.metal5_label,
+            LAYER.metaltop: LAYER.metaltop_label,
+        },
     )
 
 

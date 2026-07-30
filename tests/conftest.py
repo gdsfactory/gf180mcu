@@ -48,7 +48,7 @@ def difftest(
     dirpath: pathlib.Path = pathlib.Path.cwd(),
     xor: bool = True,
     dirpath_run: pathlib.Path | None = None,
-    ignore_sliver_differences: bool | None = None,
+    ignore_sliver_differences: bool | None = True,
     sliver_tolerance: int = 1,
 ) -> None:
     """Custom difftest that saves XOR diff images on failure instead of prompting."""
