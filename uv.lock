@@ -1011,11 +1011,11 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "gdsfactory" },
+    { name = "gdsfactoryplus" },
 ]
 
 [package.optional-dependencies]
 dev = [
-    { name = "gdsfactoryplus" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
@@ -1040,7 +1040,7 @@ tests = [
 [package.metadata]
 requires-dist = [
     { name = "gdsfactory", specifier = "~=9.47.0" },
-    { name = "gdsfactoryplus", marker = "extra == 'dev'" },
+    { name = "gdsfactoryplus" },
     { name = "jupyter", marker = "extra == 'docs'" },
     { name = "kwasm", marker = "extra == 'docs'" },
     { name = "mkdocs-material", marker = "extra == 'docs'" },

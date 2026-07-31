@@ -14,7 +14,8 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory~=9.47.0"
+  "gdsfactory~=9.47.0",
+  "gdsfactoryplus"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
@@ -26,7 +27,6 @@ version = "1.0.0"
 
 [project.optional-dependencies]
 dev = [
-  "gdsfactoryplus",
   "pre-commit",
   "pytest",
   "pytest-cov",
