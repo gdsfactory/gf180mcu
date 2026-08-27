@@ -435,7 +435,8 @@ def _draw_end_contact(
 
     Args:
         c: component
-        cx, cy: center position
+        cx: contact center x position in um
+        cy: contact center y position in um
         fill_w: contact fill width (cpl)
         end_layer: base layer (poly2 or comp)
         orient: "horz" or "vert" for metal growth direction
