@@ -4,3 +4,6 @@
 [submodule "gf180mcu/src/gf180mcu_fd_sc_mcu9t5v0"]
 	path = gf180mcu/src/gf180mcu_fd_sc_mcu9t5v0
 	url = https://github.com/google/globalfoundries-pdk-libs-gf180mcu_fd_sc_mcu9t5v0.git
+[submodule "gf180mcu/src/gf180mcu_fd_io"]
+	path = gf180mcu/src/gf180mcu_fd_io
+	url = https://github.com/google/globalfoundries-pdk-libs-gf180mcu_fd_io.git
