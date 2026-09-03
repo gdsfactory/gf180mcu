@@ -24,10 +24,9 @@ from __future__ import annotations
 from math import floor
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 
 from gf180mcu.layers import layer
-
-from ._common import _add_pins
 
 # ---------------------------------------------------------------------------
 # Grid snapping — Magic CIF output grid is 5 nm
@@ -446,5 +445,7 @@ def cap_mos(
     voltage = "3p3" if not is_6v else "6p0"
     suffix = "_b" if "_b" in type else ""
 
-    _add_pins(c, port_pin_mapping={"gate": ["gate"], "source_drain": ["source_drain"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"gate": ["gate"], "source_drain": ["source_drain"]}
+    )
     return c

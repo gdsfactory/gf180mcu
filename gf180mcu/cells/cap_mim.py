@@ -7,10 +7,9 @@ Uses MIM-A (metal2/metal3) stack with fusetop cap plate.
 from math import floor
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 
 from gf180mcu.layers import layer
-
-from ._common import _add_pins
 
 
 @gf.cell(tags=["cap_mim"])
@@ -200,5 +199,5 @@ def cap_mim(
 
     # VLSIR Simulation Metadata
 
-    _add_pins(c, port_pin_mapping={"top": ["top"], "bottom": ["bottom"]})
+    add_electrical_pins(c, port_pin_mapping={"top": ["top"], "bottom": ["bottom"]})
     return c

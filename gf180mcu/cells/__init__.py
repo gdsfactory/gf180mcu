@@ -1,6 +1,5 @@
 """Cells."""
 
-from ._common import *
 from .cap_mim import *
 from .cap_mos import *
 from .diode import *

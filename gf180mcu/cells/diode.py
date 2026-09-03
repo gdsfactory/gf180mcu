@@ -19,12 +19,11 @@ Contact rules:
 """
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import Float2
 
 from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
-
-from ._common import _add_pins
 
 # ---------------------------------------------------------------------------
 # Helper: exact rectangle placement (bypasses gdsfactory snap_to_grid2x)
@@ -443,7 +442,9 @@ def diode_nd2ps(
         port_type="electrical",
     )
 
-    _add_pins(c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
+    )
     return c
 
 
@@ -636,7 +637,9 @@ def diode_pd2nw(
         port_type="electrical",
     )
 
-    _add_pins(c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
+    )
     return c
 
 
@@ -798,7 +801,9 @@ def diode_nw2ps(
         port_type="electrical",
     )
 
-    _add_pins(c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]}
+    )
     return c
 
 
@@ -1131,7 +1136,9 @@ def diode_pw2dw(
         port_type="electrical",
     )
 
-    _add_pins(c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
+    )
     return c
 
 
@@ -1580,7 +1587,7 @@ def diode_dw2ps(
         )
         pin_mapping["anode"] = ["anode"]
 
-    _add_pins(c, port_pin_mapping=pin_mapping)
+    add_electrical_pins(c, port_pin_mapping=pin_mapping)
     return c
 
 
@@ -2000,5 +2007,7 @@ def sc_diode(
             port_type="electrical",
         )
 
-    _add_pins(c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]})
+    add_electrical_pins(
+        c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]}
+    )
     return c

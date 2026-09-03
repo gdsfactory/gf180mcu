@@ -151,3 +151,5 @@ cython_debug/
 *Thumbs.db
 test_diffs/
 .pre-commit-config.yaml
+
+*.gds

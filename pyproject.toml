@@ -15,14 +15,16 @@ classifiers = [
 ]
 dependencies = [
   "gdsfactory>=9.45,<9.50",
-  "pre-commit>=4.6.0"
+  "pre-commit>=4.6.0",
+  "pytest>=9.1.1",
+  "pytest-regressions>=2.11.0"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
 license = {file = "LICENSE"}
 name = "gf180mcu"
 readme = "README.md"
-requires-python = ">=3.12,<3.15"
+requires-python = ">=3.12,<3.14"
 version = "1.0.0"
 
 [project.optional-dependencies]

@@ -9,11 +9,10 @@ from __future__ import annotations
 from math import floor
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import LayerSpec
 
 from gf180mcu.layers import layer
-
-from ._common import _add_pins
 
 # ---------------------------------------------------------------------------
 # Magic technology constants (from gf180mcu_generators.tcl ruleset)
@@ -1339,5 +1338,5 @@ def res(
 
     # VLSIR Simulation Metadata
 
-    _add_pins(out, port_pin_mapping={"r0": ["r0"], "r1": ["r1"]})
+    add_electrical_pins(out, port_pin_mapping={"r0": ["r0"], "r1": ["r1"]})
     return out
