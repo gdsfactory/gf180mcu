@@ -1266,17 +1266,27 @@ def draw_nfet(
 
     Args:
         layout : layout object
-        l : Float of gate length
-        w : Float of gate width
-        sd_l : Float of source and drain diffusion length
+        l_gate : Float of gate length in um
+        w_gate : Float of gate width in um
+        sd_con_col : integer of number of contact columns in the source and
+            drain diffusion, it sets the diffusion length
         inter_sd_l : Float of source and drain diffusion length between fingers
         nf : integer of number of fingers
-        M : integer of number of multipliers
         grw : guard ring width when enabled
-        type : string of the device type
+        volt : string of the operating voltage (3.3V, 5V, 6V), 5V/6V adds the
+            dualgate layer and uses wider spacings
         bulk : String of bulk connection type (None, Bulk Tie, Guard Ring)
         con_bet_fin : boolean of having contacts for diffusion between fingers
         gate_con_pos : string of choosing the gate contact position (bottom, top, alternating )
+        interdig : boolean of having interdigitated fingers
+        patt : string of the required interdigitation pattern
+        deepnwell : boolean of having deepnwell
+        pcmpgr : boolean of having deepnwell guardring
+        label : boolean of having labels
+        sd_label : list of source and drain labels
+        g_label : list of gate labels
+        sub_label : string of the substrate/bulk label
+        patt_label : boolean of labelling the interdigitation pattern
 
     """
     # used layers and dimensions
@@ -1883,17 +1893,27 @@ def draw_pfet(
 
     Args:
         layout : layout object
-        l : Float of gate length
-        w : Float of gate width
-        sd_l : Float of source and drain diffusion length
+        l_gate : Float of gate length in um
+        w_gate : Float of gate width in um
+        sd_con_col : integer of number of contact columns in the source and
+            drain diffusion, it sets the diffusion length
         inter_sd_l : Float of source and drain diffusion length between fingers
         nf : integer of number of fingers
-        M : integer of number of multipliers
         grw : guard ring width when enabled
-        type : string of the device type
+        volt : string of the operating voltage (3.3V, 5V, 6V), 5V/6V adds the
+            dualgate layer and uses wider spacings
         bulk : String of bulk connection type (None, Bulk Tie, Guard Ring)
         con_bet_fin : boolean of having contacts for diffusion between fingers
         gate_con_pos : string of choosing the gate contact position (bottom, top, alternating )
+        interdig : boolean of having interdigitated fingers
+        patt : string of the required interdigitation pattern
+        deepnwell : boolean of having deepnwell
+        pcmpgr : boolean of having deepnwell guardring
+        label : boolean of having labels
+        sd_label : list of source and drain labels
+        g_label : list of gate labels
+        sub_label : string of the substrate/bulk label
+        patt_label : boolean of labelling the interdigitation pattern
 
     """
     # used layers and dimensions

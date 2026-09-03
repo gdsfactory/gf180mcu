@@ -114,6 +114,8 @@ def via_stack(
         via_size: via size.
         via_spacing: via spacing.
         via_enc: via enclosure.
+        base_layer: layer drawn around the bottom contacts, i.e. the first
+            metal of the stack.
 
 
     return via stack till the metal level indicated where :
