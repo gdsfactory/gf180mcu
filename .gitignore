@@ -153,3 +153,4 @@ test_diffs/
 .pre-commit-config.yaml
 
 *.gds
+*.oas
