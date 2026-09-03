@@ -14,7 +14,8 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory>=9.45,<9.47"
+  "gdsfactory>=9.45,<9.50",
+  "pre-commit>=4.6.0"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
