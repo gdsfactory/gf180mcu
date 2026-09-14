@@ -12,6 +12,7 @@ import gdsfactory as gf
 from gdsfactory.typings import LayerSpec
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import res_schematic
 
 # ---------------------------------------------------------------------------
 # Magic technology constants (from gf180mcu_generators.tcl ruleset)
@@ -1236,7 +1237,7 @@ def _highR_poly_res(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["res"])
+@gf.cell(tags=["res"], schematic_function=res_schematic)
 def res(
     l_res: float = 0.1,
     w_res: float = 0.1,
