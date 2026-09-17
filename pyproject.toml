@@ -4,8 +4,19 @@
 build-backend = "flit_core.buildapi"
 requires = ["flit_core>=3.2,<5"]
 
+[dependency-groups]
+dev = [
+  "gdsfactoryplus",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest_regressions",
+  "pytest-github-actions-annotate-failures",
+  "towncrier"
+]
+
 [project]
-authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
+authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
 classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -18,22 +29,13 @@ dependencies = [
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 name = "gf180mcu"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 version = "1.0.0"
 
 [project.optional-dependencies]
-dev = [
-  "gdsfactoryplus",
-  "pre-commit",
-  "pytest",
-  "pytest-cov",
-  "pytest_regressions",
-  "pytest-github-actions-annotate-failures",
-  "towncrier"
-]
 docs = [
   "jupyter",
   "kwasm",
