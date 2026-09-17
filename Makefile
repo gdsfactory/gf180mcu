@@ -1,7 +1,7 @@
 install:
 	git submodule update --init --recursive
 	uv venv --python 3.12
-	uv sync --extra docs --extra dev
+	uv sync --extra docs
 
 all:
 	uv run python gf180mcu/samples/all_cells.py
