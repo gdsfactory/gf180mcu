@@ -2,7 +2,7 @@
 
 [build-system]
 build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3.2,<4"]
+requires = ["flit_core>=3.2,<5"]
 
 [dependency-groups]
 dev = [
@@ -25,7 +25,7 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory>=9.45,<9.47"
+  "gdsfactory>=9.45,<9.50"
 ]
 description = "GlobalFoundries 180nm MCU"
 keywords = ["python"]
