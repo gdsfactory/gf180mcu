@@ -9,9 +9,10 @@ from math import floor
 import gdsfactory as gf
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import mim_schematic
 
 
-@gf.cell(tags=["cap_mim"])
+@gf.cell(tags=["cap_mim"], schematic_function=mim_schematic)
 def cap_mim(
     mim_option: str = "A",
     metal_level: str = "M4",

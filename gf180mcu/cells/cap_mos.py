@@ -26,6 +26,7 @@ from math import floor
 import gdsfactory as gf
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import moscap_schematic
 
 # ---------------------------------------------------------------------------
 # Grid snapping — Magic CIF output grid is 5 nm
@@ -242,7 +243,7 @@ def _guard_ring(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["cap_mos"])
+@gf.cell(tags=["cap_mos"], schematic_function=moscap_schematic)
 def cap_mos(
     type: str = "cap_nmos",
     lc: float = 0.1,
@@ -430,9 +431,9 @@ def cap_mos(
     )
     c.add_port(
         name="source_drain",
-        center=(0.0, float(-_snap(pc_y))),
-        width=float(lc),
-        orientation=270,
+        center=(float(_snap(hl + g2d)), 0.0),
+        width=float(wc),
+        orientation=0,
         layer=_L_METAL1,
         port_type="electrical",
     )

@@ -1049,15 +1049,6 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-dev = [
-    { name = "gdsfactoryplus" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-github-actions-annotate-failures" },
-    { name = "pytest-regressions" },
-    { name = "towncrier" },
-]
 docs = [
     { name = "jupyter" },
     { name = "kwasm" },
@@ -1072,9 +1063,20 @@ tests = [
     { name = "pytest-cov" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "gdsfactoryplus" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-github-actions-annotate-failures" },
+    { name = "pytest-regressions" },
+    { name = "towncrier" },
+]
+
 [package.metadata]
 requires-dist = [
-    { name = "gdsfactory", specifier = "~=9.51.0" },
+    { name = "gdsfactory", specifier = ">=9.45,<=9.51" },
     { name = "gdsfactoryplus", marker = "extra == 'dev'" },
     { name = "jupyter", marker = "extra == 'docs'" },
     { name = "kwasm", marker = "extra == 'docs'" },
@@ -1082,17 +1084,22 @@ requires-dist = [
     { name = "mkdocs-with-pdf", marker = "extra == 'docs'" },
     { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.27.0" },
     { name = "nbconvert", marker = "extra == 'docs'" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
     { name = "pytest", marker = "extra == 'tests'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-cov", marker = "extra == 'tests'" },
-    { name = "pytest-github-actions-annotate-failures", marker = "extra == 'dev'" },
-    { name = "pytest-regressions", marker = "extra == 'dev'" },
-    { name = "towncrier", marker = "extra == 'dev'" },
     { name = "zensical", marker = "extra == 'docs'", specifier = ">=0.0.40,<0.1.0" },
 ]
-provides-extras = ["dev", "docs", "tests"]
+provides-extras = ["docs", "tests"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "gdsfactoryplus" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-github-actions-annotate-failures" },
+    { name = "pytest-regressions" },
+    { name = "towncrier" },
+]
 
 [[package]]
 name = "ghp-import"
