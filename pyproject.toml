@@ -15,6 +15,11 @@ dev = [
   "towncrier"
 ]
 
+[dependency-groups]
+dev = [
+  "gdsfactoryplus>=1.8.20"
+]
+
 [project]
 authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
 classifiers = [
@@ -32,10 +37,18 @@ keywords = ["python"]
 license = { file = "LICENSE" }
 name = "gf180mcu"
 readme = "README.md"
-requires-python = ">=3.12,<3.15"
+requires-python = ">=3.12,<3.14"
 version = "1.0.0"
 
 [project.optional-dependencies]
+dev = [
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest_regressions",
+  "pytest-github-actions-annotate-failures",
+  "towncrier"
+]
 docs = [
   "jupyter",
   "kwasm",
