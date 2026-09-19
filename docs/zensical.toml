@@ -1,18 +1,17 @@
 [project]
 docs_dir = "."
 nav = [
-  {"Home" = "index.md"},
-  {"Reference" = [
-    {"Layer Stack" = "layer_stack.md"},
-    {"Cells" = "cells.md"},
-    {"Logic 7T" = "logic_7t.md"},
-    {"Logic 9T" = "logic_9t.md"},
-    {"Changelog" = "changelog.md"}
-  ]},
-  {"Tutorial" = [
-    {"Intro" = "intro.md"},
-    {"Migration" = "migration.md"}
-  ]}
+  { "Home" = "index.md" },
+  { "Reference" = [
+    { "Cells" = "cells.md" },
+    { "Logic 7T" = "logic_7t.md" },
+    { "Logic 9T" = "logic_9t.md" },
+    { "Changelog" = "changelog.md" }
+  ] },
+  { "Tutorial" = [
+    { "Intro" = "intro.md" },
+    { "Migration" = "migration.md" }
+  ] }
 ]
 site_dir = "_build/html"
 site_name = "GlobalFoundries 180nm MCU"

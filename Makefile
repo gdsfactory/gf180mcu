@@ -1,7 +1,7 @@
 install:
 	git submodule update --init --recursive
 	uv venv --python 3.12
-	uv sync --extra docs --extra dev
+	uv sync --extra docs
 
 all:
 	uv run python gf180mcu/samples/all_cells.py
@@ -10,6 +10,7 @@ dev:
 	uv venv --python 3.12
 	uv sync --all-extras
 	curl -sf https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow-public/main/templates/.pre-commit-config.yaml -o .pre-commit-config.yaml
+	uv run pre-commit clean
 	uv run pre-commit install
 
 tech:

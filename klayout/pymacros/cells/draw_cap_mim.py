@@ -18,8 +18,15 @@ def draw_cap_mim(
 
     Args:
         layout : layout object
+        mim_option : string of the mim flavor ("MIM-B" uses the upper metal
+            stack, anything else uses metal2/metal3)
+        metal_level : string of the top metal of the MIM-B stack
+            ("M4", "M5" or "M6")
         lc : float of cap length
         wc : float of cap width
+        label : boolean of having labels
+        top_label : string of the top plate label
+        bot_label : string of the bottom plate label
 
 
     """
