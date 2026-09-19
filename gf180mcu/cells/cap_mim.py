@@ -10,9 +10,10 @@ import gdsfactory as gf
 from gdsfactory.add_pins import add_electrical_pins
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import mim_schematic
 
 
-@gf.cell(tags=["cap_mim"])
+@gf.cell(tags=["cap_mim"], schematic_function=mim_schematic)
 def cap_mim(
     mim_option: str = "A",
     metal_level: str = "M4",

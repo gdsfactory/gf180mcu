@@ -31,6 +31,7 @@ from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import Strs
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import native_schematic, nfet_schematic, pfet_schematic
 
 # ---------------------------------------------------------------------------
 # Grid snapping — Magic CIF output grid is 5 nm
@@ -1383,7 +1384,7 @@ def _add_mos_ports(c, port_data):
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["fet"])
+@gf.cell(tags=["fet"], schematic_function=nfet_schematic)
 def nfet(
     l_gate: float = 0.28,
     w_gate: float = 0.22,
@@ -1449,7 +1450,7 @@ def nfet(
     return c
 
 
-@gf.cell(tags=["fet"])
+@gf.cell(tags=["fet"], schematic_function=pfet_schematic)
 def pfet(
     l_gate: float = 0.28,
     w_gate: float = 0.22,
@@ -1515,7 +1516,7 @@ def pfet(
     return c
 
 
-@gf.cell(tags=["fet"])
+@gf.cell(tags=["fet"], schematic_function=native_schematic)
 def nfet_06v0_nvt(
     l_gate: float = 1.8,
     w_gate: float = 0.8,

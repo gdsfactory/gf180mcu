@@ -18,12 +18,15 @@ Contact rules:
   Contact inset from guard comp outer: 0.190 (03v3), 0.180 (06v0 or outer guard)
 """
 
+from functools import partial
+
 import gdsfactory as gf
 from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import Float2
 
 from gf180mcu.cells.via_generator import via_generator, via_stack
 from gf180mcu.layers import layer
+from gf180mcu.schematic import diode_schematic
 
 # ---------------------------------------------------------------------------
 # Helper: exact rectangle placement (bypasses gdsfactory snap_to_grid2x)
@@ -299,7 +302,7 @@ def _inner_metal1(c: gf.Component, wa: float, la: float) -> None:
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="nd2ps"))
 def diode_nd2ps(
     la: float = 0.45,
     wa: float = 0.45,
@@ -313,8 +316,8 @@ def diode_nd2ps(
     """Draw N+/LVPWELL diode matching Magic VLSI geometry.
 
     Args:
-        la: diffusion length (anode).
-        wa: diffusion width (anode).
+        la: N+ diffusion length (cathode).
+        wa: N+ diffusion width (cathode).
         volt: operating voltage ("3.3V" or "6.0V").
         deepnwell: use Deep NWELL device (not implemented).
         pcmpgr: use P+ Guard Ring for DNWELL (not implemented).
@@ -426,7 +429,7 @@ def diode_nd2ps(
 
     # Ports
     c.add_port(
-        name="anode",
+        name="cathode",
         center=(0, 0),
         width=wa,
         orientation=0,
@@ -434,7 +437,7 @@ def diode_nd2ps(
         port_type="electrical",
     )
     c.add_port(
-        name="cathode",
+        name="anode",
         center=(0, guard_contact_y),
         width=2 * guard_outer_x,
         orientation=90,
@@ -453,7 +456,7 @@ def diode_nd2ps(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="pd2nw"))
 def diode_pd2nw(
     la: float = 0.45,
     wa: float = 0.45,
@@ -648,7 +651,7 @@ def diode_pd2nw(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="nw2ps"))
 def diode_nw2ps(
     la: float = 0.1,
     wa: float = 0.1,
@@ -661,8 +664,8 @@ def diode_nw2ps(
     """Draw 3.3V Nwell/Psub diode.
 
     Args:
-        la: diffusion length (anode).
-        wa: diffusion width (anode).
+        la: N+ junction length (cathode).
+        wa: N+ junction width (cathode).
         cw: cathode width.
         volt: operating voltage ("3.3V" or "5/6V").
         label: add labels.
@@ -812,7 +815,7 @@ def diode_nw2ps(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="pw2dw"))
 def diode_pw2dw(
     la: float = 0.1,
     wa: float = 0.1,
@@ -1147,7 +1150,7 @@ def diode_pw2dw(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="dw2ps"))
 def diode_dw2ps(
     la: float = 0.1,
     wa: float = 0.1,
@@ -1596,7 +1599,7 @@ def diode_dw2ps(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["diode"])
+@gf.cell(tags=["diode"], schematic_function=partial(diode_schematic, kind="sc"))
 def sc_diode(
     la: float = 0.1,
     wa: float = 0.1,
