@@ -19,6 +19,9 @@ tech:
 test:
 	uv run pytest -s
 
+test-lvs:
+	uv run pytest tests/gflvs/ -v
+
 test-ports:
 	uv run pytest -s tests/test_components.py::test_optical_port_positions
 
