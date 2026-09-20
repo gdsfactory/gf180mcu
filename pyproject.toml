@@ -28,7 +28,7 @@ dependencies = [
   "gdsfactory>=9.45,<=9.51"
 ]
 description = "GlobalFoundries 180nm MCU"
-keywords = ["python"]
+keywords = ["cmos", "eda", "gdsfactory", "gf180mcu", "globalfoundries", "pdk", "python"]
 license = { file = "LICENSE" }
 name = "gf180mcu"
 readme = "README.md"
