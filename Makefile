@@ -9,7 +9,7 @@ all:
 dev:
 	uv venv --python 3.12
 	uv sync --all-extras
-	curl -sf https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow-public/main/templates/.pre-commit-config.yaml -o .pre-commit-config.yaml
+	gh api "repos/doplaydo/pdk-ci-workflow/contents/templates/.pre-commit-config.yaml?ref=main" --header "Accept: application/vnd.github.raw+json" > .pre-commit-config.yaml
 	uv run pre-commit clean
 	uv run pre-commit install
 
@@ -64,14 +64,17 @@ sync-docs:
 	cp README.md docs/index.md
 
 docs-pdf: nbdocs sync-docs
+	uv run python .github/write_layer_stack.py
 	uv run mkdocs build -f mkdocs-pdf.yml
 
 docs: nbdocs sync-docs
 	uv run python docs/write_cells.py
+	uv run python .github/write_layer_stack.py
 	uv run --extra docs zensical build -f docs/zensical.toml
 
 docs-serve: nbdocs sync-docs
 	uv run python docs/write_cells.py
+	uv run python .github/write_layer_stack.py
 	uv run --extra docs zensical serve -f docs/zensical.toml -a localhost:8080
 
 update-changelog:
