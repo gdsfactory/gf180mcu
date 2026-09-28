@@ -25,6 +25,7 @@ The total envelope is conserved (0.23/2 + 0.065 = 0.22/2 + 0.07 = 0.18).
 from __future__ import annotations
 
 from math import floor
+from typing import Literal
 
 import gdsfactory as gf
 from gdsfactory.add_pins import add_electrical_pins
@@ -1395,7 +1396,7 @@ def nfet(
     volt: str = "3.3V",
     bulk: str = "None",
     con_bet_fin: int = 1,
-    gate_con_pos: str = "alternating",
+    gate_con_pos: Literal["alternating", "top", "bottom", "none"] = "alternating",
     interdig: int = 0,
     patt: str = "",
     deepnwell: int = 0,
@@ -1420,7 +1421,7 @@ def nfet(
         volt: voltage rating ("3.3V", "5.0V", "6.0V", "10.0V").
         bulk: bulk connection option.
         con_bet_fin: contacts between fingers.
-        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        gate_con_pos: gate contact position ("alternating"=both, "top"=top only, "bottom"=bottom only, "none"=remove all).
         interdig: interdigitated layout toggle.
         patt: gate pattern option.
         deepnwell: deep N-well toggle.
@@ -1443,8 +1444,20 @@ def nfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
+    topc = gate_con_pos in ("alternating", "top")
+    botc = gate_con_pos in ("alternating", "bottom")
     port_data = _mos_draw(
-        c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0, dss=dss, asym=asym
+        c,
+        w_gate,
+        l_gate,
+        nf,
+        rules,
+        is_nfet=True,
+        topc=topc,
+        botc=botc,
+        guard=grw > 0,
+        dss=dss,
+        asym=asym,
     )
     _add_mos_ports(c, port_data)
     return c
@@ -1461,7 +1474,7 @@ def pfet(
     volt: str = "3.3V",
     bulk: str = "None",
     con_bet_fin: int = 1,
-    gate_con_pos: str = "alternating",
+    gate_con_pos: Literal["alternating", "top", "bottom", "none"] = "alternating",
     interdig: int = 0,
     patt: str = "",
     deepnwell: int = 0,
@@ -1486,7 +1499,7 @@ def pfet(
         volt: voltage rating ("3.3V", "5.0V", "6.0V", "10.0V").
         bulk: bulk connection option.
         con_bet_fin: contacts between fingers.
-        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        gate_con_pos: gate contact position ("alternating"=both, "top"=top only, "bottom"=bottom only, "none"=remove all).
         interdig: interdigitated layout toggle.
         patt: gate pattern option.
         deepnwell: deep N-well toggle.
@@ -1509,8 +1522,20 @@ def pfet(
         rules["diff_spacing"] = 0.36
         rules["sub_surround"] = 0.16
 
+    topc = gate_con_pos in ("alternating", "top")
+    botc = gate_con_pos in ("alternating", "bottom")
     port_data = _mos_draw(
-        c, w_gate, l_gate, nf, rules, is_nfet=False, guard=grw > 0, dss=dss, asym=asym
+        c,
+        w_gate,
+        l_gate,
+        nf,
+        rules,
+        is_nfet=False,
+        topc=topc,
+        botc=botc,
+        guard=grw > 0,
+        dss=dss,
+        asym=asym,
     )
     _add_mos_ports(c, port_data)
     return c
@@ -1526,7 +1551,7 @@ def nfet_06v0_nvt(
     grw: float = 0.22,
     bulk="None",
     con_bet_fin: int = 1,
-    gate_con_pos="alternating",
+    gate_con_pos: Literal["alternating", "top", "bottom", "none"] = "alternating",
     interdig: int = 0,
     patt="",
     label: bool = False,
@@ -1546,7 +1571,7 @@ def nfet_06v0_nvt(
         grw: guard-ring width; set to 0 to disable the guard ring.
         bulk: bulk connection option.
         con_bet_fin: contacts between fingers.
-        gate_con_pos: gate contact position ("alternating", "top", "bottom").
+        gate_con_pos: gate contact position ("alternating"=both, "top"=top only, "bottom"=bottom only, "none"=remove all).
         interdig: interdigitated layout toggle.
         patt: gate pattern option.
         label: add text labels.
@@ -1561,6 +1586,10 @@ def nfet_06v0_nvt(
     rules["gate_extension"] = 0.35
     rules["sub_surround"] = 0.16
 
-    port_data = _mos_draw(c, w_gate, l_gate, nf, rules, is_nfet=True, guard=grw > 0)
+    topc = gate_con_pos in ("alternating", "top")
+    botc = gate_con_pos in ("alternating", "bottom")
+    port_data = _mos_draw(
+        c, w_gate, l_gate, nf, rules, is_nfet=True, topc=topc, botc=botc, guard=grw > 0
+    )
     _add_mos_ports(c, port_data)
     return c
