@@ -34,7 +34,28 @@ _add_ports = tuple(
     for metal, label in _metal_layers
 )
 
-_import_gds = partial(gf.import_gds, post_process=_add_ports)
+
+def _add_unique_ports(component: gf.Component) -> None:
+    """Extract all metal labels without reusing names across layers."""
+    for add_ports in _add_ports:
+        add_ports(component)
+
+    # add_ports_from_labels starts its suffix counter afresh on each layer.
+    # Reserve all original names before assigning suffixes to duplicates.
+    reserved = {port.name for port in component.ports}
+    seen = set()
+    for port in component.ports:
+        name = port.name
+        if name in seen:
+            index = 2
+            while f"{name}_{index}" in reserved:
+                index += 1
+            port.name = f"{name}_{index}"
+            reserved.add(port.name)
+        seen.add(port.name)
+
+
+_import_gds = partial(gf.import_gds, post_process=(_add_unique_ports,))
 
 
 # --- Digital I/O ---

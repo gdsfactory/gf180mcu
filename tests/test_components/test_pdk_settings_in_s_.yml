@@ -1,0 +1,2120 @@
+info: {}
+name: in_s_MS3lm
+ports:
+  A:
+    center:
+    - 32.88
+    - 320.11
+    layer: metal1
+    name: A
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A1:
+    center:
+    - 41.965
+    - 334.29
+    layer: metal1
+    name: A1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A10:
+    center:
+    - 16.1
+    - 292.85
+    layer: metal1
+    name: A10
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A11:
+    center:
+    - 27.515
+    - 233.215
+    layer: metal1
+    name: A11
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A12:
+    center:
+    - 47.485
+    - 233.215
+    layer: metal1
+    name: A12
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A13:
+    center:
+    - 57.685
+    - 254.995
+    layer: metal1
+    name: A13
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A14:
+    center:
+    - 53.23
+    - 256.845
+    layer: metal1
+    name: A14
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A15:
+    center:
+    - 62.555
+    - 233.215
+    layer: metal1
+    name: A15
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A16:
+    center:
+    - 12.445
+    - 233.215
+    layer: metal1
+    name: A16
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A2:
+    center:
+    - 68.185
+    - 334.29
+    layer: metal1
+    name: A2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A3:
+    center:
+    - 19.055
+    - 334.29
+    layer: metal1
+    name: A3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  A4:
+    center:
+    - 45.275
+    - 334.29
+    layer: metal1
+    name: A4
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A5:
+    center:
+    - 68.52
+    - 303.965
+    layer: metal1
+    name: A5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A6:
+    center:
+    - 65.695
+    - 288.215
+    layer: metal1
+    name: A6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A7:
+    center:
+    - 60.865
+    - 288.215
+    layer: metal1
+    name: A7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A8:
+    center:
+    - 49.705
+    - 318.84
+    layer: metal1
+    name: A8
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  A9:
+    center:
+    - 48.475
+    - 318.84
+    layer: metal1
+    name: A9
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  AB:
+    center:
+    - 44.505
+    - 255.005
+    layer: metal1
+    name: AB
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B:
+    center:
+    - 62.28
+    - 302.855
+    layer: metal1
+    name: B
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B1:
+    center:
+    - 64.47
+    - 288.215
+    layer: metal1
+    name: B1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B1_2:
+    center:
+    - 63.65
+    - 302.915
+    layer: metal2
+    name: B1_2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  B2:
+    center:
+    - 59.64
+    - 288.215
+    layer: metal1
+    name: B2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  CS:
+    center:
+    - 3.545
+    - 338.63
+    layer: metal2
+    name: CS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  CS1:
+    center:
+    - 16.015
+    - 320.67
+    layer: metal2
+    name: CS1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD:
+    center:
+    - 25.225
+    - 268.01
+    layer: metal1
+    name: DVDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD1:
+    center:
+    - 16.16
+    - 313.21
+    layer: metal1
+    name: DVDD1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD10:
+    center:
+    - 41.465
+    - 263.445
+    layer: metal1
+    name: DVDD10
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD10_2:
+    center:
+    - 3.925
+    - 336.845
+    layer: metal3
+    name: DVDD10_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD11:
+    center:
+    - 68.01
+    - 263.445
+    layer: metal1
+    name: DVDD11
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD11_2:
+    center:
+    - 3.925
+    - 221.395
+    layer: metal3
+    name: DVDD11_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD12:
+    center:
+    - 44.98
+    - 263.445
+    layer: metal1
+    name: DVDD12
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD12_2:
+    center:
+    - 3.925
+    - 189.35
+    layer: metal3
+    name: DVDD12_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD13:
+    center:
+    - 71.04
+    - 212.39
+    layer: metal1
+    name: DVDD13
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD13_2:
+    center:
+    - 3.925
+    - 297.67
+    layer: metal3
+    name: DVDD13_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD14:
+    center:
+    - 3.96
+    - 212.39
+    layer: metal1
+    name: DVDD14
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD14_2:
+    center:
+    - 3.925
+    - 265.67
+    layer: metal3
+    name: DVDD14_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD15:
+    center:
+    - 19.085
+    - 263.445
+    layer: metal1
+    name: DVDD15
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD15_2:
+    center:
+    - 3.925
+    - 272.845
+    layer: metal3
+    name: DVDD15_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD16:
+    center:
+    - 15.245
+    - 263.445
+    layer: metal1
+    name: DVDD16
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD16_2:
+    center:
+    - 3.925
+    - 281.67
+    layer: metal3
+    name: DVDD16_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD17:
+    center:
+    - 3.925
+    - 221.395
+    layer: metal3
+    name: DVDD17
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD18:
+    center:
+    - 3.925
+    - 209.44
+    layer: metal3
+    name: DVDD18
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD19:
+    center:
+    - 3.925
+    - 189.35
+    layer: metal3
+    name: DVDD19
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD1_2:
+    center:
+    - 3.925
+    - 173.17
+    layer: metal3
+    name: DVDD1_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD2:
+    center:
+    - 32.105
+    - 341.06
+    layer: metal1
+    name: DVDD2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD20:
+    center:
+    - 3.925
+    - 173.17
+    layer: metal3
+    name: DVDD20
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD21:
+    center:
+    - 3.925
+    - 157.6
+    layer: metal3
+    name: DVDD21
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD22:
+    center:
+    - 3.925
+    - 141.525
+    layer: metal3
+    name: DVDD22
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD23:
+    center:
+    - 3.925
+    - 120.975
+    layer: metal3
+    name: DVDD23
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD24:
+    center:
+    - 3.925
+    - 336.845
+    layer: metal3
+    name: DVDD24
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD2_2:
+    center:
+    - 3.925
+    - 157.6
+    layer: metal3
+    name: DVDD2_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD3:
+    center:
+    - 58.325
+    - 341.06
+    layer: metal1
+    name: DVDD3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD3_2:
+    center:
+    - 3.925
+    - 141.525
+    layer: metal3
+    name: DVDD3_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD4:
+    center:
+    - 28.915
+    - 341.06
+    layer: metal1
+    name: DVDD4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD4_2:
+    center:
+    - 3.925
+    - 120.975
+    layer: metal3
+    name: DVDD4_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD5:
+    center:
+    - 55.135
+    - 341.06
+    layer: metal1
+    name: DVDD5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD5_2:
+    center:
+    - 3.925
+    - 209.44
+    layer: metal3
+    name: DVDD5_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD6:
+    center:
+    - 48.59
+    - 313.21
+    layer: metal1
+    name: DVDD6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD6_2:
+    center:
+    - 3.925
+    - 265.67
+    layer: metal3
+    name: DVDD6_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD7:
+    center:
+    - 54
+    - 297.215
+    layer: metal1
+    name: DVDD7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD7_2:
+    center:
+    - 3.925
+    - 272.845
+    layer: metal3
+    name: DVDD7_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD8:
+    center:
+    - 36
+    - 212.39
+    layer: metal1
+    name: DVDD8
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD8_2:
+    center:
+    - 3.925
+    - 281.67
+    layer: metal3
+    name: DVDD8_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD9:
+    center:
+    - 39
+    - 212.39
+    layer: metal1
+    name: DVDD9
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVDD9_2:
+    center:
+    - 3.925
+    - 297.67
+    layer: metal3
+    name: DVDD9_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS:
+    center:
+    - 25.225
+    - 278.635
+    layer: metal1
+    name: DVSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS1:
+    center:
+    - 13.34
+    - 325.275
+    layer: metal1
+    name: DVSS1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS10:
+    center:
+    - 41.5
+    - 249.73
+    layer: metal1
+    name: DVSS10
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS10_2:
+    center:
+    - 3.925
+    - 237.53
+    layer: metal3
+    name: DVSS10_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS11:
+    center:
+    - 67.965
+    - 249.73
+    layer: metal1
+    name: DVSS11
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS11_2:
+    center:
+    - 3.815
+    - 78.305
+    layer: metal3
+    name: DVSS11_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS12:
+    center:
+    - 45.025
+    - 249.73
+    layer: metal1
+    name: DVSS12
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS12_2:
+    center:
+    - 3.58
+    - 94.16
+    layer: metal3
+    name: DVSS12_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS13:
+    center:
+    - 71.345
+    - 241.61
+    layer: metal1
+    name: DVSS13
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS13_2:
+    center:
+    - 3.925
+    - 109.09
+    layer: metal3
+    name: DVSS13_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS14:
+    center:
+    - 3.655
+    - 241.61
+    layer: metal1
+    name: DVSS14
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS14_2:
+    center:
+    - 3.925
+    - 344.8
+    layer: metal3
+    name: DVSS14_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS15:
+    center:
+    - 19.05
+    - 249.73
+    layer: metal1
+    name: DVSS15
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS15_2:
+    center:
+    - 3.925
+    - 329.67
+    layer: metal3
+    name: DVSS15_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS16:
+    center:
+    - 15.28
+    - 249.73
+    layer: metal1
+    name: DVSS16
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS16_2:
+    center:
+    - 3.925
+    - 304.845
+    layer: metal3
+    name: DVSS16_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS17:
+    center:
+    - 3.925
+    - 288.845
+    layer: metal3
+    name: DVSS17
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS18:
+    center:
+    - 3.925
+    - 130.055
+    layer: metal3
+    name: DVSS18
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS19:
+    center:
+    - 3.925
+    - 237.53
+    layer: metal3
+    name: DVSS19
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS1_2:
+    center:
+    - 3.925
+    - 344.8
+    layer: metal3
+    name: DVSS1_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS2:
+    center:
+    - 32.15
+    - 329.025
+    layer: metal1
+    name: DVSS2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS20:
+    center:
+    - 3.925
+    - 201.265
+    layer: metal3
+    name: DVSS20
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS2_2:
+    center:
+    - 3.925
+    - 329.67
+    layer: metal3
+    name: DVSS2_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS3:
+    center:
+    - 58.37
+    - 329.025
+    layer: metal1
+    name: DVSS3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS3_2:
+    center:
+    - 3.925
+    - 304.845
+    layer: metal3
+    name: DVSS3_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS4:
+    center:
+    - 28.87
+    - 329.025
+    layer: metal1
+    name: DVSS4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS4_2:
+    center:
+    - 3.925
+    - 288.845
+    layer: metal3
+    name: DVSS4_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS5:
+    center:
+    - 55.09
+    - 329.025
+    layer: metal1
+    name: DVSS5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS5_2:
+    center:
+    - 3.925
+    - 130.055
+    layer: metal3
+    name: DVSS5_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS6:
+    center:
+    - 48.98
+    - 325.245
+    layer: metal1
+    name: DVSS6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS6_2:
+    center:
+    - 3.815
+    - 78.305
+    layer: metal3
+    name: DVSS6_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS7:
+    center:
+    - 54.935
+    - 308.69
+    layer: metal1
+    name: DVSS7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS7_2:
+    center:
+    - 3.58
+    - 94.16
+    layer: metal3
+    name: DVSS7_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS8:
+    center:
+    - 36.305
+    - 241.61
+    layer: metal1
+    name: DVSS8
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS8_2:
+    center:
+    - 3.925
+    - 109.09
+    layer: metal3
+    name: DVSS8_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS9:
+    center:
+    - 38.695
+    - 241.61
+    layer: metal1
+    name: DVSS9
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  DVSS9_2:
+    center:
+    - 3.925
+    - 201.265
+    layer: metal3
+    name: DVSS9_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  EN:
+    center:
+    - 29.565
+    - 233.215
+    layer: metal1
+    name: EN
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  EN1:
+    center:
+    - 45.435
+    - 233.215
+    layer: metal1
+    name: EN1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  EN2:
+    center:
+    - 40.61
+    - 255.005
+    layer: metal1
+    name: EN2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  EN3:
+    center:
+    - 64.605
+    - 233.215
+    layer: metal1
+    name: EN3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  EN4:
+    center:
+    - 10.395
+    - 233.215
+    layer: metal1
+    name: EN4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  EN5:
+    center:
+    - 19.94
+    - 255.005
+    layer: metal1
+    name: EN5
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  EN6:
+    center:
+    - 14.39
+    - 255.005
+    layer: metal1
+    name: EN6
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ENB:
+    center:
+    - 30.775
+    - 233.215
+    layer: metal1
+    name: ENB
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ENB1:
+    center:
+    - 44.225
+    - 233.215
+    layer: metal1
+    name: ENB1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ENB2:
+    center:
+    - 42.225
+    - 255.005
+    layer: metal1
+    name: ENB2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ENB3:
+    center:
+    - 65.815
+    - 233.215
+    layer: metal1
+    name: ENB3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ENB4:
+    center:
+    - 9.185
+    - 233.215
+    layer: metal1
+    name: ENB4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ENB5:
+    center:
+    - 18.325
+    - 255.005
+    layer: metal1
+    name: ENB5
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ENB6:
+    center:
+    - 16.005
+    - 255.005
+    layer: metal1
+    name: ENB6
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  IE:
+    center:
+    - 14.72
+    - 334.64
+    layer: metal2
+    name: IE
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  IE1:
+    center:
+    - 25.215
+    - 318.775
+    layer: metal2
+    name: IE1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  IP_IN:
+    center:
+    - 37.58
+    - 275.375
+    layer: metal2
+    name: IP_IN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  NDRIVE_X:
+    center:
+    - 32.65
+    - 215.495
+    layer: metal1
+    name: NDRIVE_X
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  NDRIVE_X1:
+    center:
+    - 42.35
+    - 215.495
+    layer: metal1
+    name: NDRIVE_X1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  NDRIVE_X2:
+    center:
+    - 67.69
+    - 215.495
+    layer: metal1
+    name: NDRIVE_X2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  NDRIVE_X3:
+    center:
+    - 7.31
+    - 215.495
+    layer: metal1
+    name: NDRIVE_X3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  NDRIVE_Y:
+    center:
+    - 33.865
+    - 215.52
+    layer: metal1
+    name: NDRIVE_Y
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  NDRIVE_Y1:
+    center:
+    - 41.135
+    - 215.52
+    layer: metal1
+    name: NDRIVE_Y1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  NDRIVE_Y2:
+    center:
+    - 68.905
+    - 215.52
+    layer: metal1
+    name: NDRIVE_Y2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  NDRIVE_Y3:
+    center:
+    - 6.095
+    - 215.52
+    layer: metal1
+    name: NDRIVE_Y3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  OE:
+    center:
+    - 33.385
+    - 256.845
+    layer: metal1
+    name: OE
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  OE1:
+    center:
+    - 54.505
+    - 256.845
+    layer: metal1
+    name: OE1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  OE2:
+    center:
+    - 27.165
+    - 256.845
+    layer: metal1
+    name: OE2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  OE3:
+    center:
+    - 7.165
+    - 256.845
+    layer: metal1
+    name: OE3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PAD:
+    center:
+    - 37.5
+    - 204.435
+    layer: metal2
+    name: PAD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PAD1:
+    center:
+    - 37.58
+    - 269.91
+    layer: metal2
+    name: PAD1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PAD1_2:
+    center:
+    - 37.695
+    - 31.795
+    layer: metal3
+    name: PAD1_2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PAD2:
+    center:
+    - 37.475
+    - 310.305
+    layer: metal2
+    name: PAD2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PD:
+    center:
+    - 55.64
+    - 304.78
+    layer: metal1
+    name: PD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PD1:
+    center:
+    - 10.52
+    - 349.435
+    layer: metal2
+    name: PD1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PD2:
+    center:
+    - 10.52
+    - 349.435
+    layer: metal2
+    name: PD2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PD3:
+    center:
+    - 13.19
+    - 329.215
+    layer: metal2
+    name: PD3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDB_OUT:
+    center:
+    - 59.54
+    - 287.165
+    layer: metal1
+    name: PDB_OUT
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PDRIVE_X:
+    center:
+    - 22.395
+    - 215.365
+    layer: metal1
+    name: PDRIVE_X
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRIVE_X1:
+    center:
+    - 52.605
+    - 215.365
+    layer: metal1
+    name: PDRIVE_X1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PDRIVE_X2:
+    center:
+    - 57.435
+    - 215.365
+    layer: metal1
+    name: PDRIVE_X2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PDRIVE_X3:
+    center:
+    - 17.565
+    - 215.365
+    layer: metal1
+    name: PDRIVE_X3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRIVE_Y:
+    center:
+    - 24.825
+    - 215.455
+    layer: metal1
+    name: PDRIVE_Y
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRIVE_Y1:
+    center:
+    - 50.175
+    - 215.455
+    layer: metal1
+    name: PDRIVE_Y1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PDRIVE_Y2:
+    center:
+    - 59.865
+    - 215.455
+    layer: metal1
+    name: PDRIVE_Y2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PDRIVE_Y3:
+    center:
+    - 15.135
+    - 215.455
+    layer: metal1
+    name: PDRIVE_Y3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRV:
+    center:
+    - 32.155
+    - 256.845
+    layer: metal1
+    name: PDRV
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRV1:
+    center:
+    - 28.395
+    - 256.845
+    layer: metal1
+    name: PDRV1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PDRV2:
+    center:
+    - 5.935
+    - 256.845
+    layer: metal1
+    name: PDRV2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PD_IN:
+    center:
+    - 62.815
+    - 302.845
+    layer: metal2
+    name: PD_IN
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PU:
+    center:
+    - 6.155
+    - 349.415
+    layer: metal2
+    name: PU
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PU1:
+    center:
+    - 6.155
+    - 349.415
+    layer: metal2
+    name: PU1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PU2:
+    center:
+    - 6.15
+    - 338.65
+    layer: metal2
+    name: PU2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  PUB_OUT:
+    center:
+    - 64.435
+    - 287.165
+    layer: metal1
+    name: PUB_OUT
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  PU_B:
+    center:
+    - 55.64
+    - 302.525
+    layer: metal1
+    name: PU_B
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SL:
+    center:
+    - 33.38
+    - 226.615
+    layer: metal2
+    name: SL
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  SL1:
+    center:
+    - 41.62
+    - 226.615
+    layer: metal2
+    name: SL1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SL2:
+    center:
+    - 68.42
+    - 226.615
+    layer: metal2
+    name: SL2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SL3:
+    center:
+    - 6.58
+    - 226.615
+    layer: metal2
+    name: SL3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  SLB:
+    center:
+    - 22.99
+    - 233.835
+    layer: metal2
+    name: SLB
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  SLB1:
+    center:
+    - 52.01
+    - 233.835
+    layer: metal2
+    name: SLB1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SLB2:
+    center:
+    - 58.03
+    - 233.835
+    layer: metal2
+    name: SLB2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  SLB3:
+    center:
+    - 16.97
+    - 233.835
+    layer: metal2
+    name: SLB3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 62.51
+    - 313.255
+    layer: metal1
+    name: VDD
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD1:
+    center:
+    - 43.7
+    - 341.06
+    layer: metal1
+    name: VDD1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD10:
+    center:
+    - 30.425
+    - 263.445
+    layer: metal1
+    name: VDD10
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD11:
+    center:
+    - 57.55
+    - 263.445
+    layer: metal1
+    name: VDD11
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD12:
+    center:
+    - 55.79
+    - 263.445
+    layer: metal1
+    name: VDD12
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD13:
+    center:
+    - 30.125
+    - 263.445
+    layer: metal1
+    name: VDD13
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD14:
+    center:
+    - 4.205
+    - 263.445
+    layer: metal1
+    name: VDD14
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD1_2:
+    center:
+    - 3.925
+    - 313.67
+    layer: metal3
+    name: VDD1_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD2:
+    center:
+    - 69.92
+    - 341.06
+    layer: metal1
+    name: VDD2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD2_2:
+    center:
+    - 3.925
+    - 256.845
+    layer: metal3
+    name: VDD2_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD3:
+    center:
+    - 17.32
+    - 341.06
+    layer: metal1
+    name: VDD3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD3_2:
+    center:
+    - 3.925
+    - 313.67
+    layer: metal3
+    name: VDD3_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD4:
+    center:
+    - 43.54
+    - 341.06
+    layer: metal1
+    name: VDD4
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD4_2:
+    center:
+    - 3.925
+    - 256.845
+    layer: metal3
+    name: VDD4_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD5:
+    center:
+    - 69.835
+    - 296.765
+    layer: metal1
+    name: VDD5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD6:
+    center:
+    - 69.835
+    - 296.765
+    layer: metal1
+    name: VDD6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD7:
+    center:
+    - 67.355
+    - 294.19
+    layer: metal1
+    name: VDD7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD8:
+    center:
+    - 62.525
+    - 294.19
+    layer: metal1
+    name: VDD8
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VDD9:
+    center:
+    - 57.84
+    - 313.21
+    layer: metal1
+    name: VDD9
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 42.53
+    - 329.025
+    layer: metal1
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS1:
+    center:
+    - 68.75
+    - 329.025
+    layer: metal1
+    name: VSS1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS10:
+    center:
+    - 57.115
+    - 249.73
+    layer: metal1
+    name: VSS10
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS11:
+    center:
+    - 54.935
+    - 249.73
+    layer: metal1
+    name: VSS11
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS12:
+    center:
+    - 29.22
+    - 249.73
+    layer: metal1
+    name: VSS12
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS13:
+    center:
+    - 5.11
+    - 249.73
+    layer: metal1
+    name: VSS13
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS1_2:
+    center:
+    - 3.925
+    - 249.67
+    layer: metal3
+    name: VSS1_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS2:
+    center:
+    - 18.49
+    - 329.025
+    layer: metal1
+    name: VSS2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS2_2:
+    center:
+    - 3.925
+    - 320.845
+    layer: metal3
+    name: VSS2_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS3:
+    center:
+    - 44.71
+    - 329.025
+    layer: metal1
+    name: VSS3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS3_2:
+    center:
+    - 3.925
+    - 249.67
+    layer: metal3
+    name: VSS3_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS4:
+    center:
+    - 69.965
+    - 308.8
+    layer: metal1
+    name: VSS4
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS4_2:
+    center:
+    - 3.925
+    - 320.845
+    layer: metal3
+    name: VSS4_2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS5:
+    center:
+    - 69.965
+    - 308.8
+    layer: metal1
+    name: VSS5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS6:
+    center:
+    - 66.51
+    - 282.155
+    layer: metal1
+    name: VSS6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS7:
+    center:
+    - 61.68
+    - 282.155
+    layer: metal1
+    name: VSS7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS8:
+    center:
+    - 55.99
+    - 325.245
+    layer: metal1
+    name: VSS8
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS9:
+    center:
+    - 31.33
+    - 249.73
+    layer: metal1
+    name: VSS9
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Y:
+    center:
+    - 71.05
+    - 349.49
+    layer: metal2
+    name: Y
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Y1:
+    center:
+    - 71.05
+    - 349.64
+    layer: metal2
+    name: Y1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z:
+    center:
+    - 43.085
+    - 318.75
+    layer: metal1
+    name: Z
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z1:
+    center:
+    - 33.91
+    - 334.29
+    layer: metal1
+    name: Z1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Z1_2:
+    center:
+    - 67.27
+    - 302.915
+    layer: metal2
+    name: Z1_2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z2:
+    center:
+    - 60.13
+    - 334.29
+    layer: metal1
+    name: Z2
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z3:
+    center:
+    - 27.11
+    - 334.29
+    layer: metal1
+    name: Z3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  Z4:
+    center:
+    - 53.33
+    - 334.29
+    layer: metal1
+    name: Z4
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z5:
+    center:
+    - 65.09
+    - 288.215
+    layer: metal1
+    name: Z5
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z6:
+    center:
+    - 60.26
+    - 288.215
+    layer: metal1
+    name: Z6
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z7:
+    center:
+    - 66.14
+    - 319.47
+    layer: metal1
+    name: Z7
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  Z8:
+    center:
+    - 65.955
+    - 254.995
+    layer: metal1
+    name: Z8
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ZB:
+    center:
+    - 32.635
+    - 334.29
+    layer: metal1
+    name: ZB
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ZB1:
+    center:
+    - 58.855
+    - 334.29
+    layer: metal1
+    name: ZB1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ZB2:
+    center:
+    - 28.385
+    - 334.29
+    layer: metal1
+    name: ZB2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ZB3:
+    center:
+    - 54.605
+    - 334.29
+    layer: metal1
+    name: ZB3
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ZB4:
+    center:
+    - 67.23
+    - 254.995
+    layer: metal1
+    name: ZB4
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ndrive_Y_<1>:
+    center:
+    - 7.81
+    - 209.795
+    layer: metal2
+    name: ndrive_Y_<1>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ndrive_Y_<3>:
+    center:
+    - 69.89
+    - 209.795
+    layer: metal2
+    name: ndrive_Y_<3>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ndrive_x_<0>:
+    center:
+    - 5.075
+    - 209.795
+    layer: metal2
+    name: ndrive_x_<0>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ndrive_x_<1>:
+    center:
+    - 6.88
+    - 209.795
+    layer: metal2
+    name: ndrive_x_<1>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ndrive_x_<2>:
+    center:
+    - 67.155
+    - 209.795
+    layer: metal2
+    name: ndrive_x_<2>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ndrive_x_<3>:
+    center:
+    - 68.96
+    - 209.795
+    layer: metal2
+    name: ndrive_x_<3>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  ndrive_y_<0>:
+    center:
+    - 5.995
+    - 209.795
+    layer: metal2
+    name: ndrive_y_<0>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  ndrive_y_<2>:
+    center:
+    - 68.075
+    - 209.795
+    layer: metal2
+    name: ndrive_y_<2>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  pdrive_x_<0>:
+    center:
+    - 17.575
+    - 209.795
+    layer: metal2
+    name: pdrive_x_<0>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  pdrive_x_<1>:
+    center:
+    - 29.61
+    - 209.795
+    layer: metal2
+    name: pdrive_x_<1>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  pdrive_x_<2>:
+    center:
+    - 45.39
+    - 209.795
+    layer: metal2
+    name: pdrive_x_<2>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  pdrive_x_<3>:
+    center:
+    - 57.4
+    - 209.795
+    layer: metal2
+    name: pdrive_x_<3>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  pdrive_y_<0>:
+    center:
+    - 20.78
+    - 209.795
+    layer: metal2
+    name: pdrive_y_<0>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  pdrive_y_<1>:
+    center:
+    - 24.815
+    - 209.795
+    layer: metal2
+    name: pdrive_y_<1>
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  pdrive_y_<2>:
+    center:
+    - 50.15
+    - 209.795
+    layer: metal2
+    name: pdrive_y_<2>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  pdrive_y_<3>:
+    center:
+    - 54.19
+    - 209.795
+    layer: metal2
+    name: pdrive_y_<3>
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings:
+  metal_stack: 3lm

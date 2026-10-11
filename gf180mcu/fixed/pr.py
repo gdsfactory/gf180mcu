@@ -8,10 +8,10 @@ import gdsfactory as gf
 from gf180mcu.layers import LAYER
 from gf180mcu.schematic import bjt_schematic, efuse_schematic
 
-# ponytail: GDS sourced from local klayout/pymacros/cells/ (generated from fd_pr macros).
+# GDS generated from the local klayout/pymacros/cells/ fd_pr macros.
 # fd_pr submodule (gf180mcu/src/gf180mcu_fd_pr) provides the KLayout Python macros
 # to regenerate these files; top-level BJT GDS are not distributed in the upstream repo.
-_GDS_DIR = Path(__file__).parent.parent.parent / "klayout" / "pymacros" / "cells"
+_GDS_DIR = Path(__file__).parent.parent / "gds"
 
 _add_ports = gf.partial(
     gf.add_ports.add_ports_from_labels,

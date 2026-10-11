@@ -1,9 +1,9 @@
 """Tests for the via_stack PCell across all metal levels."""
 
 import gdsfactory as gf
-import klayout.db as kdb
 import pytest
 
+import klayout.db as kdb
 from gf180mcu.cells.via_generator import via_stack
 from gf180mcu.layers import layer
 
