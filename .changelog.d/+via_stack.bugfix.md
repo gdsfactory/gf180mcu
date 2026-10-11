@@ -1,0 +1,1 @@
+`via_stack` no longer crashes for `metal_level >= 2`, and now builds stacks up to metal5 (previously it stopped at metal2), with the `e2` port on the top metal and GF180 Via1-4 sizes (0.26 um) as defaults.
