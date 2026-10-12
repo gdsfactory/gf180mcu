@@ -1,8 +1,10 @@
 """This script generates a reticle with all the cells in the library."""
 
 import gdsfactory as gf
+from gdsfactory.get_factories import get_cells
 
-from gf180mcu import LAYER, PDK
+from gf180mcu import LAYER, PDK, fixed, logic
+from gf180mcu import cells as pcells
 
 skip = {
     "all_cells",
@@ -14,8 +16,11 @@ def all_cells(draw_ports: bool = False) -> gf.Component:
     """Returns a sample reticle with all cells."""
     c = gf.Component()
     cells = []
+    library_cells = get_cells([pcells, fixed, logic])
 
     for cell_name, cell in PDK.cells.items():
+        if cell_name in skip or cell_name not in library_cells:
+            continue
         try:
             cell_instance = cell()
             if draw_ports:

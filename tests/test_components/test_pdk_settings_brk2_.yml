@@ -1,0 +1,23 @@
+info: {}
+name: brk2_MS3lm
+ports:
+  VSS:
+    center:
+    - 1.035
+    - 321.29
+    layer: metal3
+    name: VSS
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+  VSS1:
+    center:
+    - 1.04
+    - 250.115
+    layer: metal3
+    name: VSS1
+    orientation: 0
+    port_type: electrical
+    width: 0.2
+settings:
+  metal_stack: 3lm

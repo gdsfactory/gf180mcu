@@ -1,8 +1,8 @@
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 
 [build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core>=3.2,<5"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77"]
 
 [dependency-groups]
 dev = [
@@ -116,11 +116,16 @@ select = [
 "gf180mcu/logic/__init__.py" = ["F811", "F841", "F401"]
 "tests/*.py" = ["E741", "PERF401"]
 
+[tool.setuptools.exclude-package-data]
+"*" = ["**/.git", "**/__pycache__/*", "**/*.py[cod]"]
+
 [tool.setuptools.package-data]
 "*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg", '*.GDS', "*.json", "*.txt"]
+"gf180mcu" = ["src/gf180mcu_fd_io/cells/**/*.gds", "src/gf180mcu_fd_sc_mcu7t5v0/cells/**/*.gds", "src/gf180mcu_fd_sc_mcu9t5v0/cells/**/*.gds", "models/**/*", "klayout/**/*", "gds/**/*.gds"]
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+include = ["gf180mcu*"]
+namespaces = false
 
 [tool.tbump]
 

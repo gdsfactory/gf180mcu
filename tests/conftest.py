@@ -85,6 +85,8 @@ def difftest(
     dirpath_run.mkdir(exist_ok=True, parents=True)
 
     ref_file = dirpath_ref / f"{filename}.gds"
+    if not ref_file.exists() and (dirpath_ref / f"{filename}.oas").exists():
+        ref_file = dirpath_ref / f"{filename}.oas"
     run_file = dirpath_run / f"{filename}.gds"
 
     component.write_gds(gdspath=run_file)
@@ -122,7 +124,7 @@ def difftest(
 
     if _config["update_gds_refs"]:
         if _config.get("force_regen"):
-            shutil.copy(run_file, ref_file)
+            component.write_gds(gdspath=ref_file)
             print(f"  Force-updated reference: {ref_file}")
             return
 
@@ -136,7 +138,7 @@ def difftest(
 
         answer = input("  Accept new reference? [Y/n] ")
         if answer.strip().lower() not in ("n", "no"):
-            shutil.copy(run_file, ref_file)
+            component.write_gds(gdspath=ref_file)
             print(f"  Updated: {ref_file}")
             return
         raise AssertionError(

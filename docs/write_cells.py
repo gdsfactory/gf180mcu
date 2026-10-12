@@ -12,7 +12,7 @@ from gdsfactory.serialization import clean_value_json
 
 matplotlib.use("Agg")
 
-from gf180mcu import PDK, logic
+from gf180mcu import PDK, fixed, logic
 from gf180mcu.config import PATH
 
 PDK.activate()
@@ -85,13 +85,14 @@ def _write_gds(name: str, cell_func) -> bool:
 def _module_for(name: str) -> str:
     if "fd_sc_mcu7t5v0" in name or "fd_sc_mcu9t5v0" in name:
         return "gf180mcu.logic"
-    if name in ("efuse",) or name.startswith("npn_") or name.startswith("pnp_"):
+    if name in fixed_cells:
         return "gf180mcu.fixed"
     return "gf180mcu.cells"
 
 
 pcell_names = []
 fixed_names = []
+fixed_cells = {name for name in cells if hasattr(fixed, name)}
 logic_7t_names = []
 logic_9t_names = []
 
@@ -100,7 +101,7 @@ for name in sorted(cells.keys()):
         continue
     if "fd_sc_mcu" in name:
         continue
-    if name in ("efuse",) or name.startswith("npn_") or name.startswith("pnp_"):
+    if name in fixed_cells:
         fixed_names.append(name)
     else:
         pcell_names.append(name)
@@ -153,7 +154,7 @@ with open(filepath, "w+") as f:
             f.write("c.plot()\n")
             f.write("```\n\n")
 
-    f.write("## Fixed Cells (BJT, eFuse)\n\n")
+    f.write("## Fixed Cells (IO, BJT, eFuse)\n\n")
 
     for name in fixed_names:
         print(name)

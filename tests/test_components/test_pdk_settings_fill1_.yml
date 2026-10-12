@@ -1,0 +1,239 @@
+info: {}
+name: fill1_MS3lm
+ports:
+  DVDD:
+    center:
+    - 0.47
+    - 337.29
+    layer: metal3
+    name: DVDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD1:
+    center:
+    - 0.47
+    - 298.115
+    layer: metal3
+    name: DVDD1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD10:
+    center:
+    - 0.47
+    - 141.97
+    layer: metal3
+    name: DVDD10
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD11:
+    center:
+    - 0.47
+    - 121.42
+    layer: metal3
+    name: DVDD11
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD2:
+    center:
+    - 0.47
+    - 282.115
+    layer: metal3
+    name: DVDD2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD3:
+    center:
+    - 0.47
+    - 273.29
+    layer: metal3
+    name: DVDD3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD4:
+    center:
+    - 0.47
+    - 266.115
+    layer: metal3
+    name: DVDD4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD5:
+    center:
+    - 0.47
+    - 221.84
+    layer: metal3
+    name: DVDD5
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD6:
+    center:
+    - 0.47
+    - 209.885
+    layer: metal3
+    name: DVDD6
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD7:
+    center:
+    - 0.47
+    - 189.795
+    layer: metal3
+    name: DVDD7
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD8:
+    center:
+    - 0.47
+    - 173.615
+    layer: metal3
+    name: DVDD8
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVDD9:
+    center:
+    - 0.47
+    - 158.045
+    layer: metal3
+    name: DVDD9
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS:
+    center:
+    - 0.47
+    - 94.605
+    layer: metal3
+    name: DVSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS1:
+    center:
+    - 0.47
+    - 78.75
+    layer: metal3
+    name: DVSS1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS2:
+    center:
+    - 0.47
+    - 109.535
+    layer: metal3
+    name: DVSS2
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS3:
+    center:
+    - 0.47
+    - 130.5
+    layer: metal3
+    name: DVSS3
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS4:
+    center:
+    - 0.47
+    - 201.71
+    layer: metal3
+    name: DVSS4
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS5:
+    center:
+    - 0.47
+    - 237.975
+    layer: metal3
+    name: DVSS5
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS6:
+    center:
+    - 0.47
+    - 289.29
+    layer: metal3
+    name: DVSS6
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS7:
+    center:
+    - 0.47
+    - 305.29
+    layer: metal3
+    name: DVSS7
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS8:
+    center:
+    - 0.47
+    - 330.115
+    layer: metal3
+    name: DVSS8
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  DVSS9:
+    center:
+    - 0.47
+    - 345.245
+    layer: metal3
+    name: DVSS9
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD:
+    center:
+    - 0.47
+    - 257.29
+    layer: metal3
+    name: VDD
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VDD1:
+    center:
+    - 0.47
+    - 314.115
+    layer: metal3
+    name: VDD1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS:
+    center:
+    - 0.47
+    - 321.29
+    layer: metal3
+    name: VSS
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+  VSS1:
+    center:
+    - 0.47
+    - 250.115
+    layer: metal3
+    name: VSS1
+    orientation: 180
+    port_type: electrical
+    width: 0.2
+settings:
+  metal_stack: 3lm
