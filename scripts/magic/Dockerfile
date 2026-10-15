@@ -12,7 +12,8 @@ ARG MAGIC_COMMIT=67c6ed939514e537773f9f01cc2ecca5c3400c44
 ARG OPEN_PDKS_COMMIT=fc20c144baf309002e0b335585a3aaef06b56f00
 # ─────────────────────────────────────────────────────────────────────────
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     build-essential git python3 tcl-dev tk-dev \
     libcairo2-dev libx11-dev libxpm-dev libglu1-mesa-dev \
     m4 csh \
@@ -33,10 +34,14 @@ RUN git clone https://github.com/RTimothyEdwards/open_pdks.git /tmp/open_pdks &&
 
 RUN echo 'puts "Magic OK"; quit -noprompt' | magic -dnull -noconsole
 
+RUN useradd --create-home --uid 1000 magic
+
 WORKDIR /work
 COPY sweep_params.json /work/sweep_params.json
 COPY generate_references.sh /work/generate_references.sh
 RUN chmod +x /work/generate_references.sh
 
 ENV REF_DIR=/output
+
+USER magic
 ENTRYPOINT ["/work/generate_references.sh"]
