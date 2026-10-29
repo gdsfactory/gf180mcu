@@ -1,0 +1,13 @@
+* GF180 resistor and efuse corners.
+.lib typical
+.include 'settings.inc'
+.lib 'sm141064.ngspice' res_typical
+.endl typical
+.lib ff
+.include 'settings.inc'
+.lib 'sm141064.ngspice' res_ff
+.endl ff
+.lib ss
+.include 'settings.inc'
+.lib 'sm141064.ngspice' res_ss
+.endl ss

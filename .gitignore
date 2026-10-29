@@ -9,7 +9,6 @@ tests/gds_ref/*.oas
 # C extensions
 *.so
 *.fsp
-uv.lock
 docs/cells.rst
 docs/logic_7t.rst
 docs/logic_9t.rst
@@ -152,3 +151,6 @@ cython_debug/
 *Thumbs.db
 test_diffs/
 .pre-commit-config.yaml
+
+*.gds
+*.oas

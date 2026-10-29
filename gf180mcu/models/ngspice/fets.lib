@@ -1,0 +1,21 @@
+* GF180 MOS corners (including native 6V).
+.lib typical
+.include 'settings.inc'
+.lib 'sm141064.ngspice' typical
+.endl typical
+.lib ff
+.include 'settings.inc'
+.lib 'sm141064.ngspice' ff
+.endl ff
+.lib ss
+.include 'settings.inc'
+.lib 'sm141064.ngspice' ss
+.endl ss
+.lib fs
+.include 'settings.inc'
+.lib 'sm141064.ngspice' fs
+.endl fs
+.lib sf
+.include 'settings.inc'
+.lib 'sm141064.ngspice' sf
+.endl sf

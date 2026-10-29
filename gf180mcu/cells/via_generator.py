@@ -2,6 +2,7 @@ from math import ceil, floor
 from typing import Any
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import Float2, LayerSpec, Size, Spacing
 
 from gf180mcu.layers import layer
@@ -60,7 +61,6 @@ def via_generator(
 
     # Add ports for top and bottom connections
     center_x = (x_range[0] + x_range[1]) / 2
-    (y_range[0] + y_range[1]) / 2
 
     c.add_port(
         name="e1",
@@ -80,7 +80,17 @@ def via_generator(
         port_type="electrical",
     )
 
+    add_electrical_pins(c, port_pin_mapping={"e": ["e1", "e2"]})
     return c
+
+
+# (via layer, metal layer above it) for each level of a via stack above metal1
+_via_metal_levels = (
+    (layer["via1"], layer["metal2"]),
+    (layer["via2"], layer["metal3"]),
+    (layer["via3"], layer["metal4"]),
+    (layer["via4"], layer["metal5"]),
+)
 
 
 @gf.cell(tags=["via_generator"])
@@ -92,26 +102,27 @@ def via_stack(
     con_enc: float = 0.07,
     m_enc: float = 0.06,
     con_spacing: Spacing = (0.28, 0.28),
-    via_size: Size = (0.22, 0.22),
-    via_spacing: Spacing = (0.28, 0.28),
+    via_size: Size = (0.26, 0.26),
+    via_spacing: Spacing = (0.26, 0.26),
     via_enc: Float2 = (0.06, 0.06),
     base_layer: LayerSpec = layer["metal1"],
     **kwargs: Any,
 ) -> gf.Component:
-    """Returns a via stack withen the range xrange and yrange and expecting the base_layer to be drawen.
+    """Returns a via stack within the range x_range and y_range, expecting the base_layer to be drawn.
 
     Args:
         x_range: dx range.
         y_range: dy range.
-        metal_level: metal level.
+        metal_level: top metal of the stack (1 to 5).
         con_size: contact size.
         con_enc: contact enclosure.
-        m_enc: metal enclosure.
+        m_enc: metal enclosure of the contacts/vias below it.
         con_spacing: contact spacing.
         via_size: via size.
         via_spacing: via spacing.
-        via_enc: via enclosure.
-
+        via_enc: enclosure of each via by the metal below it.
+        base_layer: layer drawn around the bottom contacts, i.e. the first
+            metal of the stack.
 
     return via stack till the metal level indicated where :
     metal_level 1 : till m1
@@ -119,88 +130,81 @@ def via_stack(
     metal_level 3 : till m3
     metal_level 4 : till m4
     metal_level 5 : till m5
-    withen the range xrange and yrange and expecting the base_layer to be drawen
-
     """
-    c = gf.Component()
-    if metal_level >= 1:
-        con_gen = via_generator(
-            x_range=x_range,
-            y_range=y_range,
-            via_size=con_size,
-            via_enclosure=(con_enc, con_enc),
-            via_layer=layer["contact"],
-            via_spacing=con_spacing,
+    if not 1 <= metal_level <= len(_via_metal_levels) + 1:
+        raise ValueError(
+            f"metal_level must be between 1 and {len(_via_metal_levels) + 1}, "
+            f"got {metal_level}"
         )
-        con = c.add_ref(con_gen)
-        m1_x = con.xsize + 2 * m_enc
-        m1_y = con.ysize + 2 * m_enc
-        m1 = c.add_ref(gf.components.rectangle(size=(m1_x, m1_y), layer=base_layer))
-        m1.xmin = con.xmin - m_enc
-        m1.ymin = con.ymin - m_enc
 
-    if metal_level >= 2:
-        via1_gen = via_generator(
-            x_range=(m1.xmin, m1.xmax),
-            y_range=(m1.ymin, m1.ymax),
+    c = gf.Component()
+    con_gen = via_generator(
+        x_range=x_range,
+        y_range=y_range,
+        via_size=con_size,
+        via_enclosure=(con_enc, con_enc),
+        via_layer=layer["contact"],
+        via_spacing=con_spacing,
+    )
+    con = c.add_ref(con_gen)
+    m1_x = con.xsize + 2 * m_enc
+    m1_y = con.ysize + 2 * m_enc
+    m1 = c.add_ref(gf.components.rectangle(size=(m1_x, m1_y), layer=base_layer))
+    m1.xmin = con.xmin - m_enc
+    m1.ymin = con.ymin - m_enc
+
+    top_metal = m1
+    top_layer = base_layer
+    top_width = m1_x
+
+    for level, (via_layer, metal_layer) in enumerate(
+        _via_metal_levels[: metal_level - 1], start=2
+    ):
+        via_gen = via_generator(
+            x_range=(top_metal.xmin, top_metal.xmax),
+            y_range=(top_metal.ymin, top_metal.ymax),
             via_size=via_size,
             via_enclosure=via_enc,
-            via_layer=layer["via1"],
+            via_layer=via_layer,
             via_spacing=via_spacing,
         )
-        via1 = c.add_ref(via1_gen)
+        via = c.add_ref(via_gen)
 
-        if (via1.xmax - via1.xmin + 2 * m_enc[0]) < (
-            via_size[0] + 2 * via_enc[0]
-        ) and metal_level >= 3:
-            m2_x = via_size[0] + 2 * via_enc[0]
+        m_x = via.xsize + 2 * m_enc
+        m_y = via.ysize + 2 * m_enc
+        if level < metal_level:
+            # intermediate metals must be large enough to enclose the next via
+            m_x = max(m_x, via_size[0] + 2 * via_enc[0])
+            m_y = max(m_y, via_size[1] + 2 * via_enc[1])
 
-        else:
-            m2_x = via1.xmax - via1.xmin + 2 * m_enc[0]
+        m = c.add_ref(gf.components.rectangle(size=(m_x, m_y), layer=metal_layer))
+        m.move((via.xmin - (m_x - via.xsize) / 2, via.ymin - (m_y - via.ysize) / 2))
 
-        if (via1.ymax - via1.ymin + 2 * m_enc[1]) < (
-            via_size[1] + 2 * via_enc[1]
-        ) and metal_level >= 3:
-            m2_y = via_size[1] + 2 * via_enc[1]
+        top_metal = m
+        top_layer = metal_layer
+        top_width = m_x
 
-        else:
-            m2_y = via1.ymax - via1.ymin + 2 * m_enc[1]
+    center = ((x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2)
 
-        m2_mx = (m2_x - (via1.xmax - via1.xmin)) / 2
-        m2_my = (m2_y - (via1.ymax - via1.ymin)) / 2
+    # Port at bottom layer
+    c.add_port(
+        name="e1",
+        center=center,
+        width=m1_x,
+        orientation=0,
+        layer=base_layer,
+        port_type="electrical",
+    )
 
-        m2 = c.add_ref(
-            gf.components.rectangle(size=(m2_x, m2_y), layer=layer["metal2"])
-        )
-        m2.move((via1.xmin - m2_mx, via1.ymin - m2_my))
+    # Port at top metal layer
+    c.add_port(
+        name="e2",
+        center=center,
+        width=top_width,
+        orientation=0,
+        layer=top_layer,
+        port_type="electrical",
+    )
 
-    # Add ports for the via stack
-    if metal_level >= 1:
-        # Port at bottom layer
-        c.add_port(
-            name="e1",
-            center=((x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2),
-            width=m1_x,
-            orientation=0,
-            layer=base_layer,
-            port_type="electrical",
-        )
-
-        # Port at top metal layer
-        if metal_level == 1:
-            top_layer = base_layer
-            top_width = m1_x
-        elif metal_level >= 2:
-            top_layer = layer["metal2"]
-            top_width = m2_x
-
-        c.add_port(
-            name="e2",
-            center=((x_range[0] + x_range[1]) / 2, (y_range[0] + y_range[1]) / 2),
-            width=top_width,
-            orientation=0,
-            layer=top_layer,
-            port_type="electrical",
-        )
-
+    add_electrical_pins(c, port_pin_mapping={"e": ["e1", "e2"]})
     return c

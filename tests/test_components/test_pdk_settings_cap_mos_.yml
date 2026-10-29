@@ -12,11 +12,11 @@ ports:
     width: 0.1
   source_drain:
     center:
+    - 0.31
     - 0
-    - -0.33
     layer: metal1
     name: source_drain
-    orientation: 270
+    orientation: 0
     port_type: electrical
     width: 0.1
 settings:

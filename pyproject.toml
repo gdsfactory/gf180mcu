@@ -1,11 +1,22 @@
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 
 [build-system]
-build-backend = "flit_core.buildapi"
-requires = ["flit_core >=3.2,<4"]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=77"]
+
+[dependency-groups]
+dev = [
+  "gdsfactoryplus>=1.8.20",
+  "pre-commit",
+  "pytest",
+  "pytest-cov",
+  "pytest_regressions",
+  "pytest-github-actions-annotate-failures",
+  "towncrier"
+]
 
 [project]
-authors = [{name = "gdsfactory", email = "contact@gdsfactory.com"}]
+authors = [{ name = "gdsfactory", email = "contact@gdsfactory.com" }]
 classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -14,26 +25,17 @@ classifiers = [
   "Operating System :: OS Independent"
 ]
 dependencies = [
-  "gdsfactory>=9.45,<9.47"
+  "gdsfactory>=9.45,<=9.51"
 ]
 description = "GlobalFoundries 180nm MCU"
-keywords = ["python"]
-license = {file = "LICENSE"}
+keywords = ["cmos", "eda", "gdsfactory", "gf180mcu", "globalfoundries", "pdk", "python"]
+license = { file = "LICENSE" }
 name = "gf180mcu"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 version = "1.0.0"
 
 [project.optional-dependencies]
-dev = [
-  "gdsfactoryplus",
-  "pre-commit",
-  "pytest",
-  "pytest-cov",
-  "pytest_regressions",
-  "pytest-github-actions-annotate-failures",
-  "towncrier"
-]
 docs = [
   "jupyter",
   "kwasm",
@@ -41,7 +43,8 @@ docs = [
   "mkdocs-with-pdf",
   "nbconvert",
   "mkdocstrings[python]>=0.27.0",
-  "zensical>=0.0.40,<0.1.0"
+  "zensical>=0.0.40,<0.1.0",
+  "rich"
 ]
 tests = ["pytest", "pytest-cov"]
 
@@ -113,11 +116,16 @@ select = [
 "gf180mcu/logic/__init__.py" = ["F811", "F841", "F401"]
 "tests/*.py" = ["E741", "PERF401"]
 
+[tool.setuptools.exclude-package-data]
+"*" = ["**/.git", "**/__pycache__/*", "**/*.py[cod]"]
+
 [tool.setuptools.package-data]
 "*" = ["*.csv", "*.yaml", "*.yml", "*.gds", "*.lyp", "*.oas", "*.lyt", "*.dat", "*.nc", "*.svg", '*.GDS', "*.json", "*.txt"]
+"gf180mcu" = ["src/gf180mcu_fd_io/cells/**/*.gds", "src/gf180mcu_fd_sc_mcu7t5v0/cells/**/*.gds", "src/gf180mcu_fd_sc_mcu9t5v0/cells/**/*.gds", "models/**/*", "klayout/**/*", "gds/**/*.gds"]
 
-[tool.setuptools.packages]
-find = {}
+[tool.setuptools.packages.find]
+include = ["gf180mcu*"]
+namespaces = false
 
 [tool.tbump]
 

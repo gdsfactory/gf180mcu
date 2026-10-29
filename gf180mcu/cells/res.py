@@ -9,9 +9,11 @@ from __future__ import annotations
 from math import floor
 
 import gdsfactory as gf
+from gdsfactory.add_pins import add_electrical_pins
 from gdsfactory.typings import LayerSpec
 
 from gf180mcu.layers import layer
+from gf180mcu.schematic import res_schematic
 
 # ---------------------------------------------------------------------------
 # Magic technology constants (from gf180mcu_generators.tcl ruleset)
@@ -435,7 +437,8 @@ def _draw_end_contact(
 
     Args:
         c: component
-        cx, cy: center position
+        cx: contact center x position in um
+        cy: contact center y position in um
         fill_w: contact fill width (cpl)
         end_layer: base layer (poly2 or comp)
         orient: "horz" or "vert" for metal growth direction
@@ -1235,7 +1238,7 @@ def _highR_poly_res(
 # ---------------------------------------------------------------------------
 
 
-@gf.cell(tags=["res"])
+@gf.cell(tags=["res"], schematic_function=res_schematic)
 def res(
     l_res: float = 0.1,
     w_res: float = 0.1,
@@ -1336,4 +1339,5 @@ def res(
 
     # VLSIR Simulation Metadata
 
+    add_electrical_pins(out, port_pin_mapping={"r0": ["r0"], "r1": ["r1"]})
     return out

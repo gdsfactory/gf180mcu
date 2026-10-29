@@ -1,7 +1,7 @@
 install:
 	git submodule update --init --recursive
 	uv venv --python 3.12
-	uv sync --extra docs --extra dev
+	uv sync --extra docs
 
 all:
 	uv run python gf180mcu/samples/all_cells.py
@@ -10,6 +10,7 @@ dev:
 	uv venv --python 3.12
 	uv sync --all-extras
 	curl -sf https://raw.githubusercontent.com/doplaydo/pdk-ci-workflow-public/main/templates/.pre-commit-config.yaml -o .pre-commit-config.yaml
+	uv run pre-commit clean
 	uv run pre-commit install
 
 tech:
@@ -40,7 +41,7 @@ release:
 	git push
 	git push origin --tags
 
-build:
+build: submodules
 	rm -rf dist
 	pip install build
 	python -m build
@@ -62,18 +63,24 @@ sync-docs:
 	uv run python -c "import re; from pathlib import Path; t=Path('CHANGELOG.md').read_text(); Path('docs/changelog.md').write_text(re.sub(r'\[([^\]]*)\]\([^)]*\)', r'\1', t))"
 	cp README.md docs/index.md
 
-docs-pdf: nbdocs sync-docs
+submodules:
+	git submodule update --init --recursive gf180mcu/src/gf180mcu_fd_io gf180mcu/src/gf180mcu_fd_sc_mcu7t5v0 gf180mcu/src/gf180mcu_fd_sc_mcu9t5v0
+
+docs-pdf: submodules nbdocs sync-docs
+	uv run python .github/write_layer_stack.py
 	uv run mkdocs build -f mkdocs-pdf.yml
 
-docs: nbdocs sync-docs
+docs: submodules nbdocs sync-docs
 	uv run python docs/write_cells.py
+	uv run python .github/write_layer_stack.py
 	uv run --extra docs zensical build -f docs/zensical.toml
 
-docs-serve: nbdocs sync-docs
+docs-serve: submodules nbdocs sync-docs
 	uv run python docs/write_cells.py
+	uv run python .github/write_layer_stack.py
 	uv run --extra docs zensical serve -f docs/zensical.toml -a localhost:8080
 
 update-changelog:
 	claude -p "remove links and make a user friendly changelog from @CHANGELOG.md to @docs/changelog.md"
 
-.PHONY: drc drc-sample doc docs docs-pdf build update-changelog
+.PHONY: drc drc-sample doc docs docs-pdf docs-serve submodules build update-changelog
