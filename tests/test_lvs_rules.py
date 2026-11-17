@@ -245,6 +245,12 @@ def test_pcell_extracts(
 LVS_DATA = Path(__file__).parent / "lvs_data"
 
 
+# gflvs issue: its built-in "length" extractor calls np.mean([]) on a device fragment with no terminal
+# pair (gflvs_refactor.py:2672), e.g. a stray tap region; not from rules.py
+@pytest.mark.filterwarnings("ignore:Mean of empty slice:RuntimeWarning")
+@pytest.mark.filterwarnings(
+    "ignore:invalid value encountered in scalar divide:RuntimeWarning"
+)
 def test_inv_gate_not_shorted_to_rails() -> None:
     """Foundry 5 V INV_X1: G is its own net (rails crossing the poly ends don't join it), devices are 5 V."""
     _, l2n, _ = gflvs.layout_to_netlist(

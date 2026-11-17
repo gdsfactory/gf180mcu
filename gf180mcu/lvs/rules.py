@@ -467,6 +467,9 @@ DIODE_TEMPLATES = [
         )
         for d in (
             # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
+            # TODO(issue: pending): area semantics differ. The deck measures nwp area on the p+ tap inside
+            # well_diode_mk; diode_schematic uses the nwell, (wa+0.32)*(la+0.32). PCell semantics kept here,
+            # so foundry nwp area/pj don't match the deck.
             diode(
                 f"nwp_{volt}",
                 "diode_nw2ps",
@@ -497,6 +500,9 @@ DIODE_TEMPLATES = [
                 "diode_dw2ps",
                 ((comp & pplus) & grow(v(dnwps_key), DW_GUARD_REACH)) - dnwell,
                 (comp & nplus) & v(dnwps_key),
+                # TODO(gflvs): body limited to DW_BODY_REACH from the n+ tap, so large foundry dnwps
+                # (5/10 testcases) under-measure area/pj. The whole dnwell would also fire inside dnwpw
+                # cells; telling them apart needs a "not interacting lvpwell" op gflvs lacks.
                 (dnwell & well_mk) & grow(v(dnwps_key), DW_BODY_REACH),
             ),
         )
