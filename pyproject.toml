@@ -66,6 +66,11 @@ name = "gf180mcu"
 python_version = "3.12"
 strict = true
 
+# gfpex is an optional, private dependency that ships no type information
+[[tool.mypy.overrides]]
+ignore_missing_imports = true
+module = ["gfpex", "gfpex.*"]
+
 [tool.pylsp-mypy]
 enabled = true
 live_mode = true
