@@ -180,7 +180,6 @@ PCELL_ROWS = [
             f"{name}_{suffix}",
             2,
             {"area": 2.0, "pj": 6.0},
-            marks=pytest.mark.xfail(strict=True, reason="needs flatten, Task 2"),
             id=f"{name}_{suffix}",
         )
         for pcell, name in ((cells.diode_nd2ps, "np"), (cells.diode_pd2nw, "pn"))
