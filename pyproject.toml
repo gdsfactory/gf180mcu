@@ -74,6 +74,7 @@ strict = true
 [tool.pytest.ini_options]
 # addopts = --tb=no
 addopts = '--tb=short'
+markers = ["slow: long-running tests (deselect with -m 'not slow')"]
 norecursedirs = ["extra/*.py", 'gf180/cells/klayout/*.py']
 python_files = ["gf180/*.py", "notebooks/*.ipynb", "tests/*.py"]
 testpaths = ["tests"]
