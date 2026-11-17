@@ -159,17 +159,21 @@ PCELL_ROWS = [
         {"l": 0.5, "w": 0.6, "nf": 1},
     ),
     (cells.nfet_06v0_nvt, {}, "nmos_6p0_nat", 4, {"l": 1.8, "w": 0.8, "nf": 1}),
-    (
+    pytest.param(
         cells.cap_mos,
         {"lc": 2.0, "wc": 3.0},
-        "nmoscap_3p3",
+        "nmoscap_3p3_b",
         2,
         {"c_length": 2.0, "c_width": 3.0},
+        marks=pytest.mark.xfail(
+            strict=True, reason="PCell bug: 3.3 V cap_mos draws no comp (no channel)"
+        ),
+        id="nmoscap_3p3_b",
     ),
     (
         cells.cap_mos,
         {"lc": 2.0, "wc": 3.0, "volt": "6.0V"},
-        "nmoscap_6p0",
+        "nmoscap_6p0_b",
         2,
         {"c_length": 2.0, "c_width": 3.0},
     ),
@@ -234,3 +238,49 @@ def test_pcell_extracts(
     (d,) = devices
     assert len(d.terminals) == n_terminals
     assert {p.name: p.value for p in d.parameters} == pytest.approx(params, rel=1e-3)
+
+
+# small foundry GDS from google/globalfoundries-pdk-libs-gf180mcu_fd_pr @ 9f992d5 (Apache-2.0),
+# rules/klayout/lvs/testing; expected values are the official KLayout deck's extraction
+LVS_DATA = Path(__file__).parent / "lvs_data"
+
+
+def test_inv_gate_not_shorted_to_rails() -> None:
+    """Foundry 5 V INV_X1: G is its own net (rails crossing the poly ends don't join it), devices are 5 V."""
+    _, l2n, _ = gflvs.layout_to_netlist(
+        gdstk.read_gds(LVS_DATA / "ref_sc_INV_X1_7T5P0.gds"),
+        "INV_X1_7T5P0",
+        device_templates=rules.DEFAULT_LVS_CONFIG.device_templates,
+        nettracer_config=rules.DEFAULT_LVS_CONFIG.netlist_tracer_config,
+        electrical_device_extraction_config=rules.DEFAULT_LVS_CONFIG.electrical_device_extraction_config,
+    )
+    net_of = {
+        (t.device_instance_name.rsplit("/", 1)[-1], t.device_terminal_name): n.name
+        for n in l2n.nets
+        for t in n.connected_terminals
+    }
+    assert sorted({d for d, _ in net_of}) == ["nmos_5p0_0", "pmos_5p0_0"]
+    gates = {net for (_, term), net in net_of.items() if term == "G"}
+    others = {net for (_, term), net in net_of.items() if term != "G"}
+    assert len(gates) == 1  # both gates on the input net
+    assert not gates & others
+
+
+def test_resistor_width_any_orientation() -> None:
+    """Foundry rm1 testcase: wide (W > L) bodies still give r_width = W."""
+    lib = gdstk.read_gds(LVS_DATA / "rm1.gds")
+    cfg = rules.DEFAULT_LVS_CONFIG
+    got = sorted(
+        (round(p["r_length"], 3), round(p["r_width"], 3))
+        for cell in lib.cells
+        for r in ElectricalDeviceExtractionPolicy().execute(
+            cell, cfg.device_templates, cfg.electrical_device_extraction_config
+        )
+        for p in [{q.name: q.value for q in r.ok_value.parameters}]
+    )
+    lw = (0.23, 13.5, 50.0)
+    # KLayout: the full L x W grid, with the 0.23 x 0.23 device drawn twice
+    expected = sorted(
+        [(length, width) for length in lw for width in lw] + [(0.23, 0.23)]
+    )
+    assert got == expected

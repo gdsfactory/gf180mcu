@@ -154,6 +154,15 @@ def perimeter(polygons: Polygons) -> float:
     return float(sum(p.perimeter() for p in polygons)) if polygons else float("nan")
 
 
+def edge_width(polygons: Polygons) -> float:
+    """Mean long side of thin head/body interface strips: the resistor width in any orientation (nan if empty)."""
+    return (
+        float(np.mean([np.ptp(_points([p]), axis=0).max() for p in polygons]))
+        if polygons
+        else float("nan")
+    )
+
+
 def _leaf_layers(operation: LayerOperation) -> Iterator[LayerKey]:
     """Every layer an op reads."""
     for side in ("left", "right"):
@@ -205,18 +214,22 @@ diode_mk, mos_cap_mk, cap_mk, fusetop = (
     L(LAYER.cap_mk),
     L(LAYER.fusetop),
 )
-schottky = L(LAYER.schottky_diode)
+schottky, v5_xtor, contact = L(LAYER.schottky_diode), L(LAYER.v5_xtor), L(LAYER.contact)
+# deck/foundry well diodes are marked with well_diode_mk; our PCells draw diode_mk instead (P2 below)
+well_mk = diode_mk | L(LAYER.well_diode_mk)
 
 MARKER_LAYERS: frozenset[LayerKey] = frozenset(
     key(layer)
     for layer in (
         LAYER.res_mk,
         LAYER.diode_mk,
+        LAYER.well_diode_mk,
         LAYER.mos_cap_mk,
         LAYER.cap_mk,
         LAYER.schottky_diode,
         LAYER.dualgate,
         LAYER.nat,
+        LAYER.v5_xtor,
         *(getattr(LAYER, f"metal{i}_res") for i in range(1, 7)),
     )
 )  # add_electrical_pins draws no pin geometry, so no pin layers here
@@ -228,7 +241,7 @@ NO_MARKER_TEMPLATES: frozenset[str] = frozenset(
 )
 
 # Grow distances (µm). ponytail: tuned on PCell geometry; re-measure if PCell rules change
-GATE_REACH = 1.0  # gate → its poly2 and metal1 gate pads
+GATE_REACH = 1.0  # gate → its poly2 and contacted metal1 gate pads
 SD_REACH = 2.0  # gate → S/D comp
 TAP_REACH = 3.0  # gate → bulk tap comp
 MOSCAP_REACH = 1.0  # mos_cap_mk → gate poly2/pads and S/D comp
@@ -241,6 +254,7 @@ DW_BODY_REACH = 2.0  # dw2ps key → dnwell body
 SC_ANODE_GAP = 0.1  # sc_diode: cathode region excludes the anode comp grown by this
 RES_HEAD_REACH = 1.0  # resistor body → its head contacts region
 RES_RING_REACH = 3.0  # resistor body → guard-ring comp
+RES_EDGE = 0.01  # resistor head grown into the body: a strip as long as the body width
 METAL_RES_HEAD = 0.5  # metal*_res marker → metal head beyond it
 
 # Tracer connectivity. The PDK has no Python `connectivity`; chains come from the gf180mcu KLayout LVS deck
@@ -273,9 +287,10 @@ def mos(name: str, cls: str, gate: Op, sd_imp: Op, tap_imp: Op) -> DeviceTemplat
         cls,
         [
             pin("D/S", on(metal1, sd)),
-            pin(
-                "G", (metal1 & poly2) & grow(gate, GATE_REACH)
-            ),  # metal1 gate pads; poly2 gates aren't traced
+            # contacted metal1 gate pads only: metal1 merely crossing poly (rails, straps) must not join G.
+            # TODO(gflvs): a gate contacted only on poly2 gets no G (poly2 isn't traced; verify R2).
+            pin("G", ((metal1 & contact) & poly2) & grow(gate, GATE_REACH)),
+            # TODO(gflvs): B is a tap within TAP_REACH only; substrate/well bulk isn't modelled (verify R3).
             pin("B", on(metal1, tap)),
         ],
         [
@@ -288,48 +303,41 @@ def mos(name: str, cls: str, gate: Op, sd_imp: Op, tap_imp: Op) -> DeviceTemplat
     )
 
 
-ngate = (poly2 & comp) & nplus
-pgate = ((poly2 & comp) & pplus) & nwell
+ngate = (((poly2 & comp) & nplus) - nwell) - mos_cap_mk
+pgate = (((poly2 & comp) & pplus) & nwell) - mos_cap_mk
+# TODO(issue: pending): nfet/pfet with nf>1 don't strap their D/S/G fingers (KLayout sees nf chained devices).
 MOSFET_TEMPLATES = [
     # CONFIDENCE: HIGH
-    mos(
-        "nmos_3p3",
-        "nfet",
-        (((ngate - nwell) - dualgate) - nat) - mos_cap_mk,
-        nplus,
-        pplus,
-    ),
+    mos("nmos_3p3", "nfet", ((ngate - dualgate) - nat) - v5_xtor, nplus, pplus),
+    # CONFIDENCE: MEDIUM (deck/foundry 5 V std cells only; no 5 V PCell)
+    mos("nmos_5p0", "nfet", ((ngate & dualgate) & v5_xtor) - nat, nplus, pplus),
     # CONFIDENCE: HIGH
-    mos(
-        "nmos_6p0",
-        "nfet",
-        (((ngate & dualgate) - nwell) - nat) - mos_cap_mk,
-        nplus,
-        pplus,
-    ),
+    mos("nmos_6p0", "nfet", ((ngate & dualgate) - nat) - v5_xtor, nplus, pplus),
     # CONFIDENCE: HIGH
-    mos("pmos_3p3", "pfet", (pgate - dualgate) - mos_cap_mk, pplus, nplus),
+    mos("pmos_3p3", "pfet", (pgate - dualgate) - v5_xtor, pplus, nplus),
+    # CONFIDENCE: MEDIUM (deck/foundry 5 V std cells only; no 5 V PCell)
+    mos("pmos_5p0", "pfet", (pgate & dualgate) & v5_xtor, pplus, nplus),
     # CONFIDENCE: HIGH
-    mos("pmos_6p0", "pfet", (pgate & dualgate) - mos_cap_mk, pplus, nplus),
+    mos("pmos_6p0", "pfet", (pgate & dualgate) - v5_xtor, pplus, nplus),
     # CONFIDENCE: HIGH
     mos(
         "nmos_6p0_nat",
         "nfet_06v0_nvt",
-        ((ngate & nat) & dualgate) - nwell,
+        ((ngate & nat) & dualgate) - v5_xtor,
         nplus,
         pplus,
     ),
 ]
 
 
-def moscap(name: str, body: Op) -> DeviceTemplate:
-    """MOS capacitor (SPICE gate source_drain)."""
-    sd = ((comp & nplus) & grow(body, MOSCAP_REACH)) - poly2
+def moscap(name: str, body: Op, imp: Op) -> DeviceTemplate:
+    """MOS capacitor (SPICE gate source_drain); S/D (or tap) comp carries the gate implant in every deck variant."""
+    sd = ((comp & imp) & grow(body, MOSCAP_REACH)) - poly2
     return tpl(
         name,
         "cap_mos",
         [
-            pin("gate", (metal1 & poly2) & grow(body, MOSCAP_REACH)),
+            pin("gate", ((metal1 & contact) & poly2) & grow(body, MOSCAP_REACH)),
             pin("source_drain", on(metal1, sd)),
         ],
         [
@@ -339,13 +347,30 @@ def moscap(name: str, body: Op) -> DeviceTemplate:
     )
 
 
-# TODO(issue: pending): cap_mos(type="cap_pmos") draws the nmos layers, so it extracts as nmoscap_3p3.
+# Names and bodies follow the deck (gf180mcu.lvs:951-985, 1739-1782): the cap is the gate (poly2 & comp)
+# under mos_cap_mk; *_b = gate implant same as its well (n+ in nwell, p+ in p-substrate). *_dw: not covered.
+# TODO(issue: pending): cap_mos(type="cap_pmos") draws the nmos layers, so it extracts as nmoscap_*_b.
 # TODO(issue: pending): cap_mos draws poly 0.36 wide when lc < 0.36, so c_length extracts as 0.36.
+# TODO(issue: pending): cap_mos(volt="3.3V") draws no comp under the poly (no channel): nothing extracts.
+mc_gate = ((poly2 & comp) & mos_cap_mk) - dnwell
+mc_n, mc_p = mc_gate & nplus, mc_gate & pplus
 MOSCAP_TEMPLATES = [
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("nmoscap_3p3", ((mc_n & lvpwell) - nwell) - dualgate, nplus),
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("nmoscap_6p0", ((mc_n & lvpwell) - nwell) & dualgate, nplus),
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("pmoscap_3p3", (mc_p & nwell) - dualgate, pplus),
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("pmoscap_6p0", (mc_p & nwell) & dualgate, pplus),
+    # CONFIDENCE: LOW (the 3.3 V PCell has no comp, see TODO)
+    moscap("nmoscap_3p3_b", (mc_n & nwell) - dualgate, nplus),
     # CONFIDENCE: HIGH for lc >= 0.36
-    moscap("nmoscap_3p3", ((mos_cap_mk & nplus) & nwell) - dualgate),
-    # CONFIDENCE: HIGH for lc >= 0.36
-    moscap("nmoscap_6p0", ((mos_cap_mk & nplus) & nwell) & dualgate),
+    moscap("nmoscap_6p0_b", (mc_n & nwell) & dualgate, nplus),
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("pmoscap_3p3_b", (mc_p - nwell) - dualgate, pplus),
+    # CONFIDENCE: MEDIUM (foundry cells; no PCell draws it)
+    moscap("pmoscap_6p0_b", (mc_p - nwell) & dualgate, pplus),
 ]
 
 # CONFIDENCE: MEDIUM (verified only after flattening)
@@ -353,7 +378,7 @@ MOSCAP_TEMPLATES = [
 # and MIM-B is not implemented.
 MIM_TEMPLATES = [
     tpl(
-        "mim_2p0fF",
+        "mim_single_2p0fF",  # deck name (mim_option A, mim_cap 2); PCell model is mim_2p0fF
         "cap_mim",
         [
             pin("top", (metal3 & fusetop) & cap_mk),
@@ -382,11 +407,21 @@ def tap_to(tap: Op, well: Op) -> LayerOperation:
     return grow(tap, TAP_TO_WELL) - well
 
 
+def lv(x: Op) -> LayerOperation:
+    """3.3 V variant: outside dualgate."""
+    return x - dualgate
+
+
+def hv(x: Op) -> LayerOperation:
+    """6 V variant: under dualgate."""
+    return x & dualgate
+
+
 np_k = (((comp & nplus) & diode_mk) - nwell) - dnwell
 pn_a = ((comp & pplus) & diode_mk) & nwell
-nwp_key = (diode_mk & nplus) & nwell
-dnwpw_key = ((diode_mk & pplus) & lvpwell) & dnwell
-dnwps_key = ((diode_mk & nplus) & dnwell) - lvpwell
+nwp_key = (well_mk & nplus) & nwell
+dnwpw_key = ((well_mk & pplus) & lvpwell) & dnwell
+dnwps_key = ((well_mk & nplus) & dnwell) - lvpwell
 sc_key = schottky & dnwell
 sc_a = (comp & sc_key) - nplus
 DIODE_TEMPLATES = [
@@ -422,42 +457,67 @@ DIODE_TEMPLATES = [
         ((comp & nplus) & nwell) & grow(pn_a & dualgate, DIODE_TAP_REACH),
         pn_a & dualgate,
     ),
-    # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
-    diode(
-        "nwp_3p3",
-        "diode_nw2ps",
-        tap_to(((comp & pplus) & grow(nwp_key, WELL_DIODE_REACH)) - nwell, nwell),
-        ((comp & nplus) & nwell) & grow(nwp_key, WELL_DIODE_REACH),
-        nwell & grow(nwp_key, WELL_DIODE_REACH),
-    ),
-    # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
-    diode(
-        "dnwpw",
-        "diode_pw2dw",
-        ((comp & pplus) & lvpwell) & grow(dnwpw_key, WELL_DIODE_REACH),
-        tap_to(
-            (((comp & nplus) & dnwell) & grow(dnwpw_key, WELL_DIODE_REACH)) - lvpwell,
-            lvpwell,
-        ),
-        lvpwell & grow(dnwpw_key, WELL_DIODE_REACH),
-    ),
-    # CONFIDENCE: LOW (anode only when pcmpgr=True)
-    # TODO(issue: pending): diode_dw2ps guard-ring comp is 0.1 wide with contacts outside it; anode port off comp.
-    diode(
-        "dnwps",
-        "diode_dw2ps",
-        ((comp & pplus) & grow(dnwps_key, DW_GUARD_REACH)) - dnwell,
-        (comp & nplus) & dnwps_key,
-        (dnwell & diode_mk) & grow(dnwps_key, DW_BODY_REACH),
+    # well diodes: 3p3/6p0 split on dualgate, as the deck (gf180mcu.lvs:770-788)
+    # TODO(issue: pending): diode_nw2ps/pw2dw/dw2ps draw diode_mk, not well_diode_mk, and no metal1 at all.
+    *(
+        d
+        for v, volt in (
+            (lv, "3p3"),
+            (hv, "6p0"),
+        )
+        for d in (
+            # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
+            diode(
+                f"nwp_{volt}",
+                "diode_nw2ps",
+                tap_to(
+                    ((comp & pplus) & grow(v(nwp_key), WELL_DIODE_REACH)) - nwell, nwell
+                ),
+                ((comp & nplus) & nwell) & grow(v(nwp_key), WELL_DIODE_REACH),
+                nwell & grow(v(nwp_key), WELL_DIODE_REACH),
+            ),
+            # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
+            diode(
+                f"dnwpw_{volt}",
+                "diode_pw2dw",
+                ((comp & pplus) & lvpwell) & grow(v(dnwpw_key), WELL_DIODE_REACH),
+                tap_to(
+                    (((comp & nplus) & dnwell) & grow(v(dnwpw_key), WELL_DIODE_REACH))
+                    - lvpwell,
+                    lvpwell,
+                ),
+                # whole lvpwell, as the deck (P => lvpwell): marker-covered (foundry) or near the key (PCell)
+                (lvpwell & grow(v(dnwpw_key), WELL_DIODE_REACH))
+                | v((lvpwell & dnwell) & well_mk),
+            ),
+            # CONFIDENCE: LOW (anode only when pcmpgr=True)
+            # TODO(issue: pending): diode_dw2ps guard-ring comp is 0.1 wide with contacts outside it.
+            diode(
+                f"dnwps_{volt}",
+                "diode_dw2ps",
+                ((comp & pplus) & grow(v(dnwps_key), DW_GUARD_REACH)) - dnwell,
+                (comp & nplus) & v(dnwps_key),
+                (dnwell & well_mk) & grow(v(dnwps_key), DW_BODY_REACH),
+            ),
+        )
     ),
     # CONFIDENCE: LOW (static check only, at la=wa=cw=1)
     # TODO(issue: pending): sc_diode metal1 straps miss the contacts and the ports are off the terminals.
-    diode("sc_diode", "sc_diode", sc_a, sc_key - grow(sc_a, SC_ANODE_GAP), sc_a),
+    # area/pj: the deck's diode is schottky_diode (P) over the cathode n+ comp (N), so area = that n+ comp
+    # (matches all 10 foundry sc_diode testcases).
+    # TODO(issue: pending): diode_schematic gives sc_diode area = m*wa*la (anode), the deck the cathode n+ comp.
+    diode(
+        "sc_diode",
+        "sc_diode",
+        sc_a,
+        sc_key - grow(sc_a, SC_ANODE_GAP),
+        (comp & nplus) & sc_key,
+    ),
 ]
 
 
 def res(name: str, body: Op, head: Op, ring_imp: Op) -> DeviceTemplate:
-    """Poly/diffusion/well resistor (SPICE r0 r1 bulk); PCell frame: length along y, r0 on top."""
+    """Poly/diffusion/well resistor (SPICE r0 r1 bulk); any orientation."""
     heads = (head & grow(body, RES_HEAD_REACH)) - res_mk
     return tpl(
         name,
@@ -466,18 +526,25 @@ def res(name: str, body: Op, head: Op, ring_imp: Op) -> DeviceTemplate:
             pin("r1/r0", on(metal1, heads)),
             pin("bulk", on(metal1, (comp & ring_imp) & grow(body, RES_RING_REACH))),
         ],
-        [par("r_length", body, "length"), par("r_width", body, "bbox_x")],
+        [
+            par("r_length", body, "length"),
+            par("r_width", grow(heads, RES_EDGE) & body, "edge_width"),
+        ],
     )
 
 
 def metal_res(name: str, metal: Any, marker: Any) -> DeviceTemplate:
     """Metal resistor (SPICE r0 r1) under a metal*_res marker."""
     m, mk = L(metal), L(marker)
+    heads = (m & grow(mk, METAL_RES_HEAD)) - mk
     return tpl(
         name,
         "res",
-        [pin("r1/r0", (m & grow(mk, METAL_RES_HEAD)) - mk)],
-        [par("r_length", m & mk, "length"), par("r_width", m & mk, "bbox_x")],
+        [pin("r1/r0", heads)],
+        [
+            par("r_length", m & mk, "length"),
+            par("r_width", grow(heads, RES_EDGE) & (m & mk), "edge_width"),
+        ],
     )
 
 
@@ -524,6 +591,7 @@ _EXTRACTORS: dict[str, Callable[[Polygons], float]] = {
     "sum_bbox_y": sum_bbox_y,
     "area": area,
     "perimeter": perimeter,
+    "edge_width": edge_width,
 }
 # the built-in "width" picks the long side edges of long terminals, so widths use bbox extractors instead
 PARAMETER_EXTRACTORS: dict[tuple[str, str], Callable[[Polygons], float]] = {
