@@ -23,4 +23,4 @@ jobs:
             "gfpex @ git+https://github.com/doplaydo/gf-pex@dev/diogo-main"
       # --no-sync: a plain `uv run` puts back the locked kfnetlist 0.3.0, which gfpex can't import
       - name: Run PEX tests
-        run: uv run --no-sync pytest tests/gfpex/ -v
+        run: uv run --no-sync pytest tests/test_pex_gf180mcu.py -v

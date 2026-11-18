@@ -20,7 +20,7 @@ test:
 	uv run pytest -s
 
 test-pex:
-	uv run --no-sync pytest tests/gfpex/ -v
+	uv run --no-sync pytest tests/test_pex_gf180mcu.py -v
 
 test-ports:
 	uv run pytest -s tests/test_components.py::test_optical_port_positions
