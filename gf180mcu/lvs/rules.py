@@ -263,7 +263,7 @@ METAL_RES_HEAD = 0.5  # metal*_res marker → metal head beyond it
 
 # Tracer connectivity. The PDK has no Python `connectivity`; chains come from the gf180mcu KLayout LVS deck
 # (gf180mcu.lvs:1061-1084, 1256-1266).
-# TODO(issue: pending): gf180mcu PDK lacks a Python `connectivity` list.
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): gf180mcu PDK lacks a Python `connectivity` list.
 LAYER_CONNECTIVITY: dict[LayerKey, list[LayerKey]] = connectivity(
     [
         # comp/poly2 not traced: device bodies, would short S/D and resistor heads in any parent cell
@@ -310,7 +310,7 @@ def mos(name: str, cls: str, gate: Op, sd_imp: Op, tap_imp: Op) -> DeviceTemplat
 
 ngate = (((poly2 & comp) & nplus) - nwell) - mos_cap_mk
 pgate = (((poly2 & comp) & pplus) & nwell) - mos_cap_mk
-# TODO(issue: pending): nfet/pfet with nf>1 don't strap their D/S/G fingers (KLayout sees nf chained devices).
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): nfet/pfet with nf>1 don't strap their D/S/G fingers (KLayout sees nf chained devices).
 MOSFET_TEMPLATES = [
     # CONFIDENCE: HIGH
     mos("nmos_3p3", "nfet", ((ngate - dualgate) - nat) - v5_xtor, nplus, pplus),
@@ -354,9 +354,9 @@ def moscap(name: str, body: Op, imp: Op) -> DeviceTemplate:
 
 # Names and bodies follow the deck (gf180mcu.lvs:951-985, 1739-1782): the cap is the gate (poly2 & comp)
 # under mos_cap_mk; *_b = gate implant same as its well (n+ in nwell, p+ in p-substrate). *_dw: not covered.
-# TODO(issue: pending): cap_mos(type="cap_pmos") draws the nmos layers, so it extracts as nmoscap_*_b.
-# TODO(issue: pending): cap_mos draws poly 0.36 wide when lc < 0.36, so c_length extracts as 0.36.
-# TODO(issue: pending): cap_mos(volt="3.3V") draws no comp under the poly (no channel): nothing extracts.
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): cap_mos(type="cap_pmos") draws the nmos layers, so it extracts as nmoscap_*_b.
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): cap_mos draws poly 0.36 wide when lc < 0.36, so c_length extracts as 0.36.
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): cap_mos(volt="3.3V") draws no comp under the poly (no channel): nothing extracts.
 mc_gate = ((poly2 & comp) & mos_cap_mk) - dnwell
 mc_n, mc_p = mc_gate & nplus, mc_gate & pplus
 MOSCAP_TEMPLATES = [
@@ -379,7 +379,7 @@ MOSCAP_TEMPLATES = [
 ]
 
 # CONFIDENCE: MEDIUM (verified only after flattening)
-# TODO(issue: pending): cap_mim has no metal2 bottom plate under fusetop, the bottom port sits in that hole,
+# TODO(https://github.com/gdsfactory/gf180mcu/issues/204): cap_mim has no metal2 bottom plate under fusetop, the bottom port sits in that hole,
 # and MIM-B is not implemented.
 MIM_TEMPLATES = [
     tpl(
@@ -463,7 +463,7 @@ DIODE_TEMPLATES = [
         pn_a & dualgate,
     ),
     # well diodes: 3p3/6p0 split on dualgate, as the deck (gf180mcu.lvs:770-788)
-    # TODO(issue: pending): diode_nw2ps/pw2dw/dw2ps draw diode_mk, not well_diode_mk, and no metal1 at all.
+    # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): diode_nw2ps/pw2dw/dw2ps draw diode_mk, not well_diode_mk, and no metal1 at all.
     *(
         d
         for v, volt in (
@@ -472,7 +472,7 @@ DIODE_TEMPLATES = [
         )
         for d in (
             # CONFIDENCE: MEDIUM (no metal1 at the ports: comp+implant+well only)
-            # TODO(issue: pending): area semantics differ. The deck measures nwp area on the p+ tap inside
+            # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): area semantics differ. The deck measures nwp area on the p+ tap inside
             # well_diode_mk; diode_schematic uses the nwell, (wa+0.32)*(la+0.32). PCell semantics kept here,
             # so foundry nwp area/pj don't match the deck.
             diode(
@@ -499,7 +499,7 @@ DIODE_TEMPLATES = [
                 | v((lvpwell & dnwell) & well_mk),
             ),
             # CONFIDENCE: LOW (anode only when pcmpgr=True)
-            # TODO(issue: pending): diode_dw2ps guard-ring comp is 0.1 wide with contacts outside it.
+            # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): diode_dw2ps guard-ring comp is 0.1 wide with contacts outside it.
             diode(
                 f"dnwps_{volt}",
                 "diode_dw2ps",
@@ -513,10 +513,10 @@ DIODE_TEMPLATES = [
         )
     ),
     # CONFIDENCE: LOW (static check only, at la=wa=cw=1)
-    # TODO(issue: pending): sc_diode metal1 straps miss the contacts and the ports are off the terminals.
+    # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): sc_diode metal1 straps miss the contacts and the ports are off the terminals.
     # area/pj: the deck's diode is schottky_diode (P) over the cathode n+ comp (N), so area = that n+ comp
     # (matches all 10 foundry sc_diode testcases).
-    # TODO(issue: pending): diode_schematic gives sc_diode area = m*wa*la (anode), the deck the cathode n+ comp.
+    # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): diode_schematic gives sc_diode area = m*wa*la (anode), the deck the cathode n+ comp.
     diode(
         "sc_diode",
         "sc_diode",
@@ -535,7 +535,7 @@ def res(name: str, body: Op, head: Op, ring_imp: Op) -> DeviceTemplate:
         "res",
         [
             pin("r1/r0", on(metal1, heads)),
-            # TODO(issue: pending): terminal ↔ pin name mismatch: the res PCells draw the bulk ring but
+            # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): terminal ↔ pin name mismatch: the res PCells draw the bulk ring but
             # register no bulk port or pin, so this terminal has no pin name to follow
             pin("bulk", on(metal1, (comp & ring_imp) & grow(body, RES_RING_REACH))),
         ],
@@ -586,7 +586,7 @@ RESISTOR_TEMPLATES = [
     # CONFIDENCE: HIGH
     res("pplus_u", (((comp & res_mk) & pplus) & sab) & nwell, comp & pplus, nplus),
     # CONFIDENCE: LOW (blocked: never fires as drawn)
-    # TODO(issue: pending): the nwell resistor PCell draws no res_mk, which the deck needs (nwell & res_mk).
+    # TODO(https://github.com/gdsfactory/gf180mcu/issues/204): the nwell resistor PCell draws no res_mk, which the deck needs (nwell & res_mk).
     res("nwell", ((nwell & res_mk) - comp) - poly2, nwell, pplus),
 ]
 
