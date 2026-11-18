@@ -64,7 +64,7 @@ def test_template_layers_in_pdk() -> None:
     for t in rules.DEVICE_TEMPLATES:
         for x in (*t.device_terminal_template, *t.device_parameter_template):
             used |= set(rules._leaf_layers(x.layer_composed_op))
-    assert used <= {(layer.layer, layer.datatype) for layer in LAYER}
+    assert used <= {(layer.layer, layer.datatype) for layer in LAYER}  # type: ignore[attr-defined]
 
 
 def test_terminals_use_markers() -> None:
@@ -218,13 +218,15 @@ def test_pcell_extracts(
     tmp_path: Path,
 ) -> None:
     """The PCell extracts exactly one device of the right class, terminals and parameters."""
-    lib = gdstk.read_gds(pcell(**kwargs).write_gds(tmp_path / "c.gds"))
+    component = pcell(**kwargs)
+    lib = gdstk.read_gds(component.write_gds(tmp_path / "c.gds"))
     cfg = rules.DEFAULT_LVS_CONFIG
     # like gflvs: extract from every non-passthrough cell (res keeps its geometry in a child cell)
     results = [
         result
         for cell in lib.cells
-        if cell.name != "$$$CONTEXT_INFO$$$"
+        if isinstance(cell, gdstk.Cell)
+        and cell.name != "$$$CONTEXT_INFO$$$"
         and not cell.name.lower().startswith(rules.PASSTHROUGH_DEVICE_CLASS_NAMES)
         for result in ElectricalDeviceExtractionPolicy().execute(
             cell, cfg.device_templates, cfg.electrical_device_extraction_config
@@ -233,11 +235,17 @@ def test_pcell_extracts(
     assert all(isinstance(r, Ok) for r in results), [
         r for r in results if not isinstance(r, Ok)
     ]
-    devices = [r.ok_value for r in results]
+    devices = [r.unwrap() for r in results]
     assert [d.name for d in devices] == [f"{device}_0"]
     (d,) = devices
     assert len(d.terminals) == n_terminals
     assert {p.name: p.value for p in d.parameters} == pytest.approx(params, rel=1e-3)
+    # terminal names are the PCell's logical pins, its port names where it registers none
+    pins = {p.name for p in component.pins} or {p.name for p in component.ports}
+    names = {t.name for t in d.terminals}
+    if names - pins == {"bulk"}:
+        pytest.skip("terminal ↔ pin name mismatch: the res PCell has no bulk pin")
+    assert names == pins
 
 
 # small foundry GDS from google/globalfoundries-pdk-libs-gf180mcu_fd_pr @ 9f992d5 (Apache-2.0),
@@ -266,8 +274,8 @@ def test_inv_gate_not_shorted_to_rails() -> None:
         for t in n.connected_terminals
     }
     assert sorted({d for d, _ in net_of}) == ["nmos_5p0_0", "pmos_5p0_0"]
-    gates = {net for (_, term), net in net_of.items() if term == "G"}
-    others = {net for (_, term), net in net_of.items() if term != "G"}
+    gates = {net for (_, term), net in net_of.items() if term == "Gate"}
+    others = {net for (_, term), net in net_of.items() if term != "Gate"}
     assert len(gates) == 1  # both gates on the input net
     assert not gates & others
 
@@ -279,10 +287,11 @@ def test_resistor_width_any_orientation() -> None:
     got = sorted(
         (round(p["r_length"], 3), round(p["r_width"], 3))
         for cell in lib.cells
+        if isinstance(cell, gdstk.Cell)
         for r in ElectricalDeviceExtractionPolicy().execute(
             cell, cfg.device_templates, cfg.electrical_device_extraction_config
         )
-        for p in [{q.name: q.value for q in r.ok_value.parameters}]
+        for p in [{q.name: q.value for q in r.unwrap().parameters}]
     )
     lw = (0.23, 13.5, 50.0)
     # KLayout: the full L x W grid, with the 0.23 x 0.23 device drawn twice

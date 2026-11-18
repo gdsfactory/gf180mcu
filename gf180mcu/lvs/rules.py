@@ -5,7 +5,11 @@ Usage::
     import gflvs
     from gf180mcu.lvs.rules import DEFAULT_LVS_CONFIG
 
-    clean, extracted, l2n, report = gflvs.lvs(reference_netlist, gdstk_library, DEFAULT_LVS_CONFIG)
+    clean, extracted, l2n, report = gflvs.lvs(
+        reference_netlist, gdstk_library, DEFAULT_LVS_CONFIG, topcell=component.name
+    )
+
+An empty topcell picks gdsfactory's `$$$CONTEXT_INFO$$$` cell (doplaydo/gflvs#137), so pass it.
 
 Flip the flags below and call `build_lvs_config()` for a variant config.
 
@@ -276,22 +280,23 @@ LAYER_CONNECTIVITY: dict[LayerKey, list[LayerKey]] = connectivity(
 
 # ── Templates ───────────────────────────────────────────────────────
 # python precedence: `-` binds tighter than `&`, `&` tighter than `|`: every step is parenthesised
+# Terminal names are the PCell logical pin names (Drain, Gate, ...; the pins group indexed Drain_k ports).
 
 
 def mos(name: str, cls: str, gate: Op, sd_imp: Op, tap_imp: Op) -> DeviceTemplate:
-    """MOSFET (SPICE D G S B); w = w_gate*nf, D/S alternate left to right."""
+    """MOSFET (SPICE D G S B); w = w_gate*nf, Drain/Source alternate left to right (Drain_0 leftmost)."""
     sd = ((comp & sd_imp) & grow(gate, SD_REACH)) - poly2
     tap = (comp & tap_imp) & grow(gate, TAP_REACH)
     return tpl(
         name,
         cls,
         [
-            pin("D/S", on(metal1, sd)),
-            # contacted metal1 gate pads only: metal1 merely crossing poly (rails, straps) must not join G.
-            # TODO(gflvs): a gate contacted only on poly2 gets no G (poly2 isn't traced; verify R2).
-            pin("G", ((metal1 & contact) & poly2) & grow(gate, GATE_REACH)),
-            # TODO(gflvs): B is a tap within TAP_REACH only; substrate/well bulk isn't modelled (verify R3).
-            pin("B", on(metal1, tap)),
+            pin("Drain/Source", on(metal1, sd)),
+            # contacted metal1 gate pads only: metal1 merely crossing poly (rails, straps) must not join Gate.
+            # TODO(gflvs): a gate contacted only on poly2 gets no Gate (poly2 isn't traced; verify R2).
+            pin("Gate", ((metal1 & contact) & poly2) & grow(gate, GATE_REACH)),
+            # TODO(gflvs): Bulk is a tap within TAP_REACH only; substrate/well bulk isn't modelled (verify R3).
+            pin("Bulk", on(metal1, tap)),
         ],
         [
             par("l", poly2 & grow(gate, GATE_REACH), "length"),
@@ -530,6 +535,8 @@ def res(name: str, body: Op, head: Op, ring_imp: Op) -> DeviceTemplate:
         "res",
         [
             pin("r1/r0", on(metal1, heads)),
+            # TODO(issue: pending): terminal ↔ pin name mismatch: the res PCells draw the bulk ring but
+            # register no bulk port or pin, so this terminal has no pin name to follow
             pin("bulk", on(metal1, (comp & ring_imp) & grow(body, RES_RING_REACH))),
         ],
         [
