@@ -9,6 +9,9 @@ over unchanged from gf-pex `gfpexconfg/gf180mcuD.py`, which comes from KPEX.
 
 gfpex is optional and private; it is not a dependency of this package.
 
+gfpex is private: installing it needs read access to `doplaydo/gf-pex`, git authenticated for github.com
+(for example `gh auth login && gh auth setup-git`) and a Rust toolchain to build it.
+
 ```bash
 uv pip install networkx "kfnetlist @ git+https://github.com/gdsfactory/kfnetlist" \
     "gfpex @ git+https://github.com/doplaydo/gf-pex@dev/diogo-main"
