@@ -448,6 +448,7 @@ def diode_nd2ps(
     add_electrical_pins(
         c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
     )
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
 
 
@@ -643,6 +644,7 @@ def diode_pd2nw(
     add_electrical_pins(
         c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
     )
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
 
 
@@ -807,6 +809,7 @@ def diode_nw2ps(
     add_electrical_pins(
         c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]}
     )
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
 
 
@@ -1142,6 +1145,7 @@ def diode_pw2dw(
     add_electrical_pins(
         c, port_pin_mapping={"anode": ["anode"], "cathode": ["cathode"]}
     )
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
 
 
@@ -1591,6 +1595,7 @@ def diode_dw2ps(
         pin_mapping["anode"] = ["anode"]
 
     add_electrical_pins(c, port_pin_mapping=pin_mapping)
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
 
 
@@ -2013,4 +2018,5 @@ def sc_diode(
     add_electrical_pins(
         c, port_pin_mapping={"cathode": ["cathode"], "anode": ["anode"]}
     )
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c

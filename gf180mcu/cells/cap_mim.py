@@ -201,4 +201,5 @@ def cap_mim(
     # VLSIR Simulation Metadata
 
     add_electrical_pins(c, port_pin_mapping={"top": ["top"], "bottom": ["bottom"]})
+    c.flatten()  # gflvs extracts devices from a cell's own polygons only
     return c
